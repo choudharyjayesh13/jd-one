@@ -42,3 +42,4 @@ next-env.d.ts
 
 # keep the example env committed
 !.env.example
+.gh-pages/
