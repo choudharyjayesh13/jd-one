@@ -1,0 +1,31 @@
+name: Import Meta leads
+
+on:
+  schedule:
+    # 02:30 UTC = 08:00 IST, daily
+    - cron: "30 2 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: import-meta-leads
+  cancel-in-progress: false
+
+jobs:
+  import:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+      - run: bun install --frozen-lockfile
+      - name: Import leads into Supabase
+        env:
+          META_LEADS_CSV_URLS: ${{ secrets.META_LEADS_CSV_URLS }}
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: bun run import:meta
