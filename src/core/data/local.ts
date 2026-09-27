@@ -37,7 +37,11 @@ export class LocalStore implements DataStore {
         },
         // An OLDER tab is holding the database open: tell the user instead of spinning forever.
         blocked: () => {
-          if (typeof window !== "undefined") window.alert("JD One is open in another tab with an older version. Please close that tab (or reload it), then reload this page.");
+          if (typeof document === "undefined") return;
+          const el = document.createElement("div");
+          el.textContent = "JD One is open in another tab with an older version. Close or reload that tab, then reload this page.";
+          el.style.cssText = "position:fixed;top:0;left:0;right:0;z-index:9999;background:#b91c1c;color:#fff;padding:10px 16px;font:14px system-ui;text-align:center";
+          document.body.appendChild(el);
         },
       });
     }
