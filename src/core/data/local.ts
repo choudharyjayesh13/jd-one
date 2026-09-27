@@ -28,6 +28,17 @@ export class LocalStore implements DataStore {
             if (!db.objectStoreNames.contains(e.table)) db.createObjectStore(e.table, { keyPath: "id" });
           }
         },
+        // Another tab runs a NEWER build and wants to upgrade: release our
+        // connection and reload so both tabs use the same schema.
+        blocking: () => {
+          this.dbPromise?.then((db) => db.close()).catch(() => undefined);
+          this.dbPromise = null;
+          if (typeof window !== "undefined") setTimeout(() => window.location.reload(), 250);
+        },
+        // An OLDER tab is holding the database open: tell the user instead of spinning forever.
+        blocked: () => {
+          if (typeof window !== "undefined") window.alert("JD One is open in another tab with an older version. Please close that tab (or reload it), then reload this page.");
+        },
       });
     }
     return this.dbPromise;
