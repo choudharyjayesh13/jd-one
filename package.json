@@ -10,7 +10,9 @@
     "icons": "bun run scripts/make-icons.ts",
     "import:meta": "bun run scripts/import-meta-leads.ts",
     "sync:wa": "bun run scripts/sync-whatsapp.ts",
-    "deploy:pages": "NEXT_PUBLIC_BASE_PATH=/jd-one next build && bun run scripts/publish-gh-pages.ts"
+    "deploy:pages": "NEXT_PUBLIC_BASE_PATH=/jd-one next build && bun run scripts/publish-gh-pages.ts",
+    "sync:reports": "bun run scripts/sync-daily-reports.ts",
+    "bundle:jd": "bun run scripts/build-jd-bundle.ts"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.117.2",

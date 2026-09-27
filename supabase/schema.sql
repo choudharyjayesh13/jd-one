@@ -304,6 +304,33 @@ create table if not exists public.messages (
 create index if not exists messages_customer_sent_idx on public.messages (customer_id, sent_at desc);
 create index if not exists messages_phone_idx on public.messages (sender_phone);
 
+-- Hiring pipeline (HR); "Mark as hired" creates the staff row and links it here.
+create table if not exists public.candidates (
+  id uuid primary key default gen_random_uuid(),
+  name text not null,
+  phone text not null,
+  email text,
+  position text not null,
+  business_unit_id uuid not null references public.business_units(id) on delete restrict,
+  source text,
+  stage text not null default 'Applied',
+  applied_on date,
+  interview_on timestamptz,
+  expected_salary numeric(12,2),
+  offered_salary numeric(12,2),
+  joining_date date,
+  experience_years numeric(4,1),
+  current_city text,
+  interviewer uuid references public.staff(id) on delete set null,
+  staff_id uuid references public.staff(id) on delete set null,
+  documents text,
+  notes text,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  created_by uuid references public.staff(id) on delete set null
+);
+create index if not exists candidates_stage_idx on public.candidates (business_unit_id, stage);
+
 -- Lookup of unit types (the app also has them as select options).
 create table if not exists public.unit_types (
   id uuid primary key default gen_random_uuid(),
@@ -339,7 +366,7 @@ create index if not exists staff_auth_idx on public.staff (auth_user_id);
 do $$
 declare t text;
 begin
-  foreach t in array array['business_units','staff','customers','leads','activities','bookings','payments','checkins','daily_reports','attendance','expenses','stock','tasks','targets','import_runs','messages']
+  foreach t in array array['business_units','staff','customers','leads','activities','bookings','payments','checkins','daily_reports','attendance','expenses','stock','tasks','targets','import_runs','messages','candidates']
   loop
     execute format('drop trigger if exists set_updated_at on public.%I', t);
     execute format('create trigger set_updated_at before update on public.%I for each row execute function public.set_updated_at()', t);
@@ -367,7 +394,7 @@ $$;
 do $$
 declare t text;
 begin
-  foreach t in array array['business_units','staff','customers','leads','activities','bookings','payments','checkins','daily_reports','attendance','expenses','stock','tasks','targets','import_runs','messages','unit_types']
+  foreach t in array array['business_units','staff','customers','leads','activities','bookings','payments','checkins','daily_reports','attendance','expenses','stock','tasks','targets','import_runs','messages','candidates','unit_types']
   loop
     execute format('alter table public.%I enable row level security', t);
     execute format('drop policy if exists "staff read" on public.%I', t);

@@ -201,6 +201,7 @@ export function HrSection({ d }: { d: DashboardData }) {
   const { start } = monthRange(d.month);
   const joiners = d.staff.filter((s) => s.joined_on && String(s.joined_on) >= start);
   const leavers = d.staff.filter((s) => s.left_on && String(s.left_on) >= start);
+  const pipeline = d.candidates.filter((c) => !["Hired", "Rejected"].includes(String(c.stage)));
   return (
     <div className="space-y-4">
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
@@ -208,10 +209,14 @@ export function HrSection({ d }: { d: DashboardData }) {
         <Stat label="Present today" value={counts.P} hint={`${counts.A} absent · ${counts.H} half · ${counts.L} leave`} tone="good" />
         <Stat label="Not marked" value={missing.length} tone={missing.length ? "bad" : "good"} />
         <Stat label="Joiners / leavers" value={`${joiners.length} / ${leavers.length}`} hint="this month" />
+        <Stat label="Hiring pipeline" value={pipeline.length} hint={`${d.candidates.filter((c) => c.stage === "Offer").length} at offer stage`} />
       </div>
       <div className="grid gap-4 lg:grid-cols-2">
         <Section title="Attendance today" href="/attendance/grid/">
           <KeyValue rows={active.map((s) => ({ label: String(s.name), hint: String(s.designation ?? ""), value: marked.has(s.id) ? ATTENDANCE_LABELS[marked.get(s.id)!] ?? marked.get(s.id) : "—" }))} />
+        </Section>
+        <Section title="Hiring pipeline" href={listHref("candidates")}>
+          <RecordList entity="candidates" rows={pipeline} primary={(r) => String(r.name)} secondary={(r) => `${r.position ?? ""}${r.interview_on ? ` · interview ${formatDate(r.interview_on)}` : ""}`} badge={(r) => r.stage} empty="No open candidates — add one under HR → Hiring" />
         </Section>
         <Section title="Joiners & leavers this month" href={listHref("staff")}>
           <RecordList entity="staff" rows={[...joiners, ...leavers]} primary={(r) => String(r.name)} secondary={(r) => (r.left_on && String(r.left_on) >= start ? `Left ${formatDate(r.left_on)}` : `Joined ${formatDate(r.joined_on)}`)} badge={(r) => r.role} empty="No changes this month" />

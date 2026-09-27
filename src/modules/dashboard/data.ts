@@ -11,6 +11,7 @@ export interface DashboardData {
   month: string;
   units: Row[];
   staff: Row[];
+  candidates: Row[];
   bookings: Row[];
   reportsMonth: Row[];
   targets: Row[];
@@ -28,7 +29,7 @@ export async function loadDashboard(store: DataStore, unitId: string | null): Pr
   const month = currentMonth();
   const { start, end } = monthRange(month);
   const unitFilter = unitId ? { business_unit_id: unitId } : {};
-  const [units, staff, bookings, reportsMonth, targets, leads, stock, tasks, attendanceToday, expensesMonth, paymentsMonth, crm] = await Promise.all([
+  const [units, staff, bookings, reportsMonth, targets, leads, stock, tasks, attendanceToday, expensesMonth, paymentsMonth, crm, candidates] = await Promise.all([
     store.list("business-units"),
     store.list("staff", { filter: unitFilter }),
     store.list("bookings", { filter: unitFilter }),
@@ -41,8 +42,9 @@ export async function loadDashboard(store: DataStore, unitId: string | null): Pr
     store.list("expenses", { filter: unitFilter, range: { date: { gte: start, lte: end } } }),
     store.list("payments", { range: { date: { gte: start, lte: end } } }),
     crmSummary(store),
+    store.list("candidates", { filter: unitFilter }),
   ]);
-  return { today, month, units, staff, bookings, reportsMonth, targets, leads, stock, tasks, attendanceToday, expensesMonth, paymentsMonth, crm };
+  return { today, month, units, staff, bookings, reportsMonth, targets, leads, stock, tasks, attendanceToday, expensesMonth, paymentsMonth, crm, candidates };
 }
 
 /* ---- derived numbers shared by sections ---- */

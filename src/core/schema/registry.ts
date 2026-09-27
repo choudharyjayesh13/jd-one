@@ -20,6 +20,7 @@ import { tasks } from "@/modules/tasks/entity";
 import { targets } from "@/modules/targets/entity";
 import { importRuns } from "@/modules/import-runs/entity";
 import { messages } from "@/modules/messages/entity";
+import { candidates } from "@/modules/candidates/entity";
 
 export const entities: EntityDef[] = [
   businessUnits,
@@ -38,6 +39,7 @@ export const entities: EntityDef[] = [
   targets,
   importRuns,
   messages,
+  candidates,
 ];
 
 const byName = new Map(entities.map((e) => [e.name, e]));

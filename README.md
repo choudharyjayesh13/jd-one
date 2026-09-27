@@ -38,3 +38,9 @@ One internal web app for every JD Group team (operations, marketing, accounts, f
 - **Adding a form = one file.** Create `src/modules/<name>/entity.ts` with an `EntityDef` (fields, relations, list columns, teams, permissions, hooks) and add it to `src/core/schema/registry.ts`; add the matching table to `supabase/schema.sql` (and bump `DB_VERSION` in `src/core/data/local.ts`). List, form, detail, search, CSV export, role visibility and dashboard grouping come from the generic engine in `src/core/ui`.
 - The UI never touches Supabase directly; it talks to the `DataStore` interface (`src/core/data`). `LocalStore` and `SupabaseStore` implement it.
 - Spec and decisions: `SPEC.md`. Build notes: `BUILD-NOTES.md`.
+
+## Your existing reports and staff (added 27 Sep 2026)
+
+- **HR → Hiring**: add candidates (position, stage Applied → Screening → Interview → Offer → Hired), then press **Mark as hired** — the staff record is created and attendance/salary start from the joining date. The HR dashboard shows the open pipeline.
+- **History bundle**: `bun run bundle:jd -- --since 2026-06-01 --notes <expense-register-export.md> --out ~/Desktop/jd-one-data.json` builds a JSON file from the WhatsApp daily reports (sales, occupancy, attendance, staff roster) and the expense register. Import it in **Settings → Import JSON backup**. Business units and staff are matched by name, so importing twice never duplicates.
+- **Ongoing daily reports** (shared mode): `bun run sync:reports` parses new WhatsApp daily-report messages into Daily reports + Attendance every 30 minutes (`ops/launchd/com.jyc.jdone-reports-sync.plist`). Unknown staff names are created automatically under The Udaisarovar so new hires appear as soon as they are on the report.

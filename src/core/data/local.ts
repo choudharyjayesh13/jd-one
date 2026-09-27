@@ -5,12 +5,13 @@
 import { openDB, type IDBPDatabase } from "idb";
 import type { Row, FieldValues } from "@/core/schema/types";
 import { entities, getEntity } from "@/core/schema/registry";
+import { mergeBundle } from "./merge";
 import type { DataStore, ExportBundle, ListQuery } from "./types";
 import { newId } from "./types";
 import { applyQuery } from "./query";
 
 const DB_NAME = "jd-one";
-const DB_VERSION = 2; // v2: messages store
+const DB_VERSION = 3; // v2: messages, v3: candidates
 
 type Listener = () => void;
 
@@ -92,8 +93,9 @@ export class LocalStore implements DataStore {
   }
 
   /** Merge-import: rows with the same id are replaced, others are added. */
-  async importAll(bundle: ExportBundle): Promise<void> {
+  async importAll(input: ExportBundle): Promise<void> {
     const db = await this.db();
+    const bundle = mergeBundle(input, { business_units: (await db.getAll("business_units")) as Row[], staff: (await db.getAll("staff")) as Row[] });
     for (const e of entities) {
       const rows = bundle.tables[e.table];
       if (!rows) continue;

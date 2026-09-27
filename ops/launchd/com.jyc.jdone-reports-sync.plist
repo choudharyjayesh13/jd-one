@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!-- Every 30 minutes: push the WhatsApp daily report (sales, occupancy, attendance) into JD One.
+     Install: cp ops/launchd/com.jyc.jdone-reports-sync.plist ~/Library/LaunchAgents/ && launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/com.jyc.jdone-reports-sync.plist
+     Needs ~/jd-one/.env.local with SUPABASE_URL + SUPABASE_SERVICE_ROLE_KEY (+ optional WA_SYNC_ACCOUNTS). -->
+<plist version="1.0"><dict>
+  <key>Label</key><string>com.jyc.jdone-reports-sync</string>
+  <key>ProgramArguments</key><array>
+    <string>/bin/zsh</string><string>-lc</string>
+    <string>cd /Users/jyc/jd-one &amp;&amp; /Users/jyc/.bun/bin/bun run --env-file=.env.local scripts/sync-daily-reports.ts</string>
+  </array>
+  <key>StartInterval</key><integer>1800</integer>
+  <key>RunAtLoad</key><true/>
+  <key>StandardOutPath</key><string>/Users/jyc/.jdone/reports-sync.log</string>
+  <key>StandardErrorPath</key><string>/Users/jyc/.jdone/reports-sync.log</string>
+</dict></plist>

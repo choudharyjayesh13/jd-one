@@ -1,3 +1,4 @@
+import { mergeBundle } from "./merge";
 /**
  * SupabaseStore: Postgres through supabase-js. Row-level security in
  * supabase/schema.sql decides who may read/write; this class only translates
@@ -96,7 +97,9 @@ export class SupabaseStore implements DataStore {
   }
 
   /** Upsert in dependency order so foreign keys resolve. */
-  async importAll(bundle: ExportBundle): Promise<void> {
+  async importAll(input: ExportBundle): Promise<void> {
+    const [units, staffRows] = await Promise.all([this.list("business-units"), this.list("staff")]);
+    const bundle = mergeBundle(input, { business_units: units, staff: staffRows });
     for (const e of entities) {
       const rows = bundle.tables[e.table];
       if (!rows?.length) continue;
