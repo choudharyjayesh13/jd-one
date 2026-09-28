@@ -32,7 +32,7 @@ const rows = db
   .all(GROUP, state.since ?? "2026-09-01");
 db.close();
 
-const client = createClient(supabaseUrl, serviceKey, { auth: { persistSession: false, autoRefreshToken: false }, db: { schema: process.env.SUPABASE_SCHEMA ?? process.env.NEXT_PUBLIC_SUPABASE_SCHEMA ?? "public" } });
+const client = createClient(supabaseUrl, serviceKey, { auth: { persistSession: false, autoRefreshToken: false }, db: { schema: (process.env.SUPABASE_SCHEMA ?? process.env.NEXT_PUBLIC_SUPABASE_SCHEMA ?? "public") as "public" } });
 const fail = (e: { message: string } | null) => {
   if (e) throw new Error(e.message);
 };

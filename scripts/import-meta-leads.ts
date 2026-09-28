@@ -30,7 +30,7 @@ function fail(msg: string): never {
 if (!urls.length) fail("META_LEADS_CSV_URLS is empty (comma-separated CSV export URLs, one per sheet tab).");
 if (!supabaseUrl || !serviceKey) fail("SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY are required.");
 
-const client = createClient(supabaseUrl, serviceKey, { auth: { persistSession: false, autoRefreshToken: false }, db: { schema: process.env.SUPABASE_SCHEMA ?? process.env.NEXT_PUBLIC_SUPABASE_SCHEMA ?? "public" } });
+const client = createClient(supabaseUrl, serviceKey, { auth: { persistSession: false, autoRefreshToken: false }, db: { schema: (process.env.SUPABASE_SCHEMA ?? process.env.NEXT_PUBLIC_SUPABASE_SCHEMA ?? "public") as "public" } });
 const all: ImportedLead[] = [];
 const notes: string[] = [];
 let rowsRead = 0;
