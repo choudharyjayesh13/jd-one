@@ -91,7 +91,7 @@ function readNew(account: Account, since: string | undefined): BridgeRow[] {
   }
 }
 
-const client = createClient(supabaseUrl, serviceKey, { auth: { persistSession: false, autoRefreshToken: false } });
+const client = createClient(supabaseUrl, serviceKey, { auth: { persistSession: false, autoRefreshToken: false }, db: { schema: process.env.SUPABASE_SCHEMA ?? process.env.NEXT_PUBLIC_SUPABASE_SCHEMA ?? "public" } });
 const started = new Date().toISOString();
 let read = 0, created = 0, customersCreated = 0, unmatched = 0, errors = 0;
 const notes: string[] = [];

@@ -16,7 +16,8 @@ export class SupabaseStore implements DataStore {
   readonly client: SupabaseClient;
 
   constructor(url: string, anonKey: string) {
-    this.client = createClient(url, anonKey);
+    // NEXT_PUBLIC_SUPABASE_SCHEMA lets JD One share a Supabase project with another app (e.g. schema "jdone").
+    this.client = createClient(url, anonKey, { db: { schema: process.env.NEXT_PUBLIC_SUPABASE_SCHEMA || "public" } });
   }
 
   async list(entity: string, query?: ListQuery): Promise<Row[]> {

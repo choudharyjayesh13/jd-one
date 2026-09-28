@@ -1,0 +1,495 @@
+-- JD One schema for a SHARED Supabase project: everything lives in schema "jdone"
+-- so it never collides with another app's tables in "public".
+-- Generated from schema.sql (keep both in sync: sed 's/public\./jdone./g').
+-- After running: Project Settings → API → "Exposed schemas" → add jdone.
+create schema if not exists jdone;
+grant usage on schema jdone to anon, authenticated, service_role;
+alter default privileges in schema jdone grant all on tables to anon, authenticated, service_role;
+alter default privileges in schema jdone grant all on sequences to anon, authenticated, service_role;
+alter default privileges in schema jdone grant all on functions to anon, authenticated, service_role;
+
+-- JD One — Supabase schema (idempotent; safe to re-run).
+-- Run in the Supabase SQL editor. Creates tables, indexes, updated_at triggers,
+-- row-level security, the `receipts` storage bucket, the customer_stats view
+-- and seed rows for business units + unit types.
+
+create extension if not exists pgcrypto;
+
+-- ---------------------------------------------------------------- helpers
+create or replace function jdone.set_updated_at() returns trigger
+language plpgsql as $$
+begin
+  new.updated_at = now();
+  return new;
+end $$;
+
+-- ---------------------------------------------------------------- tables
+create table if not exists jdone.business_units (
+  id uuid primary key default gen_random_uuid(),
+  name text not null unique,
+  short_code text,
+  type text,
+  city text,
+  phone text,
+  active boolean not null default true,
+  address text,
+  notes text,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  created_by uuid
+);
+
+create table if not exists jdone.staff (
+  id uuid primary key default gen_random_uuid(),
+  name text not null,
+  phone text,
+  email text,
+  role text not null default 'staff' check (role in ('owner','manager','hr','accounts','finance','marketing','staff')),
+  business_unit_id uuid references jdone.business_units(id) on delete set null,
+  designation text,
+  active boolean not null default true,
+  joined_on date,
+  left_on date,
+  salary numeric(12,2),
+  auth_user_id uuid unique,
+  notes text,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  created_by uuid
+);
+
+-- created_by everywhere points at the staff member who entered the record.
+alter table jdone.business_units drop constraint if exists business_units_created_by_fkey;
+alter table jdone.business_units add constraint business_units_created_by_fkey foreign key (created_by) references jdone.staff(id) on delete set null;
+alter table jdone.staff drop constraint if exists staff_created_by_fkey;
+alter table jdone.staff add constraint staff_created_by_fkey foreign key (created_by) references jdone.staff(id) on delete set null;
+
+create table if not exists jdone.customers (
+  id uuid primary key default gen_random_uuid(),
+  name text not null,
+  phone text not null,
+  email text,
+  city text,
+  company text,
+  tags text[] not null default '{}',
+  owner_id uuid references jdone.staff(id) on delete set null,
+  first_source text,
+  first_seen date,
+  birthday date,
+  anniversary date,
+  preferences text,
+  notes text,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  created_by uuid references jdone.staff(id) on delete set null
+);
+create unique index if not exists customers_phone_key on jdone.customers (phone);
+
+create table if not exists jdone.leads (
+  id uuid primary key default gen_random_uuid(),
+  name text not null,
+  phone text,
+  email text,
+  customer_id uuid references jdone.customers(id) on delete set null,
+  business_unit_id uuid references jdone.business_units(id) on delete set null,
+  source text not null default 'Other',
+  campaign text,
+  requirement text,
+  visit_from date,
+  visit_to date,
+  guests integer,
+  budget numeric(12,2),
+  qualification text,
+  stage text not null default 'New',
+  assigned_to uuid references jdone.staff(id) on delete set null,
+  next_follow_up date,
+  last_contact date,
+  lost_reason text,
+  notes text,
+  external_source text,
+  external_id text,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  created_by uuid references jdone.staff(id) on delete set null
+);
+create unique index if not exists leads_external_id_key on jdone.leads (external_id) where external_id is not null;
+
+create table if not exists jdone.activities (
+  id uuid primary key default gen_random_uuid(),
+  lead_id uuid references jdone.leads(id) on delete cascade,
+  customer_id uuid references jdone.customers(id) on delete set null,
+  type text not null default 'call',
+  at timestamptz not null default now(),
+  summary text not null,
+  next_action text,
+  next_action_date date,
+  done_by uuid references jdone.staff(id) on delete set null,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  created_by uuid references jdone.staff(id) on delete set null
+);
+
+create table if not exists jdone.bookings (
+  id uuid primary key default gen_random_uuid(),
+  guest_name text not null,
+  phone text,
+  customer_id uuid references jdone.customers(id) on delete set null,
+  lead_id uuid references jdone.leads(id) on delete set null,
+  business_unit_id uuid references jdone.business_units(id) on delete set null,
+  check_in date not null,
+  check_out date not null,
+  unit_type text not null,
+  units integer not null default 1,
+  adults integer default 2,
+  children integer default 0,
+  meal_plan text default 'CP',
+  rate numeric(12,2),
+  total numeric(12,2) default 0,
+  advance numeric(12,2) default 0,
+  paid numeric(12,2) default 0,
+  balance numeric(12,2) default 0,
+  source text not null default 'Direct',
+  status text not null default 'Confirmed',
+  special_requests text,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  created_by uuid references jdone.staff(id) on delete set null
+);
+
+create table if not exists jdone.payments (
+  id uuid primary key default gen_random_uuid(),
+  booking_id uuid not null references jdone.bookings(id) on delete cascade,
+  customer_id uuid references jdone.customers(id) on delete set null,
+  date date not null default current_date,
+  amount numeric(12,2) not null,
+  mode text not null default 'UPI',
+  reference text,
+  received_by uuid references jdone.staff(id) on delete set null,
+  notes text,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  created_by uuid references jdone.staff(id) on delete set null
+);
+
+create table if not exists jdone.checkins (
+  id uuid primary key default gen_random_uuid(),
+  booking_id uuid not null references jdone.bookings(id) on delete cascade,
+  actual_in timestamptz,
+  actual_out timestamptz,
+  id_proof_type text,
+  id_number text,            -- last 4 digits only (the app enforces this)
+  vehicle text,
+  room_numbers text,
+  handled_by uuid references jdone.staff(id) on delete set null,
+  notes text,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  created_by uuid references jdone.staff(id) on delete set null
+);
+
+create table if not exists jdone.daily_reports (
+  id uuid primary key default gen_random_uuid(),
+  date date not null,
+  business_unit_id uuid not null references jdone.business_units(id) on delete cascade,
+  sales_cash numeric(12,2) not null default 0,
+  sales_online numeric(12,2) not null default 0,
+  sales_total numeric(12,2) not null default 0,
+  occupancy_units integer,
+  submitted_by uuid references jdone.staff(id) on delete set null,
+  remarks text,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  created_by uuid references jdone.staff(id) on delete set null,
+  unique (date, business_unit_id)
+);
+
+create table if not exists jdone.attendance (
+  id uuid primary key default gen_random_uuid(),
+  date date not null,
+  staff_id uuid not null references jdone.staff(id) on delete cascade,
+  status text not null check (status in ('P','A','H','L')),
+  remarks text,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  created_by uuid references jdone.staff(id) on delete set null,
+  unique (date, staff_id)
+);
+
+create table if not exists jdone.expenses (
+  id uuid primary key default gen_random_uuid(),
+  date date not null default current_date,
+  business_unit_id uuid references jdone.business_units(id) on delete set null,
+  amount numeric(12,2) not null,
+  category text not null,
+  vendor text not null,
+  detail text,
+  paid_by uuid references jdone.staff(id) on delete set null,
+  mode text default 'Cash',
+  receipt text,              -- public URL in the `receipts` bucket
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  created_by uuid references jdone.staff(id) on delete set null
+);
+
+create table if not exists jdone.stock (
+  id uuid primary key default gen_random_uuid(),
+  item text not null,
+  unit text default 'pcs',
+  quantity numeric(12,2) not null default 0,
+  min_quantity numeric(12,2) not null default 0,
+  low_stock boolean not null default false,
+  business_unit_id uuid references jdone.business_units(id) on delete set null,
+  last_counted date,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  created_by uuid references jdone.staff(id) on delete set null
+);
+
+create table if not exists jdone.tasks (
+  id uuid primary key default gen_random_uuid(),
+  title text not null,
+  business_unit_id uuid references jdone.business_units(id) on delete set null,
+  type text not null default 'Other',
+  priority text default 'Medium',
+  assigned_to uuid references jdone.staff(id) on delete set null,
+  due date,
+  status text not null default 'Open',
+  booking_id uuid references jdone.bookings(id) on delete set null,
+  customer_id uuid references jdone.customers(id) on delete set null,
+  notes text,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  created_by uuid references jdone.staff(id) on delete set null
+);
+
+create table if not exists jdone.targets (
+  id uuid primary key default gen_random_uuid(),
+  business_unit_id uuid not null references jdone.business_units(id) on delete cascade,
+  month text not null check (month ~ '^\d{4}-\d{2}$'),
+  target_amount numeric(12,2) not null default 0,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  created_by uuid references jdone.staff(id) on delete set null,
+  unique (business_unit_id, month)
+);
+
+create table if not exists jdone.import_runs (
+  id uuid primary key default gen_random_uuid(),
+  source text not null,
+  started_at timestamptz not null default now(),
+  finished_at timestamptz,
+  rows integer not null default 0,
+  customers_created integer not null default 0,
+  created integer not null default 0,
+  updated integer not null default 0,
+  skipped integer not null default 0,
+  errors integer not null default 0,
+  message text,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  created_by uuid references jdone.staff(id) on delete set null
+);
+
+
+-- WhatsApp messages with customers (written by scripts/sync-whatsapp.ts).
+create table if not exists jdone.messages (
+  id uuid primary key default gen_random_uuid(),
+  customer_id uuid references jdone.customers(id) on delete set null,
+  channel text not null default 'whatsapp',
+  account text not null check (account in ('udaisarovar','pronite','personal')),
+  direction text not null check (direction in ('in','out')),
+  sent_at timestamptz not null,
+  sender_phone text,
+  sender_name text,
+  body text,
+  media_type text,
+  media_url text,
+  chat_jid text,
+  external_id text not null,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  created_by uuid references jdone.staff(id) on delete set null,
+  unique (account, external_id)
+);
+create index if not exists messages_customer_sent_idx on jdone.messages (customer_id, sent_at desc);
+create index if not exists messages_phone_idx on jdone.messages (sender_phone);
+
+-- Hiring pipeline (HR); "Mark as hired" creates the staff row and links it here.
+create table if not exists jdone.candidates (
+  id uuid primary key default gen_random_uuid(),
+  name text not null,
+  phone text not null,
+  email text,
+  position text not null,
+  business_unit_id uuid not null references jdone.business_units(id) on delete restrict,
+  source text,
+  stage text not null default 'Applied',
+  applied_on date,
+  interview_on timestamptz,
+  expected_salary numeric(12,2),
+  offered_salary numeric(12,2),
+  joining_date date,
+  experience_years numeric(4,1),
+  current_city text,
+  interviewer uuid references jdone.staff(id) on delete set null,
+  staff_id uuid references jdone.staff(id) on delete set null,
+  documents text,
+  notes text,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  created_by uuid references jdone.staff(id) on delete set null
+);
+create index if not exists candidates_stage_idx on jdone.candidates (business_unit_id, stage);
+
+-- Phone check-in (selfie + time + GPS) on attendance; property coordinates on business units.
+alter table jdone.attendance
+  add column if not exists checked_in_at timestamptz,
+  add column if not exists checked_out_at timestamptz,
+  add column if not exists selfie text,
+  add column if not exists selfie_out text,
+  add column if not exists latitude double precision,
+  add column if not exists longitude double precision,
+  add column if not exists accuracy_m integer,
+  add column if not exists distance_m integer,
+  add column if not exists location_ok boolean,
+  add column if not exists device text;
+alter table jdone.business_units
+  add column if not exists latitude double precision,
+  add column if not exists longitude double precision,
+  add column if not exists geofence_m integer default 300;
+
+-- Lookup of unit types (the app also has them as select options).
+create table if not exists jdone.unit_types (
+  id uuid primary key default gen_random_uuid(),
+  name text not null unique,
+  business_unit_id uuid references jdone.business_units(id) on delete cascade,
+  created_at timestamptz not null default now()
+);
+
+-- ---------------------------------------------------------------- indexes
+create index if not exists leads_customer_idx on jdone.leads (customer_id);
+create index if not exists leads_stage_idx on jdone.leads (stage);
+create index if not exists leads_follow_up_idx on jdone.leads (next_follow_up);
+create index if not exists leads_unit_idx on jdone.leads (business_unit_id);
+create index if not exists activities_lead_idx on jdone.activities (lead_id);
+create index if not exists activities_customer_idx on jdone.activities (customer_id);
+create index if not exists bookings_customer_idx on jdone.bookings (customer_id);
+create index if not exists bookings_dates_idx on jdone.bookings (check_in, check_out);
+create index if not exists bookings_unit_idx on jdone.bookings (business_unit_id);
+create index if not exists payments_booking_idx on jdone.payments (booking_id);
+create index if not exists payments_customer_idx on jdone.payments (customer_id);
+create index if not exists payments_date_idx on jdone.payments (date);
+create index if not exists checkins_booking_idx on jdone.checkins (booking_id);
+create index if not exists daily_reports_date_idx on jdone.daily_reports (date);
+create index if not exists attendance_date_idx on jdone.attendance (date);
+create index if not exists expenses_date_idx on jdone.expenses (date);
+create index if not exists expenses_unit_idx on jdone.expenses (business_unit_id);
+create index if not exists stock_unit_idx on jdone.stock (business_unit_id);
+create index if not exists tasks_status_idx on jdone.tasks (status);
+create index if not exists tasks_customer_idx on jdone.tasks (customer_id);
+create index if not exists staff_auth_idx on jdone.staff (auth_user_id);
+
+-- ---------------------------------------------------------------- updated_at triggers
+do $$
+declare t text;
+begin
+  foreach t in array array['business_units','staff','customers','leads','activities','bookings','payments','checkins','daily_reports','attendance','expenses','stock','tasks','targets','import_runs','messages','candidates']
+  loop
+    execute format('drop trigger if exists set_updated_at on jdone.%I', t);
+    execute format('create trigger set_updated_at before update on jdone.%I for each row execute function jdone.set_updated_at()', t);
+  end loop;
+end $$;
+
+-- ---------------------------------------------------------------- auth helpers (security definer so RLS on staff does not block the lookup)
+create or replace function jdone.current_staff_role() returns text
+language sql stable security definer set search_path = jdone, public as $$
+  select role from jdone.staff where auth_user_id = auth.uid() and active limit 1
+$$;
+
+create or replace function jdone.is_staff() returns boolean
+language sql stable security definer set search_path = jdone, public as $$
+  select exists (select 1 from jdone.staff where auth_user_id = auth.uid() and active)
+$$;
+
+create or replace function jdone.is_owner() returns boolean
+language sql stable security definer set search_path = jdone, public as $$
+  select coalesce(jdone.current_staff_role() = 'owner', false)
+$$;
+
+-- ---------------------------------------------------------------- row level security
+-- Any active staff member may read and write; only the owner may delete.
+do $$
+declare t text;
+begin
+  foreach t in array array['business_units','staff','customers','leads','activities','bookings','payments','checkins','daily_reports','attendance','expenses','stock','tasks','targets','import_runs','messages','candidates','unit_types']
+  loop
+    execute format('alter table jdone.%I enable row level security', t);
+    execute format('drop policy if exists "staff read" on jdone.%I', t);
+    execute format('create policy "staff read" on jdone.%I for select to authenticated using (jdone.is_staff())', t);
+    execute format('drop policy if exists "staff insert" on jdone.%I', t);
+    execute format('create policy "staff insert" on jdone.%I for insert to authenticated with check (jdone.is_staff())', t);
+    execute format('drop policy if exists "staff update" on jdone.%I', t);
+    execute format('create policy "staff update" on jdone.%I for update to authenticated using (jdone.is_staff()) with check (jdone.is_staff())', t);
+    execute format('drop policy if exists "owner delete" on jdone.%I', t);
+    execute format('create policy "owner delete" on jdone.%I for delete to authenticated using (jdone.is_owner())', t);
+  end loop;
+end $$;
+
+-- ---------------------------------------------------------------- customer 360° view
+-- One row per customer with the headline numbers (RLS of the underlying tables applies).
+create or replace view jdone.customer_stats with (security_invoker = on) as
+select
+  c.id as customer_id,
+  c.name,
+  c.phone,
+  count(b.id) filter (where b.status in ('Confirmed','Checked-in','Checked-out') and b.check_in <= current_date) as stays,
+  coalesce(sum(greatest(b.check_out - b.check_in, 0)) filter (where b.status in ('Confirmed','Checked-in','Checked-out') and b.check_in <= current_date), 0) as nights,
+  coalesce((select sum(p.amount) from jdone.payments p where p.customer_id = c.id), 0) as spend,
+  max(b.check_in) filter (where b.status in ('Confirmed','Checked-in','Checked-out') and b.check_in <= current_date) as last_visit,
+  min(b.check_in) filter (where b.status in ('Confirmed','Checked-in') and b.check_in > current_date) as next_booking,
+  (select count(*) from jdone.leads l where l.customer_id = c.id and l.stage not in ('Won','Lost')) as open_leads,
+  (select max(a.at) from jdone.activities a where a.customer_id = c.id) as last_activity
+from jdone.customers c
+left join jdone.bookings b on b.customer_id = c.id
+group by c.id, c.name, c.phone;
+
+-- ---------------------------------------------------------------- storage: receipts bucket (public read, staff write)
+insert into storage.buckets (id, name, public)
+values ('receipts', 'receipts', true)
+on conflict (id) do nothing;
+
+drop policy if exists "receipts public read" on storage.objects;
+create policy "receipts public read" on storage.objects for select using (bucket_id = 'receipts');
+drop policy if exists "receipts staff insert" on storage.objects;
+create policy "receipts staff insert" on storage.objects for insert to authenticated with check (bucket_id = 'receipts' and jdone.is_staff());
+drop policy if exists "receipts staff update" on storage.objects;
+create policy "receipts staff update" on storage.objects for update to authenticated using (bucket_id = 'receipts' and jdone.is_staff());
+drop policy if exists "receipts owner delete" on storage.objects;
+create policy "receipts owner delete" on storage.objects for delete to authenticated using (bucket_id = 'receipts' and jdone.is_owner());
+
+-- ---------------------------------------------------------------- seeds
+insert into jdone.business_units (name, short_code, type, city) values
+  ('The Udaisarovar', 'UDS', 'Resort', 'Udaipur'),
+  ('Pronite', 'PRN', 'Events', 'Udaipur'),
+  ('CPC – Choudhary Properties & Consultancy', 'CPC', 'Consultancy', 'Udaipur'),
+  ('JD Group HQ', 'HQ', 'HQ', 'Udaipur'),
+  ('Hotel Kirti Plaza', 'HKP', 'Hotel', 'Udaipur'),
+  ('The Artist House', 'TAH', 'Hotel', 'Udaipur'),
+  ('House of Beauty', 'HOB', 'Salon', 'Udaipur')
+on conflict (name) do nothing;
+
+insert into jdone.unit_types (name, business_unit_id)
+select v.name, (select id from jdone.business_units where name = 'The Udaisarovar')
+from (values ('Lake View Cottage'), ('Pool View Cottage'), ('Family Suite'), ('Camping'), ('Glass House'), ('Other')) as v(name)
+on conflict (name) do nothing;
+
+-- ---------------------------------------------------------------- first owner
+-- After creating your login under Authentication → Users, link it:
+--   insert into jdone.staff (name, role, business_unit_id, auth_user_id, active)
+--   values ('Jayesh Choudhary', 'owner', (select id from jdone.business_units where name = 'JD Group HQ'), '<auth user uuid>', true);
+
+
+-- Grants for objects created above (default privileges only cover future objects created by this role).
+grant all on all tables in schema jdone to anon, authenticated, service_role;
+grant all on all sequences in schema jdone to anon, authenticated, service_role;
+grant execute on all functions in schema jdone to anon, authenticated, service_role;
