@@ -10,7 +10,7 @@ import { getStore } from "@/core/data";
 import { useUser } from "@/core/auth/AuthProvider";
 import { todayISO, formatDateTime } from "@/core/format";
 import { Button } from "@/core/ui/Button";
-import { Card, CardBody, CardHeader } from "@/core/ui/Card";
+import { Card, CardBody } from "@/core/ui/Card";
 import { PageHeader } from "@/core/ui/misc";
 import { useToast } from "@/core/ui/Toast";
 import type { Row } from "@/core/schema/types";
@@ -64,8 +64,8 @@ export function CheckIn() {
     });
   }, [store, staffId]);
   useEffect(() => {
-    if (!staffId) return setToday(null);
-    void store.list("attendance", { filter: { date: todayISO(), staff_id: staffId } }).then((rows) => setToday(rows[0] ?? null));
+    const q = staffId ? store.list("attendance", { filter: { date: todayISO(), staff_id: staffId } }) : Promise.resolve([] as Row[]);
+    void q.then((rows) => setToday(rows[0] ?? null));
   }, [store, staffId, saving]);
 
   const me = staff.find((s) => s.id === staffId) ?? null;
@@ -92,8 +92,9 @@ export function CheckIn() {
     );
   };
   useEffect(() => {
-    locate();
-     
+    const t = setTimeout(locate, 0);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const save = async (kind: "in" | "out") => {
