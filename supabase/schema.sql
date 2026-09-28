@@ -348,6 +348,97 @@ alter table public.business_units
   add column if not exists longitude double precision,
   add column if not exists geofence_m integer default 300;
 
+
+-- ---------------------------------------------------------------- customer portal (myjdgroup.com/portal)
+-- Investors log in with Supabase Auth; they may READ only their own rows (auth_user_id = auth.uid()).
+create table if not exists public.investors (
+  id uuid primary key default gen_random_uuid(),
+  name text not null,
+  phone text not null,
+  email text not null,
+  customer_id uuid references public.customers(id) on delete set null,
+  city text,
+  pan_last4 text,
+  kyc_status text not null default 'Pending',
+  relationship_owner uuid references public.staff(id) on delete set null,
+  portal_active boolean not null default true,
+  auth_user_id uuid unique,
+  notes text,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  created_by uuid references public.staff(id) on delete set null
+);
+create unique index if not exists investors_email_key on public.investors (lower(email));
+
+create table if not exists public.investments (
+  id uuid primary key default gen_random_uuid(),
+  investor_id uuid not null references public.investors(id) on delete cascade,
+  project text not null,
+  business_unit_id uuid references public.business_units(id) on delete set null,
+  type text not null default 'Debt / fixed return',
+  amount numeric(14,2) not null,
+  invested_on date not null,
+  annual_return_pct numeric(6,2),
+  maturity_on date,
+  current_value numeric(14,2),
+  returns_paid numeric(14,2) not null default 0,
+  status text not null default 'Active',
+  reference text,
+  document text,
+  notes text,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  created_by uuid references public.staff(id) on delete set null
+);
+create index if not exists investments_investor_idx on public.investments (investor_id);
+
+create table if not exists public.wallet_transactions (
+  id uuid primary key default gen_random_uuid(),
+  investor_id uuid not null references public.investors(id) on delete cascade,
+  date date not null default current_date,
+  direction text not null check (direction in ('credit','debit')),
+  amount numeric(14,2) not null check (amount >= 0),
+  category text not null default 'Deposit',
+  investment_id uuid references public.investments(id) on delete set null,
+  reference text,
+  note text not null,
+  entered_by uuid references public.staff(id) on delete set null,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  created_by uuid references public.staff(id) on delete set null
+);
+create index if not exists wallet_tx_investor_idx on public.wallet_transactions (investor_id, date desc);
+
+create or replace view public.wallet_balances with (security_invoker = on) as
+select i.id as investor_id, i.name, i.email,
+  coalesce(sum(case when t.direction = 'credit' then t.amount else -t.amount end), 0) as balance,
+  max(t.date) as last_transaction
+from public.investors i left join public.wallet_transactions t on t.investor_id = i.id
+group by i.id, i.name, i.email;
+
+-- Portal users: link on sign-up by email, and allow them to read their own rows.
+create or replace function public.link_investor_on_signup() returns trigger
+language plpgsql security definer set search_path = public as $$
+begin
+  update public.investors set auth_user_id = new.id
+   where auth_user_id is null and lower(email) = lower(new.email);
+  return new;
+end $$;
+drop trigger if exists link_investor on auth.users;
+create trigger link_investor after insert on auth.users for each row execute function public.link_investor_on_signup();
+
+alter table public.investors enable row level security;
+alter table public.investments enable row level security;
+alter table public.wallet_transactions enable row level security;
+drop policy if exists "investor read own" on public.investors;
+create policy "investor read own" on public.investors for select to authenticated using (auth_user_id = auth.uid() and portal_active);
+drop policy if exists "investor read own investments" on public.investments;
+create policy "investor read own investments" on public.investments for select to authenticated
+  using (exists (select 1 from public.investors i where i.id = investor_id and i.auth_user_id = auth.uid() and i.portal_active));
+drop policy if exists "investor read own wallet" on public.wallet_transactions;
+create policy "investor read own wallet" on public.wallet_transactions for select to authenticated
+  using (exists (select 1 from public.investors i where i.id = investor_id and i.auth_user_id = auth.uid() and i.portal_active));
+
 -- Lookup of unit types (the app also has them as select options).
 create table if not exists public.unit_types (
   id uuid primary key default gen_random_uuid(),
@@ -383,7 +474,7 @@ create index if not exists staff_auth_idx on public.staff (auth_user_id);
 do $$
 declare t text;
 begin
-  foreach t in array array['business_units','staff','customers','leads','activities','bookings','payments','checkins','daily_reports','attendance','expenses','stock','tasks','targets','import_runs','messages','candidates']
+  foreach t in array array['business_units','staff','customers','leads','activities','bookings','payments','checkins','daily_reports','attendance','expenses','stock','tasks','targets','import_runs','messages','candidates','investors','investments','wallet_transactions']
   loop
     execute format('drop trigger if exists set_updated_at on public.%I', t);
     execute format('create trigger set_updated_at before update on public.%I for each row execute function public.set_updated_at()', t);
@@ -411,7 +502,7 @@ $$;
 do $$
 declare t text;
 begin
-  foreach t in array array['business_units','staff','customers','leads','activities','bookings','payments','checkins','daily_reports','attendance','expenses','stock','tasks','targets','import_runs','messages','candidates','unit_types']
+  foreach t in array array['business_units','staff','customers','leads','activities','bookings','payments','checkins','daily_reports','attendance','expenses','stock','tasks','targets','import_runs','messages','candidates','investors','investments','wallet_transactions','unit_types']
   loop
     execute format('alter table public.%I enable row level security', t);
     execute format('drop policy if exists "staff read" on public.%I', t);
