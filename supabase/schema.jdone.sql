@@ -449,6 +449,13 @@ drop policy if exists "investor read own wallet" on jdone.wallet_transactions;
 create policy "investor read own wallet" on jdone.wallet_transactions for select to authenticated
   using (exists (select 1 from jdone.investors i where i.id = investor_id and i.auth_user_id = auth.uid() and i.portal_active));
 
+
+-- Portal customers may read their own bookings (matched via the investor's linked CRM customer or phone).
+drop policy if exists "investor read own bookings" on jdone.bookings;
+create policy "investor read own bookings" on jdone.bookings for select to authenticated
+  using (exists (select 1 from jdone.investors i where i.auth_user_id = auth.uid() and i.portal_active
+                 and (i.customer_id = bookings.customer_id or i.phone = bookings.phone)));
+
 -- Lookup of unit types (the app also has them as select options).
 create table if not exists jdone.unit_types (
   id uuid primary key default gen_random_uuid(),
