@@ -48,3 +48,12 @@ One internal web app for every JD Group team (operations, marketing, accounts, f
 ## Mark attendance from a phone (added 28 Sep 2026)
 
 Sidebar → **Mark attendance** (`/attendance/checkin/`). Staff pick their name, take a selfie (front camera), the page captures the exact time and GPS position, and **Check in** writes all of it onto today's attendance row (status P). **Check out** adds the leaving time and a second selfie. If the business unit has latitude/longitude set (Settings → Business units), the page shows the distance from the property and flags check-ins outside the attendance radius (default 300 m). Every entry keeps: time in/out, selfies, latitude, longitude, GPS accuracy, distance, on-site flag, and the phone's device string. Location needs HTTPS and the user's permission; GitHub Pages and app.myjdgroup.com are both HTTPS.
+
+## Shared mode is ON (28 Sep 2026)
+
+JD One runs on the Supabase project **JD hospitality app** (`cyimbgjzxxxszjadxpgv`), in its own schema `jdone` (the old Udaisarovar app's tables in `public` are untouched). Keys live in `.env.local` on the Mac (never committed). Deploy with `bun run deploy:pages` — the build bakes in the public URL and anon key.
+
+- **Logins:** Supabase → Authentication → Users → *Add user* (email + password, auto-confirm). A staff record with the same email links automatically on first sign-in (trigger `jdone.link_staff_on_signup`). Roles come from the Staff record.
+- **Data:** `bun run scripts/import-bundle.ts <bundle.json>` pushes a JSON bundle server-side (used 28 Sep for the Jun–Sep history).
+- **Mac jobs installed:** `com.jyc.jdone-wa-sync` (WhatsApp → customer timeline, every 5 min) and `com.jyc.jdone-reports-sync` (daily report → reports + attendance, every 30 min). Logs in `~/.jdone/`.
+- **Pending:** Meta leads scheduled import needs `META_LEADS_CSV_URLS` (sheet shared "anyone with link") and the GitHub `workflow` scope, or the Mac fallback plist.
