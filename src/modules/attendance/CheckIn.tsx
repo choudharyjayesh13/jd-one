@@ -93,7 +93,7 @@ export function CheckIn() {
   };
   useEffect(() => {
     locate();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+     
   }, []);
 
   const save = async (kind: "in" | "out") => {
