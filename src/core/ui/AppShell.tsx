@@ -3,7 +3,7 @@
 import { useState, type ReactNode } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, Settings, LogOut, Menu, X, CalendarDays } from "lucide-react";
+import { LayoutDashboard, Settings, LogOut, Menu, X, CalendarDays, Camera } from "lucide-react";
 import { TEAMS } from "@/core/schema/types";
 import { useAuth, useUser } from "@/core/auth/AuthProvider";
 import { navGroups, isAdmin } from "@/core/auth/access";
@@ -35,6 +35,7 @@ export function AppShell({ children }: { children: ReactNode }) {
     <nav className="flex flex-col gap-4 p-3">
       <div className="space-y-0.5">
         <NavLink href="/" label="Dashboard" icon={LayoutDashboard} active={active("/")} onClick={close} />
+        <NavLink href="/attendance/checkin/" label="Mark attendance" icon={Camera} active={active("/attendance/checkin/")} onClick={close} />
         {groups.some((g) => g.team === "hr") && <NavLink href="/attendance/grid/" label="Attendance grid" icon={CalendarDays} active={active("/attendance/grid/")} onClick={close} />}
       </div>
       {groups.map((g) => (

@@ -331,6 +331,23 @@ create table if not exists public.candidates (
 );
 create index if not exists candidates_stage_idx on public.candidates (business_unit_id, stage);
 
+-- Phone check-in (selfie + time + GPS) on attendance; property coordinates on business units.
+alter table public.attendance
+  add column if not exists checked_in_at timestamptz,
+  add column if not exists checked_out_at timestamptz,
+  add column if not exists selfie text,
+  add column if not exists selfie_out text,
+  add column if not exists latitude double precision,
+  add column if not exists longitude double precision,
+  add column if not exists accuracy_m integer,
+  add column if not exists distance_m integer,
+  add column if not exists location_ok boolean,
+  add column if not exists device text;
+alter table public.business_units
+  add column if not exists latitude double precision,
+  add column if not exists longitude double precision,
+  add column if not exists geofence_m integer default 300;
+
 -- Lookup of unit types (the app also has them as select options).
 create table if not exists public.unit_types (
   id uuid primary key default gen_random_uuid(),
