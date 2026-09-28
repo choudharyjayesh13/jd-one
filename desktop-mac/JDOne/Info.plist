@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0"><dict>
+  <key>CFBundleName</key><string>JD</string>
+  <key>CFBundleDisplayName</key><string>JD</string>
+  <key>CFBundleIdentifier</key><string>com.jdgroup.jd</string>
+  <key>CFBundleVersion</key><string>1</string>
+  <key>CFBundleShortVersionString</key><string>1.0</string>
+  <key>CFBundleExecutable</key><string>JD</string>
+  <key>CFBundlePackageType</key><string>APPL</string>
+  <key>CFBundleIconFile</key><string>JD.icns</string>
+  <key>LSMinimumSystemVersion</key><string>12.0</string>
+  <key>NSHighResolutionCapable</key><true/>
+  <key>NSCameraUsageDescription</key><string>JD uses the camera for staff attendance selfies.</string>
+  <key>NSLocationWhenInUseUsageDescription</key><string>JD records the location when staff mark attendance.</string>
+  <key>NSMicrophoneUsageDescription</key><string>Not used; required by the web view.</string>
+</dict></plist>
