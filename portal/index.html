@@ -1,0 +1,190 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex">
+<title>JD One · Customer Login</title>
+<meta name="description" content="JD Group customer portal: sign in to see your JD One wallet, investments and statements.">
+<link rel="icon" href="./jd-logo.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#08120d;--panel:#0d1b14;--panel2:#12241b;--edge:rgba(120,180,145,.16);--txt:#e9f2ec;--mut:#8aa396;--dim:#5d7468;--jd:#ff7a1a;--gold:#c9a24b;--good:#4cd48a;--bad:#ff6b6b;--mono:"JetBrains Mono",ui-monospace,monospace}
+*{box-sizing:border-box}html{color-scheme:dark}
+body{margin:0;background:var(--bg);color:var(--txt);font-family:Manrope,system-ui,sans-serif;min-height:100vh}
+a{color:var(--gold)}
+.wrap{max-width:960px;margin:0 auto;padding:16px}
+header{display:flex;align-items:center;justify-content:space-between;padding:14px 0;border-bottom:1px solid var(--edge)}
+.logo{display:flex;align-items:center;gap:10px;font-weight:800;letter-spacing:.06em;color:var(--txt);text-decoration:none}
+.logo img{height:36px;width:36px}.logo span{color:var(--jd)}
+.card{background:var(--panel);border:1px solid var(--edge);border-radius:16px;padding:20px;margin-top:16px}
+h1{font-size:1.4rem;margin:0 0 6px}h2{font-size:1rem;margin:0 0 10px;color:var(--mut);font-weight:600;letter-spacing:.08em;text-transform:uppercase;font-family:var(--mono);font-size:.68rem}
+label{display:block;font-size:.85rem;color:var(--mut);margin:12px 0 6px}
+input{width:100%;padding:12px 14px;border-radius:10px;border:1px solid var(--edge);background:var(--panel2);color:var(--txt);font-size:1rem}
+input:focus{outline:2px solid rgba(255,122,26,.5)}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:12px 18px;border-radius:10px;border:0;font-weight:700;font-size:.95rem;cursor:pointer;width:100%;margin-top:16px}
+.btn-primary{background:var(--jd);color:#1a0d02}.btn-ghost{background:transparent;border:1px solid var(--edge);color:var(--txt);width:auto;padding:8px 14px;margin:0;font-weight:600}
+.row{display:flex;gap:12px;flex-wrap:wrap}.row>*{flex:1 1 200px}
+.wallet{background:linear-gradient(135deg,rgba(255,122,26,.16),rgba(201,162,75,.1));border:1px solid rgba(255,122,26,.35);border-radius:16px;padding:18px}
+.lbl{font-family:var(--mono);font-size:.62rem;letter-spacing:.2em;color:var(--mut);text-transform:uppercase}
+.amt{font-size:2rem;font-weight:800;margin:6px 0 2px}.amt small{font-size:1rem;color:var(--jd)}
+.stat{background:var(--panel2);border:1px solid var(--edge);border-radius:12px;padding:14px}
+.stat .v{font-size:1.25rem;font-weight:700;margin-top:4px}
+table{width:100%;border-collapse:collapse;font-size:.9rem}th,td{text-align:left;padding:10px 8px;border-bottom:1px solid var(--edge);vertical-align:top}
+th{font-family:var(--mono);font-size:.62rem;letter-spacing:.15em;color:var(--mut);text-transform:uppercase;font-weight:600}
+.credit{color:var(--good)}.debit{color:var(--bad)}
+.badge{display:inline-block;padding:2px 8px;border-radius:999px;font-size:.72rem;border:1px solid var(--edge);color:var(--mut)}
+.msg{margin-top:12px;padding:10px 12px;border-radius:10px;font-size:.9rem;display:none}.msg.err{display:block;background:rgba(255,107,107,.12);color:#ffb3b3}.msg.ok{display:block;background:rgba(76,212,138,.12);color:#9ff0c1}
+.muted{color:var(--mut);font-size:.85rem}.hidden{display:none}
+.tabs{display:flex;gap:6px;margin-bottom:8px}.tabs button{background:transparent;border:1px solid var(--edge);color:var(--mut);padding:8px 12px;border-radius:8px;cursor:pointer;font-weight:600}.tabs button.on{color:var(--txt);border-color:var(--jd)}
+footer{margin:30px 0 10px;text-align:center;color:var(--dim);font-size:.75rem}
+@media (max-width:600px){.amt{font-size:1.6rem}td:nth-child(4),th:nth-child(4){display:none}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <a class="logo" href="https://www.myjdgroup.com/"><img src="./jd-logo.svg" alt="">JD<span>◆</span>ONE</a>
+    <div id="who" class="muted"></div>
+    <button id="signout" class="btn btn-ghost hidden">Sign out</button>
+  </header>
+
+  <!-- AUTH -->
+  <section id="auth" class="card" style="max-width:440px;margin-left:auto;margin-right:auto">
+    <div class="tabs"><button id="t-in" class="on">Sign in</button><button id="t-up">Create account</button><button id="t-reset">Forgot password</button></div>
+    <h1 id="auth-title">Customer login</h1>
+    <p class="muted" id="auth-sub">See your JD One wallet, investments and statements.</p>
+    <form id="f-in">
+      <label>Email</label><input type="email" name="email" autocomplete="email" required>
+      <label>Password</label><input type="password" name="password" autocomplete="current-password" required minlength="6">
+      <button class="btn btn-primary" type="submit">Sign in</button>
+    </form>
+    <form id="f-up" class="hidden">
+      <label>Full name</label><input type="text" name="name" autocomplete="name" required>
+      <label>Mobile</label><input type="tel" name="phone" autocomplete="tel" required>
+      <label>Email</label><input type="email" name="email" autocomplete="email" required>
+      <label>Password (min 8 characters)</label><input type="password" name="password" autocomplete="new-password" required minlength="8">
+      <button class="btn btn-primary" type="submit">Create account</button>
+      <p class="muted">Use the email you gave JD Group. Your wallet and investments appear once our team links your account (usually within a day).</p>
+    </form>
+    <form id="f-reset" class="hidden">
+      <label>Email</label><input type="email" name="email" autocomplete="email" required>
+      <button class="btn btn-primary" type="submit">Send reset link</button>
+    </form>
+    <form id="f-newpass" class="hidden">
+      <label>New password</label><input type="password" name="password" autocomplete="new-password" required minlength="8">
+      <button class="btn btn-primary" type="submit">Save new password</button>
+    </form>
+    <div id="auth-msg" class="msg"></div>
+  </section>
+
+  <!-- DASHBOARD -->
+  <section id="dash" class="hidden">
+    <div class="card wallet">
+      <div class="lbl">JD One wallet balance</div>
+      <div class="amt" id="w-balance">₹0</div>
+      <div class="muted" id="w-last"></div>
+    </div>
+    <div class="row" style="margin-top:12px">
+      <div class="stat"><div class="lbl">Total invested</div><div class="v" id="s-invested">₹0</div></div>
+      <div class="stat"><div class="lbl">Current value</div><div class="v" id="s-value">₹0</div></div>
+      <div class="stat"><div class="lbl">Returns received</div><div class="v" id="s-returns">₹0</div></div>
+      <div class="stat"><div class="lbl">Active investments</div><div class="v" id="s-count">0</div></div>
+    </div>
+    <div class="card"><h2>Your investments</h2><div id="inv"></div></div>
+    <div class="card"><h2>Your stays &amp; bookings</h2><div id="bk"></div></div>
+    <div class="card"><h2>Wallet statement</h2><div id="tx"></div></div>
+    <div class="card"><h2>Profile</h2><div id="profile" class="muted"></div></div>
+    <div id="pending" class="card hidden"><h1>Account created</h1><p class="muted">Thank you. Our team will link your wallet and investments to this login shortly. If you already invested with JD Group, WhatsApp us at +91 96203 07861 and we'll speed it up.</p></div>
+  </section>
+  <footer>JD Group of Companies · Udaipur · <a href="https://www.myjdgroup.com/">myjdgroup.com</a></footer>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script>
+// ---- config (public values; row-level security protects the data) ----
+const SUPABASE_URL = "https://cyimbgjzxxxszjadxpgv.supabase.co";
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN5aW1iZ2p6eHh4c3pqYWR4cGd2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQyMTg2MDgsImV4cCI6MjA5OTc5NDYwOH0.R-8de9Ccqui113tBsAvdhHE04LZ6Hlz09bY1vymAcv4";
+const SCHEMA = "jdone";
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, { db: { schema: SCHEMA }, auth: { storageKey: "jd-portal-auth" } });
+
+const $ = (id) => document.getElementById(id);
+const inr = (n) => "₹" + Number(n || 0).toLocaleString("en-IN", { maximumFractionDigits: 0 });
+const dt = (d) => d ? new Date(d).toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" }) : "—";
+const msg = (text, kind) => { const m = $("auth-msg"); m.textContent = text; m.className = "msg " + (kind || "err"); };
+const show = (tab) => {
+  ["in","up","reset","newpass"].forEach((k) => $("f-" + k).classList.toggle("hidden", k !== tab));
+  ["t-in","t-up","t-reset"].forEach((k) => $(k).classList.toggle("on", k === "t-" + tab));
+  $("auth-title").textContent = { in: "Customer login", up: "Create your account", reset: "Reset password", newpass: "Choose a new password" }[tab];
+  msg("", "");
+};
+$("t-in").onclick = () => show("in"); $("t-up").onclick = () => show("up"); $("t-reset").onclick = () => show("reset");
+
+$("f-in").onsubmit = async (e) => {
+  e.preventDefault(); const f = new FormData(e.target);
+  const { error } = await sb.auth.signInWithPassword({ email: f.get("email"), password: f.get("password") });
+  if (error) return msg(error.message.includes("Invalid") ? "Wrong email or password." : error.message);
+  load();
+};
+$("f-up").onsubmit = async (e) => {
+  e.preventDefault(); const f = new FormData(e.target);
+  const { error } = await sb.auth.signUp({ email: f.get("email"), password: f.get("password"), options: { data: { name: f.get("name"), phone: f.get("phone") }, emailRedirectTo: location.href.split("#")[0] } });
+  if (error) return msg(error.message);
+  msg("Account created. Check your email for a confirmation link, then sign in.", "ok"); show("in");
+};
+$("f-reset").onsubmit = async (e) => {
+  e.preventDefault(); const f = new FormData(e.target);
+  const { error } = await sb.auth.resetPasswordForEmail(f.get("email"), { redirectTo: location.href.split("#")[0] });
+  if (error) return msg(error.message);
+  msg("If that email is registered, a reset link is on its way.", "ok");
+};
+$("f-newpass").onsubmit = async (e) => {
+  e.preventDefault(); const f = new FormData(e.target);
+  const { error } = await sb.auth.updateUser({ password: f.get("password") });
+  if (error) return msg(error.message);
+  msg("Password updated.", "ok"); load();
+};
+$("signout").onclick = async () => { await sb.auth.signOut(); location.reload(); };
+
+async function load() {
+  const { data: { session } } = await sb.auth.getSession();
+  if (!session) { $("auth").classList.remove("hidden"); $("dash").classList.add("hidden"); $("signout").classList.add("hidden"); return; }
+  $("auth").classList.add("hidden"); $("dash").classList.remove("hidden"); $("signout").classList.remove("hidden");
+  $("who").textContent = session.user.email;
+  const { data: inv } = await sb.from("investors").select("*").eq("auth_user_id", session.user.id).maybeSingle();
+  if (!inv) { $("pending").classList.remove("hidden"); ["w-last"].forEach((k) => $(k).textContent = "Not linked yet"); return; }
+  $("pending").classList.add("hidden");
+  const [{ data: investments }, { data: txs }, { data: bookings }] = await Promise.all([
+    sb.from("investments").select("*").eq("investor_id", inv.id).order("invested_on", { ascending: false }),
+    sb.from("wallet_transactions").select("*").eq("investor_id", inv.id).order("date", { ascending: false }).limit(200),
+    sb.from("bookings").select("id,guest_name,check_in,check_out,unit_type,units,meal_plan,total,paid,balance,status,business_unit_id").order("check_in", { ascending: false }).limit(50),
+  ]);
+  $("bk").innerHTML = bookings && bookings.length
+    ? "<table><tr><th>Stay</th><th>Dates</th><th>Total</th><th>Paid</th><th>Balance</th><th>Status</th></tr>" +
+      bookings.map((b) => `<tr><td><b>${esc(b.unit_type)}</b> × ${b.units || 1}<br><span class="muted">${esc(b.meal_plan || "")}</span></td><td>${dt(b.check_in)} → ${dt(b.check_out)}</td><td>${inr(b.total)}</td><td>${inr(b.paid)}</td><td>${inr(b.balance)}</td><td><span class="badge">${esc(b.status)}</span></td></tr>`).join("") + "</table>"
+    : '<p class="muted">No bookings on record. Book at <a href="https://www.theudaisarovar.com" target="_blank" rel="noreferrer">theudaisarovar.com</a>.</p>';
+  const bal = (txs || []).reduce((s, t) => s + (t.direction === "credit" ? 1 : -1) * Number(t.amount), 0);
+  $("w-balance").innerHTML = inr(bal) + ' <small>JD One</small>';
+  $("w-last").textContent = txs && txs.length ? "Last transaction " + dt(txs[0].date) : "No transactions yet";
+  const active = (investments || []).filter((i) => i.status === "Active");
+  $("s-invested").textContent = inr((investments || []).reduce((s, i) => s + Number(i.amount), 0));
+  $("s-value").textContent = inr((investments || []).reduce((s, i) => s + Number(i.current_value ?? i.amount), 0));
+  $("s-returns").textContent = inr((investments || []).reduce((s, i) => s + Number(i.returns_paid || 0), 0));
+  $("s-count").textContent = active.length;
+  $("inv").innerHTML = investments && investments.length
+    ? "<table><tr><th>Project</th><th>Invested</th><th>Value</th><th>Date</th><th>Return</th><th>Maturity</th><th>Status</th></tr>" +
+      investments.map((i) => `<tr><td><b>${esc(i.project)}</b><br><span class="muted">${esc(i.type || "")}${i.reference ? " · " + esc(i.reference) : ""}</span></td><td>${inr(i.amount)}</td><td>${inr(i.current_value ?? i.amount)}</td><td>${dt(i.invested_on)}</td><td>${i.annual_return_pct != null ? i.annual_return_pct + "% p.a." : "—"}</td><td>${dt(i.maturity_on)}</td><td><span class="badge">${esc(i.status)}</span></td></tr>`).join("") + "</table>"
+    : '<p class="muted">No investments recorded yet.</p>';
+  $("tx").innerHTML = txs && txs.length
+    ? "<table><tr><th>Date</th><th>Detail</th><th>Amount</th><th>Reference</th></tr>" +
+      txs.map((t) => `<tr><td>${dt(t.date)}</td><td>${esc(t.note)}<br><span class="muted">${esc(t.category || "")}</span></td><td class="${t.direction}">${t.direction === "credit" ? "+" : "−"}${inr(t.amount)}</td><td class="muted">${esc(t.reference || "")}</td></tr>`).join("") + "</table>"
+    : '<p class="muted">No wallet transactions yet.</p>';
+  $("profile").innerHTML = `${esc(inv.name)} · ${esc(inv.phone)} · ${esc(inv.email)}${inv.city ? " · " + esc(inv.city) : ""}<br>KYC: ${esc(inv.kyc_status)}. To update details, WhatsApp +91 96203 07861.`;
+}
+function esc(s) { return String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c])); }
+sb.auth.onAuthStateChange((event) => { if (event === "PASSWORD_RECOVERY") { $("auth").classList.remove("hidden"); $("dash").classList.add("hidden"); show("newpass"); } });
+load();
+</script>
+</body>
+</html>
