@@ -94,7 +94,7 @@ export function CheckIn() {
   useEffect(() => {
     const t = setTimeout(locate, 0);
     return () => clearTimeout(t);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+     
   }, []);
 
   const save = async (kind: "in" | "out") => {
