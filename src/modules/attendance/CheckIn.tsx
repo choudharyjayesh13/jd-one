@@ -4,8 +4,8 @@
  * position. Saves onto today's attendance row (status P) and, when the
  * business unit has coordinates, records the distance from the property.
  */
-import { useEffect, useMemo, useRef, useState } from "react";
-import { Camera, LogIn, LogOut, MapPin, RefreshCw } from "lucide-react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Camera, LogIn, LogOut, MapPin, RefreshCw, X } from "lucide-react";
 import { getStore } from "@/core/data";
 import { useUser } from "@/core/auth/AuthProvider";
 import { todayISO, formatDateTime } from "@/core/format";
@@ -51,6 +51,64 @@ export function CheckIn() {
   const [today, setToday] = useState<Row | null>(null);
   const [saving, setSaving] = useState(false);
   const input = useRef<HTMLInputElement>(null);
+  const video = useRef<HTMLVideoElement>(null);
+  const [stream, setStream] = useState<MediaStream | null>(null);
+  const [camError, setCamError] = useState<string | null>(null);
+
+  const stopCamera = useCallback(() => {
+    setStream((s) => {
+      s?.getTracks().forEach((t) => t.stop());
+      return null;
+    });
+  }, []);
+
+  /** Live front-camera preview (needs HTTPS + permission). Falls back to the file picker. */
+  const openCamera = async () => {
+    setCamError(null);
+    if (!navigator.mediaDevices?.getUserMedia) {
+      input.current?.click();
+      return;
+    }
+    try {
+      const s = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "user", width: { ideal: 960 }, height: { ideal: 960 } }, audio: false });
+      setStream(s);
+    } catch (e) {
+      const err = e as DOMException;
+      setCamError(
+        err.name === "NotAllowedError"
+          ? "Camera permission was blocked. Allow the camera for this site (lock icon in the address bar) or use the photo picker."
+          : err.name === "NotFoundError"
+            ? "No camera found on this device — use the photo picker."
+            : `Camera error: ${err.message}`,
+      );
+      input.current?.click();
+    }
+  };
+
+  useEffect(() => {
+    if (stream && video.current) {
+      video.current.srcObject = stream;
+      void video.current.play().catch(() => undefined);
+    }
+  }, [stream]);
+  useEffect(() => () => stopCamera(), [stopCamera]);
+
+  const capture = () => {
+    const v = video.current;
+    if (!v || !v.videoWidth) return;
+    const max = 640;
+    const scale = Math.min(1, max / Math.max(v.videoWidth, v.videoHeight));
+    const canvas = document.createElement("canvas");
+    canvas.width = Math.round(v.videoWidth * scale);
+    canvas.height = Math.round(v.videoHeight * scale);
+    const ctx = canvas.getContext("2d")!;
+    // Mirror so the saved selfie matches what the person saw in the preview.
+    ctx.translate(canvas.width, 0);
+    ctx.scale(-1, 1);
+    ctx.drawImage(v, 0, 0, canvas.width, canvas.height);
+    setPhoto(canvas.toDataURL("image/jpeg", 0.8));
+    stopCamera();
+  };
 
   useEffect(() => {
     const t = setInterval(() => setNow(new Date()), 1000);
@@ -160,9 +218,13 @@ export function CheckIn() {
               </div>
             )}
             <div className="space-y-2">
-              <Button variant="secondary" icon={Camera} onClick={() => input.current?.click()}>
+              <Button variant="secondary" icon={Camera} onClick={() => void openCamera()}>
                 {photo ? "Retake selfie" : "Take selfie"}
               </Button>
+              <button type="button" className="block text-xs text-slate-500 underline" onClick={() => input.current?.click()}>
+                or choose a photo
+              </button>
+              {camError && <p className="text-xs text-red-700">{camError}</p>}
               <input
                 ref={input}
                 type="file"
@@ -175,9 +237,23 @@ export function CheckIn() {
                   e.target.value = "";
                 }}
               />
-              <p className="text-xs text-slate-500">Front camera opens on phones.</p>
             </div>
           </div>
+
+          {stream && (
+            <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-black/90 p-4">
+              <video ref={video} playsInline muted autoPlay className="max-h-[70vh] w-full max-w-md rounded-xl" style={{ transform: "scaleX(-1)" }} />
+              <div className="mt-4 flex gap-3">
+                <Button icon={Camera} onClick={capture}>
+                  Capture
+                </Button>
+                <Button variant="secondary" icon={X} onClick={stopCamera}>
+                  Cancel
+                </Button>
+              </div>
+              <p className="mt-2 text-xs text-slate-300">Look at the camera, then tap Capture.</p>
+            </div>
+          )}
 
           <div className="rounded-lg border border-line p-3 text-sm">
             <div className="flex items-center justify-between">
