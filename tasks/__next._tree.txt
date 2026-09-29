@@ -1,2 +1,2 @@
 :HL["/jd-one/_next/static/chunks/1je0pv-4nzeo4.css","style"]
-0:{"tree":{"name":"","param":null,"prefetchHints":4176,"slots":{"children":{"name":"entity","param":{"type":"d","key":"tasks","siblings":["attendance","login","my-day","scoreboard","settings"]},"prefetchHints":4192,"slots":{"children":{"name":"__PAGE__","param":null,"prefetchHints":4256,"slots":null}}}}},"staleTime":300,"buildId":"yBebczQIzE-qNRSXcctpO"}
+0:{"tree":{"name":"","param":null,"prefetchHints":4176,"slots":{"children":{"name":"entity","param":{"type":"d","key":"tasks","siblings":["attendance","login","my-day","scoreboard","settings"]},"prefetchHints":4192,"slots":{"children":{"name":"__PAGE__","param":null,"prefetchHints":4256,"slots":null}}}}},"staleTime":300,"buildId":"8B31sTzYqFjy0DDFVnFWd"}
