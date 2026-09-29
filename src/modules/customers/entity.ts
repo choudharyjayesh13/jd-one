@@ -15,11 +15,12 @@ export const customers = defineEntity({
   table: "customers",
   teams: ["marketing", "operations", "finance"],
   titleField: "name",
-  searchFields: ["name", "phone", "email", "city", "company"],
+  searchFields: ["customer_no", "name", "phone", "email", "city", "company"],
   defaultSort: { field: "created_at", dir: "desc" },
   unique: [["phone"]],
   customDetail: Customer360,
   fields: [
+    { name: "customer_no", label: "Customer no.", type: "text", readOnly: true, help: "Assigned automatically (JDC-00001…)" },
     { name: "name", label: "Name", type: "text", required: true },
     { name: "phone", label: "Phone", type: "phone", required: true, help: "Unique — used to match leads and bookings" },
     { name: "email", label: "Email", type: "email" },

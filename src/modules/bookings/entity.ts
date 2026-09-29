@@ -48,6 +48,8 @@ export const bookings = defineEntity({
     { name: "source", label: "Source", type: "select", options: BOOKING_SOURCES, required: true, default: "Direct" },
     { name: "status", label: "Status", type: "select", options: BOOKING_STATUSES, required: true, default: "Confirmed" },
     { name: "special_requests", label: "Special requests", type: "textarea" },
+    { name: "booked_by", label: "Booked by", type: "text", help: "Staff member or channel that created the booking" },
+    { name: "external_ref", label: "Channel booking ID", type: "text", readOnly: true, help: "AsiaTech / OTA reference" },
   ],
   listColumns: ["guest_name", "status", "check_in", "check_out", "unit_type", "business_unit_id", "total", "balance"],
   reverse: [
