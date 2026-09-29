@@ -30,10 +30,20 @@ for f in sorted(glob.glob(os.path.join(src, "*.xls"))):
         continue
     hdr = [str(c.value).strip() for c in sh.row(0)]
     COLS = {h: i for i, h in enumerate(hdr)}
+    # "Account Booking Export" layout: Booking ID, Name, Booking Date, Check In, Check Out, Channel, Commission, Tax, Total, Type, Received, Room Assigned, Invoice No
+    slim = "Channel" in COLS and "Mobile" not in COLS
     for r in range(1, sh.nrows):
         rec = {h: sh.cell(r, i).value for h, i in COLS.items()}
         bid = str(rec.get("Booking ID", "")).strip()
-        if bid:
+        if not bid:
+            continue
+        if slim:
+            rec = {"Booking ID": bid, "Name": rec.get("Name"), "Booking Date": rec.get("Booking Date"), "Check In": rec.get("Check In"), "Check Out": rec.get("Check Out"),
+                   "Source": rec.get("Channel"), "Source Type": "", "Booking By": rec.get("Channel"), "Total Amount": rec.get("Total"), "Received Amount": rec.get("Received"),
+                   "Pending Amount": (float(rec.get("Total") or 0) - float(rec.get("Received") or 0)), "Status": "Confirmed", "Payment Status": rec.get("Type"), "Room Assigned": rec.get("Room Assigned"),
+                   "Room Type": "Lake View Cottage", "No. Rooms": 1, "No. Adults": 2, "No. Childs": 0, "Mealplan": "EP", "Mobile": "", "Email": "", "Special Comment": "",
+                   "No. Nights": max(1, int((__import__("datetime").date.fromisoformat(str(rec.get("Check Out"))[:10]) - __import__("datetime").date.fromisoformat(str(rec.get("Check In"))[:10])).days)) if rec.get("Check In") and rec.get("Check Out") else 1}
+        if bid not in rows or not slim:   # full-layout rows win over slim ones
             rows[bid] = rec
 print(f"bookings read: {len(rows)} from {len(glob.glob(os.path.join(src, '*.xls')))} files")
 
@@ -86,9 +96,27 @@ for rec in order:
     if not c["email"] and em: c["email"] = em
     if len(title(rec.get("Name"))) > len(c["name"]): c["name"] = title(rec.get("Name"))
     c["bookings"].append(rec)
-for i, (k, c) in enumerate(sorted(customers.items(), key=lambda kv: (kv[1]["first_seen"] or "9999", kv[1]["name"])), start=1):
-    c["customer_no"] = f"JDC-{i:05d}"
+# Customer numbers are permanent: reuse numbers already in JD One (matched by phone), then continue after the highest.
+existing_no = {}
+try:
+    envx = {}
+    for line in open(os.path.expanduser("~/jd-one/.env.local")):
+        if "=" in line and not line.startswith("#"): k_, v_ = line.strip().split("=", 1); envx[k_] = v_
+    got = json.loads(urllib.request.urlopen(urllib.request.Request(f"{envx['SUPABASE_URL']}/rest/v1/customers?select=phone,customer_no&customer_no=not.is.null&limit=5000", headers={"apikey": envx["SUPABASE_SERVICE_ROLE_KEY"], "Authorization": f"Bearer {envx['SUPABASE_SERVICE_ROLE_KEY']}", "Accept-Profile": envx.get("SUPABASE_SCHEMA", "public")}), timeout=30).read())
+    existing_no = {g["phone"]: g["customer_no"] for g in got if g.get("customer_no")}
+except Exception as e:
+    print("note: could not read existing customer numbers:", e)
+next_no = max([int(v.split("-")[1]) for v in existing_no.values() if re.match(r"JDC-\d+$", v)] or [0]) + 1
+for k, c in sorted(customers.items(), key=lambda kv: (kv[1]["first_seen"] or "9999", kv[1]["name"])):
+    ph_key = c["phone"] or None
+    known = existing_no.get(ph_key) if ph_key else None
+    if known:
+        c["customer_no"] = known
+    else:
+        c["customer_no"] = f"JDC-{next_no:05d}"; next_no += 1
     c["id"] = str(uuid.uuid5(uuid.NAMESPACE_URL, "jdone-customer-" + (c["phone"] or k)))
+    if not c["phone"]:
+        c["phone_placeholder"] = existing_no and next((p for p, n in existing_no.items() if n == c["customer_no"]), None) or f"JDC{c['customer_no'][-5:]}"
     for rec in c["bookings"]:
         if status_map(rec) in ("Confirmed", "Checked-in", "Checked-out"):
             c["stays"] += 1; c["nights"] += int(num(rec.get("No. Nights"))); c["spend"] += num(rec.get("Received Amount"))
@@ -152,13 +180,23 @@ if push:
     def rest(table, payload, on_conflict):
         req = urllib.request.Request(f"{url}/rest/v1/{table}?on_conflict={on_conflict}", data=json.dumps(payload).encode(), method="POST",
               headers={"apikey": key, "Authorization": f"Bearer {key}", "Content-Type": "application/json", "Content-Profile": schema, "Prefer": "resolution=merge-duplicates,return=minimal"})
-        with urllib.request.urlopen(req, timeout=60) as r: return r.status
+        try:
+            with urllib.request.urlopen(req, timeout=60) as r: return r.status
+        except urllib.error.HTTPError as e:
+            print("REST error", table, e.code, e.read().decode()[:300]); raise
     uds = json.loads(urllib.request.urlopen(urllib.request.Request(f"{url}/rest/v1/business_units?select=id&short_code=eq.UDS", headers={"apikey": key, "Authorization": f"Bearer {key}", "Accept-Profile": schema})).read())[0]["id"]
-    cust_rows = [{"id": c["id"], "customer_no": c["customer_no"], "name": c["name"], "phone": c["phone"] or f"JDC{c['customer_no'][-5:]}", "email": c["email"] or None, "first_source": "AsiaTech", "first_seen": c["first_seen"], "notes": f"Imported from AsiaTech {date.today()}; first booking created by {c['created_by']}"} for c in cl]
+    cust_rows = [{"customer_no": c["customer_no"], "name": c["name"], "phone": c["phone"] or c.get("phone_placeholder") or f"JDC{c['customer_no'][-5:]}", "email": c["email"] or None, "first_source": "AsiaTech", "first_seen": c["first_seen"], "notes": f"Imported from AsiaTech {date.today()}; first booking created by {c['created_by']}"} for c in cl]
     for i in range(0, len(cust_rows), 200): rest("customers", cust_rows[i:i+200], "phone")
+    # Re-read ids by phone: an existing customer with the same phone keeps its own id.
+    got = json.loads(urllib.request.urlopen(urllib.request.Request(f"{url}/rest/v1/customers?select=id,phone,customer_no&limit=5000", headers={"apikey": key, "Authorization": f"Bearer {key}", "Accept-Profile": schema})).read())
+    id_by_phone = {g["phone"]: g["id"] for g in got}
+    for c in cl:
+        c["id"] = id_by_phone.get(c["phone"] or c.get("phone_placeholder") or f"JDC{c['customer_no'][-5:]}", c["id"])
+    for b in bookings:
+        b["customer_id"] = next((c["id"] for c in cl if c["customer_no"] == b["customer_no"]), b["customer_id"])
     book_rows = [{"id": b["id"], "external_ref": b["external_ref"], "customer_id": b["customer_id"], "guest_name": b["guest_name"], "phone": b["phone"] or "", "business_unit_id": uds,
                   "check_in": b["check_in"], "check_out": b["check_out"], "unit_type": b["unit_type"], "units": b["units"], "adults": b["adults"], "children": b["children"], "meal_plan": b["meal_plan"] if b["meal_plan"] in ("EP","CP","MAP","AP") else "EP",
                   "total": b["total"], "paid": b["paid"], "balance": b["balance"], "source": b["source"], "booked_by": b["booked_by"], "status": b["status"],
                   "special_requests": (b["comment"] or None), "created_at": (b["booking_date"] or date.today().isoformat()) + "T09:00:00+05:30"} for b in bookings if b["check_in"] and b["check_out"]]
-    for i in range(0, len(book_rows), 200): rest("bookings", book_rows[i:i+200], "external_ref")
+    for i in range(0, len(book_rows), 200): rest("bookings", book_rows[i:i+200], "id")
     print("pushed", len(cust_rows), "customers and", len(book_rows), "bookings to Supabase")
