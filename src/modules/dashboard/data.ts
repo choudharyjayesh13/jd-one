@@ -68,7 +68,7 @@ export async function loadDashboard(store: DataStore, unitId: string | null): Pr
 /* ---- property (front office) ---- */
 export function occupancyToday(d: DashboardData): { occupied: number; total: number; pct: number | null } {
   const total = d.rooms.length;
-  const occupied = d.bookings.filter((b) => (b.status === "Confirmed" || b.status === "Checked-in") && String(b.check_in) <= d.today && String(b.check_out) > d.today).reduce((s, b) => s + Number(b.units ?? 1), 0);
+  const occupied = d.bookings.filter((b) => (b.status === "Confirmed" || b.status === "Checked-in" || b.status === "On hold") && String(b.check_in) <= d.today && String(b.check_out) > d.today).reduce((s, b) => s + Number(b.units ?? 1), 0);
   return { occupied: Math.min(occupied, total || occupied), total, pct: total ? Math.round((Math.min(occupied, total) / total) * 100) : null };
 }
 export function dirtyRooms(d: DashboardData) {

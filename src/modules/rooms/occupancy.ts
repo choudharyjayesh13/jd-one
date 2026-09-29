@@ -2,7 +2,7 @@
 import type { Row } from "@/core/schema/types";
 
 /** Booking statuses that hold inventory. */
-export const HOLDING_STATUSES: readonly string[] = ["Confirmed", "Checked-in"];
+export const HOLDING_STATUSES: readonly string[] = ["On hold", "Confirmed", "Checked-in"];
 
 /** A booking occupies night `date` when check_in ≤ date < check_out. */
 export function occupiesNight(b: Row, date: string): boolean {

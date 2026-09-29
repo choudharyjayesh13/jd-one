@@ -1,6 +1,7 @@
 -- JD One — migration 30 Sep 2026 (schema jdone): Property / front-office modules modelled on the
 -- AsiaTech channel-manager panel — rooms, rates calendar, promotions, request money, housekeeping,
--- petty cash, hotel details. Idempotent; run once in the Supabase SQL editor of the shared project.
+-- petty cash, agents, add-ons, hotel details. Idempotent; run once in the Supabase SQL editor of the
+-- shared project (safe to re-run after a partial run).
 -- Contains ONLY the statements new since 2026-09-29-customer-no-asiatech.jdone.sql.
 
 -- ---------------------------------------------------------------- hotel details on business units
@@ -42,9 +43,50 @@ create table if not exists jdone.rooms (
 create index if not exists rooms_unit_idx on jdone.rooms (business_unit_id, active);
 create index if not exists rooms_type_idx on jdone.rooms (unit_type);
 
--- Bookings: assigned physical room (room chart).
-alter table jdone.bookings add column if not exists room_id uuid references jdone.rooms(id) on delete set null;
+-- ---------------------------------------------------------------- travel / corporate agents
+create table if not exists jdone.agents (
+  id uuid primary key default gen_random_uuid(),
+  kind text not null default 'Travel agent',
+  company text not null,
+  contact_person text,
+  phone text,
+  email text,
+  city text,
+  commission_pct numeric(5,2),
+  credit_allowed boolean not null default false,
+  credit_limit numeric(12,2),
+  gstin text,
+  active boolean not null default true,
+  notes text,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  created_by uuid references jdone.staff(id) on delete set null
+);
+
+-- ---------------------------------------------------------------- add-on services
+create table if not exists jdone.add_ons (
+  id uuid primary key default gen_random_uuid(),
+  name text not null,
+  business_unit_id uuid not null references jdone.business_units(id) on delete cascade,
+  price numeric(12,2) not null default 0,
+  per text not null default 'Booking',
+  tax_pct numeric(5,2) default 18,
+  quantity integer,
+  description text,
+  image text,
+  active boolean not null default true,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  created_by uuid references jdone.staff(id) on delete set null
+);
+
+-- Bookings: assigned physical room (room chart), agent, hold expiry, and the "On hold" status.
+alter table jdone.bookings
+  add column if not exists room_id uuid references jdone.rooms(id) on delete set null,
+  add column if not exists agent_id uuid references jdone.agents(id) on delete set null,
+  add column if not exists hold_until timestamptz;
 create index if not exists bookings_room_idx on jdone.bookings (room_id);
+create index if not exists bookings_agent_idx on jdone.bookings (agent_id);
 
 -- ---------------------------------------------------------------- rates (date-ranged, per type + meal plan)
 create table if not exists jdone.rates (
@@ -72,6 +114,7 @@ create index if not exists rates_lookup_idx on jdone.rates (business_unit_id, un
 create table if not exists jdone.promotions (
   id uuid primary key default gen_random_uuid(),
   name text not null,
+  offer_type text not null default 'Seasonal offer',
   code text unique,
   business_unit_id uuid not null references jdone.business_units(id) on delete cascade,
   kind text not null default 'Percent',
@@ -149,17 +192,19 @@ create table if not exists jdone.petty_cash (
   handled_by uuid references jdone.staff(id) on delete set null,
   receipt text,
   notes text,
+  payment_id uuid references jdone.payments(id) on delete set null,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
   created_by uuid references jdone.staff(id) on delete set null
 );
 create index if not exists petty_cash_date_idx on jdone.petty_cash (business_unit_id, date desc);
+create index if not exists petty_cash_payment_idx on jdone.petty_cash (payment_id);
 
 -- ---------------------------------------------------------------- updated_at triggers + RLS (same rules as every staff table)
 do $$
 declare t text;
 begin
-  foreach t in array array['rooms','rates','promotions','payment_requests','housekeeping_reports','petty_cash']
+  foreach t in array array['rooms','rates','promotions','payment_requests','housekeeping_reports','petty_cash','agents','add_ons']
   loop
     execute format('drop trigger if exists set_updated_at on jdone.%I', t);
     execute format('create trigger set_updated_at before update on jdone.%I for each row execute function jdone.set_updated_at()', t);
@@ -175,19 +220,33 @@ begin
   end loop;
 end $$;
 
--- ---------------------------------------------------------------- seed: The Udaisarovar rooms (5 sellable units + camping)
-insert into jdone.rooms (name, business_unit_id, unit_type, block, max_adults, max_children, sort_order, amenities)
-select v.name, u.id, v.unit_type, v.block, v.max_adults, v.max_children, v.sort_order, v.amenities::jsonb
+-- ---------------------------------------------------------------- seed: The Udaisarovar rooms, numbered as in AsiaTech housekeeping
+insert into jdone.rooms (name, business_unit_id, unit_type, block, max_adults, max_children, extra_bed, sort_order, amenities)
+select v.name, u.id, v.unit_type, v.block, v.max_adults, v.max_children, v.extra_bed, v.sort_order, v.amenities::jsonb
 from (values
-  ('Lake View Cottage 1', 'Lake View Cottage', 'Lake side', 2, 1, 1, '["Lake view","Garden","AC"]'),
-  ('Lake View Cottage 2', 'Lake View Cottage', 'Lake side', 2, 1, 2, '["Lake view","Garden","AC"]'),
-  ('Lake View Cottage 3', 'Lake View Cottage', 'Lake side', 2, 1, 3, '["Lake view","Garden","AC"]'),
-  ('Pool View Cottage',   'Pool View Cottage', 'Pool side', 2, 1, 4, '["Pool view","Garden","AC"]'),
-  ('Family Suite',        'Family Suite',      'Main house', 3, 2, 5, '["AC","Bunk bed","Extra bed"]'),
-  ('Camping (5 tents)',   'Camping',           'Lawn', 2, 1, 6, '["Garden"]')
-) as v(name, unit_type, block, max_adults, max_children, sort_order, amenities)
+  ('Cottage - 1',      'Lake View Cottage', 'Lake side',  2, 1, false, 1,  '["Lake view","Garden","AC"]'),
+  ('Cottage - 2',      'Lake View Cottage', 'Lake side',  2, 1, false, 2,  '["Lake view","Garden","AC"]'),
+  ('Cottage - 3',      'Lake View Cottage', 'Lake side',  2, 1, false, 3,  '["Lake view","Garden","AC"]'),
+  ('Cottage - 4',      'Pool View Cottage', 'Pool side',  2, 1, false, 4,  '["Pool view","Garden","AC"]'),
+  ('Family Suite - 5', 'Family Suite',      'Main house', 3, 1, true,  5,  '["AC","Bunk bed","Extra bed"]'),
+  ('Camp - 6',         'Camping',           'Lawn',       2, 1, false, 6,  '["Garden"]'),
+  ('Camp - 7',         'Camping',           'Lawn',       2, 1, false, 7,  '["Garden"]'),
+  ('Camp - 8',         'Camping',           'Lawn',       2, 1, false, 8,  '["Garden"]'),
+  ('Camp - 9',         'Camping',           'Lawn',       2, 1, false, 9,  '["Garden"]'),
+  ('Camp - 10',        'Camping',           'Lawn',       2, 1, false, 10, '["Garden"]')
+) as v(name, unit_type, block, max_adults, max_children, extra_bed, sort_order, amenities)
 join jdone.business_units u on u.name = 'The Udaisarovar'
 on conflict (business_unit_id, name) do nothing;
+
+-- Agents already registered in AsiaTech.
+insert into jdone.agents (kind, company, contact_person, city)
+select v.kind, v.company, v.contact_person, v.city
+from (values
+  ('Travel agent', 'mamta tour and travels', 'Mamta', 'Udaipur'),
+  ('Corporate', 'XYZ', 'Divya', 'Dungarpur'),
+  ('Taxi / driver', 'Taxiservices', 'Rajendra', 'Udaipur')
+) as v(kind, company, contact_person, city)
+where not exists (select 1 from jdone.agents a where a.company = v.company);
 
 -- Hotel details for The Udaisarovar (only fills blanks).
 update jdone.business_units set
