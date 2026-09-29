@@ -2,7 +2,9 @@
 /**
  * Auth context. Local mode: PIN gate, user is the owner (or "acting as" a
  * staff member chosen in Settings, to preview team views). Supabase mode:
- * email + password, role comes from the linked `staff` row.
+ * email + password, role comes from the linked `staff` row. A signed-in
+ * account without a staff row is a self sign-up waiting for HR approval:
+ * its `signup_requests` row is created here from the sign-up metadata.
  */
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import type { Role, Row } from "@/core/schema/types";
@@ -20,15 +22,34 @@ export interface AuthUser {
   unitId: string | null;
 }
 
+/** Supabase: signed in, but not (yet) a staff member — waiting for approval. */
+export interface PendingSignup {
+  email: string | null;
+  name: string;
+  status: "Pending" | "Approved" | "Rejected";
+  note: string | null;
+}
+
+export interface SignUpInput {
+  name: string;
+  phone: string;
+  email: string;
+  password: string;
+  designation: string;
+  business_unit_id: string;
+}
+
 interface AuthState {
   mode: "local" | "supabase";
   loading: boolean;
   user: AuthUser | null;
   /** Local mode: whether a PIN has been set yet. */
   pinSet: boolean;
-  /** Supabase: signed in but no staff row links to this account. */
-  unlinkedEmail: string | null;
+  /** Supabase: signed in but no staff row links to this account (sign-up awaiting approval). */
+  pendingSignup: PendingSignup | null;
   signInWithPassword: (email: string, password: string) => Promise<void>;
+  /** Supabase: create an account; returns true when the email must be confirmed first. */
+  signUp: (input: SignUpInput) => Promise<{ needsEmailConfirmation: boolean }>;
   unlockWithPin: (pin: string) => Promise<boolean>;
   createPin: (pin: string) => Promise<void>;
   signOut: () => Promise<void>;
@@ -54,11 +75,38 @@ function userFromStaff(id: string, email: string | null, staff: Row | null): Aut
   };
 }
 
+/**
+ * First sign-in without a staff row: record the sign-up request (from the
+ * metadata given at sign-up) so HR can approve it. Idempotent: one row per auth user.
+ */
+async function ensureSignupRequest(authUserId: string, email: string | null, meta: Record<string, unknown>): Promise<PendingSignup> {
+  const name = String(meta.name ?? meta.full_name ?? email ?? "New user");
+  try {
+    const store = getStore();
+    const existing = (await store.list("signup-requests", { filter: { auth_user_id: authUserId } }))[0];
+    if (existing) return { email, name: String(existing.name ?? name), status: (existing.status as PendingSignup["status"]) ?? "Pending", note: (existing.note as string | null) ?? null };
+    const row = await store.create("signup-requests", {
+      auth_user_id: authUserId,
+      name,
+      phone: (meta.phone as string | undefined) ?? null,
+      email,
+      designation: (meta.designation as string | undefined) ?? null,
+      business_unit_id: (meta.business_unit_id as string | undefined) || null,
+      status: "Pending",
+      requested_at: new Date().toISOString(),
+    });
+    return { email, name: String(row.name ?? name), status: "Pending", note: null };
+  } catch {
+    // RLS or table missing (schema not updated yet): still show the pending screen.
+    return { email, name, status: "Pending", note: null };
+  }
+}
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState<AuthUser | null>(null);
   const [pinSet, setPinSet] = useState(false);
-  const [unlinkedEmail, setUnlinkedEmail] = useState<string | null>(null);
+  const [pendingSignup, setPendingSignup] = useState<PendingSignup | null>(null);
 
   const loadLocalUser = useCallback(async () => {
     const actAs = localStorage.getItem(ACT_AS_KEY);
@@ -78,27 +126,29 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return;
       }
       const client = getSupabaseClient()!;
-      const resolve = async (sessionUserId: string | undefined, email: string | null) => {
-        if (!sessionUserId) {
+      type SessionUser = { id: string; email?: string | null; user_metadata?: Record<string, unknown> } | undefined;
+      const resolve = async (su: SessionUser) => {
+        if (!su) {
           setUser(null);
-          setUnlinkedEmail(null);
+          setPendingSignup(null);
           return;
         }
-        const rows = await getStore().list("staff", { filter: { auth_user_id: sessionUserId } });
+        const email = su.email ?? null;
+        const rows = await getStore().list("staff", { filter: { auth_user_id: su.id } });
         const staff = rows[0] ?? null;
         if (!staff) {
           setUser(null);
-          setUnlinkedEmail(email);
+          setPendingSignup(await ensureSignupRequest(su.id, email, su.user_metadata ?? {}));
           return;
         }
-        setUnlinkedEmail(null);
-        setUser(userFromStaff(sessionUserId, email, staff));
+        setPendingSignup(null);
+        setUser(userFromStaff(su.id, email, staff));
       };
       const { data } = await client.auth.getSession();
-      await resolve(data.session?.user.id, data.session?.user.email ?? null);
+      await resolve(data.session?.user);
       if (!cancelled) setLoading(false);
       const { data: sub } = client.auth.onAuthStateChange((_event, session) => {
-        void resolve(session?.user.id, session?.user.email ?? null);
+        void resolve(session?.user);
       });
       return () => sub.subscription.unsubscribe();
     })();
@@ -113,12 +163,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       loading,
       user,
       pinSet,
-      unlinkedEmail,
+      pendingSignup,
       async signInWithPassword(email, password) {
         const client = getSupabaseClient();
         if (!client) throw new Error("Supabase is not configured");
         const { error } = await client.auth.signInWithPassword({ email, password });
         if (error) throw new Error(error.message);
+      },
+      async signUp(input) {
+        const client = getSupabaseClient();
+        if (!client) throw new Error("Supabase is not configured");
+        const { data, error } = await client.auth.signUp({
+          email: input.email,
+          password: input.password,
+          options: { data: { name: input.name, phone: input.phone, designation: input.designation, business_unit_id: input.business_unit_id } },
+        });
+        if (error) throw new Error(error.message);
+        // With "Confirm email" on, Supabase returns a user but no session until the link is clicked.
+        return { needsEmailConfirmation: !data.session };
       },
       async unlockWithPin(pin) {
         const ok = await verifyPin(pin);
@@ -149,7 +211,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setUser(await loadLocalUser());
       },
     }),
-    [loading, user, pinSet, unlinkedEmail, loadLocalUser],
+    [loading, user, pinSet, pendingSignup, loadLocalUser],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

@@ -10,7 +10,7 @@ alter default privileges in schema jdone grant all on functions to anon, authent
 
 -- JD One — Supabase schema (idempotent; safe to re-run).
 -- Run in the Supabase SQL editor. Creates tables, indexes, updated_at triggers,
--- row-level security, the `receipts` storage bucket, the customer_stats view
+-- row-level security, the `receipts` + `tickets` storage buckets, the customer_stats view
 -- and seed rows for business units + unit types.
 
 create extension if not exists pgcrypto;
@@ -359,6 +359,90 @@ alter table jdone.business_units
   add column if not exists geofence_m integer default 300;
 
 
+
+-- ---------------------------------------------------------------- staff self sign-up + approval, maintenance tickets, task points (29 Sep 2026)
+-- Roles that may approve sign-ups (mirrors APPROVER_ROLES in the app).
+create or replace function jdone.is_hr_admin() returns boolean
+language sql stable security definer set search_path = jdone, public as $$
+  select coalesce(jdone.current_staff_role() in ('owner','manager','hr'), false)
+$$;
+
+-- Login → Create account writes this row on first sign-in; HR → Staff approves it (creates the staff row).
+create table if not exists jdone.signup_requests (
+  id uuid primary key default gen_random_uuid(),
+  auth_user_id uuid not null unique,
+  name text not null,
+  phone text,
+  email text,
+  designation text,
+  business_unit_id uuid references jdone.business_units(id) on delete set null,
+  status text not null default 'Pending' check (status in ('Pending','Approved','Rejected')),
+  requested_at timestamptz not null default now(),
+  decided_by uuid references jdone.staff(id) on delete set null,
+  decided_at timestamptz,
+  note text,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  created_by uuid references jdone.staff(id) on delete set null
+);
+create index if not exists signup_requests_status_idx on jdone.signup_requests (status);
+
+-- Maintenance tickets; media / resolution_media hold JSON arrays of {url, type, name, size} (files in the `tickets` bucket).
+create table if not exists jdone.tickets (
+  id uuid primary key default gen_random_uuid(),
+  title text not null,
+  category text not null default 'Other',
+  business_unit_id uuid references jdone.business_units(id) on delete set null,
+  location text,
+  booking_id uuid references jdone.bookings(id) on delete set null,
+  priority text not null default 'Medium',
+  priority_rank integer not null default 2,   -- 0 Urgent … 3 Low, kept by the app for sorting
+  description text,
+  media jsonb not null default '[]'::jsonb,
+  reported_by uuid references jdone.staff(id) on delete set null,
+  assigned_to uuid references jdone.staff(id) on delete set null,
+  status text not null default 'Open' check (status in ('Open','In progress','Waiting parts','Done','Verified')),
+  due date,
+  started_at timestamptz,                     -- first time the ticket leaves Open (first response)
+  resolved_at timestamptz,                    -- set when Done / Verified
+  resolution_notes text,
+  resolution_media jsonb not null default '[]'::jsonb,
+  cost numeric(12,2),
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  created_by uuid references jdone.staff(id) on delete set null
+);
+create index if not exists tickets_status_idx on jdone.tickets (status);
+create index if not exists tickets_unit_idx on jdone.tickets (business_unit_id);
+create index if not exists tickets_assigned_idx on jdone.tickets (assigned_to);
+create index if not exists tickets_priority_idx on jdone.tickets (priority_rank, created_at desc);
+
+-- Tasks: points for the scoreboard, completion time, and the ticket that created the task.
+alter table jdone.tasks
+  add column if not exists points integer not null default 1,
+  add column if not exists completed_at timestamptz,
+  add column if not exists ticket_id uuid references jdone.tickets(id) on delete set null;
+create index if not exists tasks_ticket_idx on jdone.tasks (ticket_id);
+create index if not exists tasks_assigned_idx on jdone.tasks (assigned_to, status);
+
+-- link_staff_on_signup: a staff row pre-created by HR with the person's email is linked to their
+-- login the moment they sign up, so they skip approval. Self sign-ups without a staff row go
+-- through signup_requests instead. The trigger is only added when no trigger on auth.users
+-- already calls this function (the live project had it installed by hand).
+create or replace function jdone.link_staff_on_signup() returns trigger
+language plpgsql security definer set search_path = jdone, public as $$
+begin
+  update jdone.staff set auth_user_id = new.id
+   where auth_user_id is null and email is not null and lower(email) = lower(new.email);
+  return new;
+end $$;
+do $$
+begin
+  if not exists (select 1 from pg_trigger where tgrelid = 'auth.users'::regclass and tgfoid = 'jdone.link_staff_on_signup'::regproc) then
+    create trigger link_staff after insert on auth.users for each row execute function jdone.link_staff_on_signup();
+  end if;
+end $$;
+
 -- ---------------------------------------------------------------- customer portal (myjdgroup.com/portal)
 -- Investors log in with Supabase Auth; they may READ only their own rows (auth_user_id = auth.uid()).
 create table if not exists jdone.investors (
@@ -491,7 +575,7 @@ create index if not exists staff_auth_idx on jdone.staff (auth_user_id);
 do $$
 declare t text;
 begin
-  foreach t in array array['business_units','staff','customers','leads','activities','bookings','payments','checkins','daily_reports','attendance','expenses','stock','tasks','targets','import_runs','messages','candidates','investors','investments','wallet_transactions']
+  foreach t in array array['business_units','staff','customers','leads','activities','bookings','payments','checkins','daily_reports','attendance','expenses','stock','tasks','targets','import_runs','messages','candidates','investors','investments','wallet_transactions','tickets','signup_requests']
   loop
     execute format('drop trigger if exists set_updated_at on jdone.%I', t);
     execute format('create trigger set_updated_at before update on jdone.%I for each row execute function jdone.set_updated_at()', t);
@@ -519,7 +603,7 @@ $$;
 do $$
 declare t text;
 begin
-  foreach t in array array['business_units','staff','customers','leads','activities','bookings','payments','checkins','daily_reports','attendance','expenses','stock','tasks','targets','import_runs','messages','candidates','investors','investments','wallet_transactions','unit_types']
+  foreach t in array array['business_units','staff','customers','leads','activities','bookings','payments','checkins','daily_reports','attendance','expenses','stock','tasks','targets','import_runs','messages','candidates','investors','investments','wallet_transactions','unit_types','tickets']
   loop
     execute format('alter table jdone.%I enable row level security', t);
     execute format('drop policy if exists "staff read" on jdone.%I', t);
@@ -532,6 +616,24 @@ begin
     execute format('create policy "owner delete" on jdone.%I for delete to authenticated using (jdone.is_owner())', t);
   end loop;
 end $$;
+
+-- Sign-up requests: a signed-in user may create/see their OWN request (they are not staff yet);
+-- staff read all; owner/manager/hr decide.
+alter table jdone.signup_requests enable row level security;
+drop policy if exists "own signup insert" on jdone.signup_requests;
+create policy "own signup insert" on jdone.signup_requests for insert to authenticated with check (auth_user_id = auth.uid());
+drop policy if exists "own or staff signup read" on jdone.signup_requests;
+create policy "own or staff signup read" on jdone.signup_requests for select to authenticated using (auth_user_id = auth.uid() or jdone.is_staff());
+drop policy if exists "hr signup update" on jdone.signup_requests;
+create policy "hr signup update" on jdone.signup_requests for update to authenticated using (jdone.is_hr_admin()) with check (jdone.is_hr_admin());
+drop policy if exists "hr signup delete" on jdone.signup_requests;
+create policy "hr signup delete" on jdone.signup_requests for delete to authenticated using (jdone.is_hr_admin());
+
+-- The sign-up form (not signed in) lists active business units with the anon key: id, name, short_code, active only.
+drop policy if exists "anon read active units" on jdone.business_units;
+create policy "anon read active units" on jdone.business_units for select to anon using (active);
+revoke select on jdone.business_units from anon;
+grant select (id, name, short_code, active) on jdone.business_units to anon;
 
 -- ---------------------------------------------------------------- customer 360° view
 -- One row per customer with the headline numbers (RLS of the underlying tables applies).
@@ -565,6 +667,20 @@ create policy "receipts staff update" on storage.objects for update to authentic
 drop policy if exists "receipts owner delete" on storage.objects;
 create policy "receipts owner delete" on storage.objects for delete to authenticated using (bucket_id = 'receipts' and jdone.is_owner());
 
+-- ---------------------------------------------------------------- storage: tickets bucket (photos/videos; public read, staff write)
+insert into storage.buckets (id, name, public)
+values ('tickets', 'tickets', true)
+on conflict (id) do nothing;
+
+drop policy if exists "tickets public read" on storage.objects;
+create policy "tickets public read" on storage.objects for select using (bucket_id = 'tickets');
+drop policy if exists "tickets staff insert" on storage.objects;
+create policy "tickets staff insert" on storage.objects for insert to authenticated with check (bucket_id = 'tickets' and jdone.is_staff());
+drop policy if exists "tickets staff update" on storage.objects;
+create policy "tickets staff update" on storage.objects for update to authenticated using (bucket_id = 'tickets' and jdone.is_staff());
+drop policy if exists "tickets owner delete" on storage.objects;
+create policy "tickets owner delete" on storage.objects for delete to authenticated using (bucket_id = 'tickets' and jdone.is_owner());
+
 -- ---------------------------------------------------------------- seeds
 insert into jdone.business_units (name, short_code, type, city) values
   ('The Udaisarovar', 'UDS', 'Resort', 'Udaipur'),
@@ -591,3 +707,8 @@ on conflict (name) do nothing;
 grant all on all tables in schema jdone to anon, authenticated, service_role;
 grant all on all sequences in schema jdone to anon, authenticated, service_role;
 grant execute on all functions in schema jdone to anon, authenticated, service_role;
+
+-- The blanket grant above re-opens every column of business_units to anon; narrow it again
+-- to what the sign-up form needs (RLS still limits rows to active units).
+revoke select on jdone.business_units from anon;
+grant select (id, name, short_code, active) on jdone.business_units to anon;

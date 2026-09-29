@@ -13,6 +13,8 @@ export interface ListQuery {
   /** Inclusive range filters on a field, e.g. { date: { gte: "2026-09-01", lte: "2026-09-30" } }. */
   range?: Record<string, { gte?: string | number; lte?: string | number }>;
   sort?: { field: string; dir: "asc" | "desc" };
+  /** Secondary sort applied when `sort` ties. */
+  thenBy?: { field: string; dir: "asc" | "desc" };
   limit?: number;
 }
 

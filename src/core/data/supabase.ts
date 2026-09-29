@@ -2,14 +2,18 @@ import { mergeBundle } from "./merge";
 /**
  * SupabaseStore: Postgres through supabase-js. Row-level security in
  * supabase/schema.sql decides who may read/write; this class only translates
- * the DataStore calls. Image fields are uploaded to the `receipts` bucket.
+ * the DataStore calls. Image fields are uploaded to the `receipts` bucket,
+ * `files` fields (ticket photos/videos) to the `tickets` bucket.
  */
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
-import type { Row, FieldValues } from "@/core/schema/types";
+import type { Row, FieldValues, FileItem } from "@/core/schema/types";
 import { entities, getEntity } from "@/core/schema/registry";
 import type { DataStore, ExportBundle, ListQuery } from "./types";
 
 export const RECEIPTS_BUCKET = "receipts";
+export const TICKETS_BUCKET = "tickets";
+/** Schema the app's tables live in ("jdone" when sharing a project with another app). */
+export const SUPABASE_SCHEMA = process.env.NEXT_PUBLIC_SUPABASE_SCHEMA || "public";
 
 export class SupabaseStore implements DataStore {
   kind = "supabase" as const;
@@ -17,7 +21,7 @@ export class SupabaseStore implements DataStore {
 
   constructor(url: string, anonKey: string) {
     // NEXT_PUBLIC_SUPABASE_SCHEMA lets JD One share a Supabase project with another app (e.g. schema "jdone").
-    this.client = createClient(url, anonKey, { db: { schema: (process.env.NEXT_PUBLIC_SUPABASE_SCHEMA || "public") as "public" } });
+    this.client = createClient(url, anonKey, { db: { schema: SUPABASE_SCHEMA as "public" } });
   }
 
   async list(entity: string, query?: ListQuery): Promise<Row[]> {
@@ -41,6 +45,8 @@ export class SupabaseStore implements DataStore {
     }
     const sort = query?.sort ?? def.defaultSort;
     q = q.order(sort.field, { ascending: sort.dir === "asc", nullsFirst: false });
+    const thenBy = query?.thenBy ?? (query?.sort ? undefined : def.secondarySort);
+    if (thenBy) q = q.order(thenBy.field, { ascending: thenBy.dir === "asc", nullsFirst: false });
     if (query?.limit) q = q.limit(query.limit);
     const { data, error } = await q;
     if (error) throw new Error(error.message);
@@ -80,7 +86,7 @@ export class SupabaseStore implements DataStore {
     const def = getEntity(entity);
     const channel = this.client
       .channel(`jd-one:${def.table}`)
-      .on("postgres_changes", { event: "*", schema: "public", table: def.table }, () => callback())
+      .on("postgres_changes", { event: "*", schema: SUPABASE_SCHEMA, table: def.table }, () => callback())
       .subscribe();
     return () => {
       void this.client.removeChannel(channel);
@@ -115,17 +121,39 @@ export class SupabaseStore implements DataStore {
     const def = getEntity(entity);
     const out = { ...values };
     for (const f of def.fields) {
-      if (f.type !== "file") continue;
-      const v = out[f.name];
-      if (typeof v !== "string" || !v.startsWith("data:")) continue;
-      const blob = await (await fetch(v)).blob();
-      const ext = blob.type.split("/")[1]?.replace("jpeg", "jpg") || "bin";
-      const path = `${def.table}/${id ?? crypto.randomUUID()}-${f.name}-${Date.now()}.${ext}`;
-      const { error } = await this.client.storage.from(RECEIPTS_BUCKET).upload(path, blob, { upsert: true, contentType: blob.type });
-      if (error) throw new Error(`Upload failed: ${error.message}`);
-      out[f.name] = this.client.storage.from(RECEIPTS_BUCKET).getPublicUrl(path).data.publicUrl;
+      if (f.type === "file") {
+        const v = out[f.name];
+        if (typeof v !== "string" || !v.startsWith("data:")) continue;
+        const blob = await (await fetch(v)).blob();
+        const ext = blob.type.split("/")[1]?.replace("jpeg", "jpg") || "bin";
+        const path = `${def.table}/${id ?? crypto.randomUUID()}-${f.name}-${Date.now()}.${ext}`;
+        out[f.name] = await this.putObject(RECEIPTS_BUCKET, path, blob);
+      } else if (f.type === "files") {
+        // Multiple photos/videos: upload the new (data URL) ones, keep http(s) URLs as they are.
+        const items = Array.isArray(out[f.name]) ? (out[f.name] as FileItem[]) : [];
+        if (!items.some((it) => it.url.startsWith("data:"))) continue;
+        const folder = `${def.table}/${id ?? crypto.randomUUID()}`;
+        const uploaded: FileItem[] = [];
+        for (const it of items) {
+          if (!it.url.startsWith("data:")) {
+            uploaded.push(it);
+            continue;
+          }
+          const blob = await (await fetch(it.url)).blob();
+          const ext = (it.name.split(".").pop() || blob.type.split("/")[1] || "bin").toLowerCase().replace("jpeg", "jpg").replace("quicktime", "mov");
+          const url = await this.putObject(TICKETS_BUCKET, `${folder}/${crypto.randomUUID()}.${ext}`, blob);
+          uploaded.push({ ...it, url, size: blob.size });
+        }
+        out[f.name] = uploaded;
+      }
     }
     return out;
+  }
+
+  private async putObject(bucket: string, path: string, blob: Blob): Promise<string> {
+    const { error } = await this.client.storage.from(bucket).upload(path, blob, { upsert: true, contentType: blob.type });
+    if (error) throw new Error(`Upload failed: ${error.message}`);
+    return this.client.storage.from(bucket).getPublicUrl(path).data.publicUrl;
   }
 }
 

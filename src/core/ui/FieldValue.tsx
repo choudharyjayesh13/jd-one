@@ -2,11 +2,12 @@
 /** Renders one stored value according to its FieldDef (money, date, badge, link…). */
 import Link from "next/link";
 import { CheckCircle2, Circle } from "lucide-react";
-import type { FieldDef } from "@/core/schema/types";
+import type { FieldDef, FileItem } from "@/core/schema/types";
 import { formatDate, formatDateTime, formatMoney, formatNumber } from "@/core/format";
 import { viewHref } from "@/core/routes";
 import { relationLabel, type RelationMaps } from "./hooks";
 import { Badge } from "./Badge";
+import { MediaGallery } from "./FilesInput";
 
 export function FieldValue({ field, value, maps }: { field: FieldDef; value: unknown; maps: RelationMaps }) {
   if (value === null || value === undefined || value === "" || (Array.isArray(value) && value.length === 0)) return <span className="text-slate-400">—</span>;
@@ -56,6 +57,9 @@ export function FieldValue({ field, value, maps }: { field: FieldDef; value: unk
           <img src={String(value)} alt={field.label} className="h-16 w-16 rounded-lg border border-line object-cover" />
         </a>
       );
+    case "files": {
+      return <MediaGallery items={Array.isArray(value) ? (value as FileItem[]) : []} className="max-w-md" />;
+    }
     case "textarea":
       return <span className="whitespace-pre-wrap">{String(value)}</span>;
     default:

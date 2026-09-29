@@ -24,6 +24,8 @@ import { candidates } from "@/modules/candidates/entity";
 import { investors } from "@/modules/investors/entity";
 import { investments } from "@/modules/investments/entity";
 import { walletTransactions } from "@/modules/wallet-transactions/entity";
+import { tickets } from "@/modules/tickets/entity";
+import { signupRequests } from "@/modules/signup-requests/entity";
 
 export const entities: EntityDef[] = [
   businessUnits,
@@ -46,6 +48,8 @@ export const entities: EntityDef[] = [
   investors,
   investments,
   walletTransactions,
+  tickets,
+  signupRequests,
 ];
 
 const byName = new Map(entities.map((e) => [e.name, e]));

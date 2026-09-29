@@ -48,7 +48,7 @@ export function Dashboard() {
         .then((d) => !cancelled && setData(d))
         .catch((e) => !cancelled && setError((e as Error).message));
     void load();
-    const unsubs = ["bookings", "leads", "tasks", "stock", "daily-reports", "expenses", "payments", "attendance", "customers", "targets"].map((e) => getStore().subscribe?.(e, () => void load()));
+    const unsubs = ["bookings", "leads", "tasks", "tickets", "activities", "stock", "daily-reports", "expenses", "payments", "attendance", "customers", "targets"].map((e) => getStore().subscribe?.(e, () => void load()));
     return () => {
       cancelled = true;
       unsubs.forEach((u) => u?.());

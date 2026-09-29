@@ -26,15 +26,18 @@ export function applyQuery(rows: Row[], query: ListQuery | undefined, searchFiel
     out = out.filter((r) => searchFields.some((f) => String(r[f] ?? "").toLowerCase().includes(q)));
   }
   if (query?.sort) {
-    const { field, dir } = query.sort;
-    const m = dir === "asc" ? 1 : -1;
+    const keys = [query.sort, ...(query.thenBy ? [query.thenBy] : [])];
     out = [...out].sort((a, b) => {
-      const x = a[field] as string | number | null | undefined;
-      const y = b[field] as string | number | null | undefined;
-      if (x === y) return 0;
-      if (x === null || x === undefined) return 1;
-      if (y === null || y === undefined) return -1;
-      return x < y ? -m : m;
+      for (const { field, dir } of keys) {
+        const m = dir === "asc" ? 1 : -1;
+        const x = a[field] as string | number | null | undefined;
+        const y = b[field] as string | number | null | undefined;
+        if (x === y) continue;
+        if (x === null || x === undefined) return 1;
+        if (y === null || y === undefined) return -1;
+        return x < y ? -m : m;
+      }
+      return 0;
     });
   }
   if (query?.limit) out = out.slice(0, query.limit);

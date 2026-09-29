@@ -29,16 +29,17 @@ export const Select = forwardRef<HTMLSelectElement, SelectHTMLAttributes<HTMLSel
   );
 });
 
-/** Label + control + error/help text. */
-export function Field({ label, required, error, help, children, wide }: { label: string; required?: boolean; error?: string; help?: string; children: ReactNode; wide?: boolean }) {
+/** Label + control + error/help text. `plain` renders a <div> for controls made of buttons (chips, galleries). */
+export function Field({ label, required, error, help, children, wide, plain }: { label: string; required?: boolean; error?: string; help?: string; children: ReactNode; wide?: boolean; plain?: boolean }) {
+  const Tag = plain ? "div" : "label";
   return (
-    <label className={cn("block", wide && "sm:col-span-2")}>
+    <Tag className={cn("block", wide && "sm:col-span-2")}>
       <span className="mb-1 block text-sm font-medium text-slate-700">
         {label}
         {required && <span className="text-red-500"> *</span>}
       </span>
       {children}
       {error ? <span className="mt-1 block text-xs text-red-600">{error}</span> : help ? <span className="mt-1 block text-xs text-slate-500">{help}</span> : null}
-    </label>
+    </Tag>
   );
 }

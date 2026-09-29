@@ -42,7 +42,7 @@ export function normalize(def: EntityDef, values: FieldValues): FieldValues {
     if (v === "" || v === undefined) v = null;
     if ((f.type === "number" || f.type === "money") && v !== null) v = Number(v);
     if (f.type === "boolean") v = Boolean(v);
-    if (f.type === "multiselect") v = Array.isArray(v) ? v : [];
+    if (f.type === "multiselect" || f.type === "files") v = Array.isArray(v) ? v : [];
     if (f.type === "text" || f.type === "textarea" || f.type === "phone" || f.type === "email") {
       if (typeof v === "string") v = v.trim() || null;
     }

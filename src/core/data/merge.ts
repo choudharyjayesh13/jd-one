@@ -7,7 +7,7 @@
 import type { ExportBundle } from "./types";
 import type { Row } from "@/core/schema/types";
 
-const REF_FIELDS = ["business_unit_id", "staff_id", "submitted_by", "paid_by", "assigned_to", "done_by", "received_by", "handled_by", "interviewer", "owner_id", "created_by"];
+const REF_FIELDS = ["business_unit_id", "staff_id", "submitted_by", "paid_by", "assigned_to", "done_by", "received_by", "handled_by", "interviewer", "owner_id", "reported_by", "decided_by", "created_by"];
 const key = (v: unknown) => String(v ?? "").toLowerCase().replace(/[^a-z0-9]/g, "");
 
 export function mergeBundle(bundle: ExportBundle, existing: { business_units: Row[]; staff: Row[] }): ExportBundle {

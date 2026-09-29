@@ -31,9 +31,11 @@ function ListInner({ entity }: { entity: string }) {
   const def = getEntity(entity);
   const user = useUser();
   if (!canRead(user.role, def)) return <Forbidden />;
+  const Extra = def.listExtra;
   return (
     <>
       <PageHeader title={def.label} />
+      {Extra && <Extra />}
       <EntityList entity={entity} />
     </>
   );

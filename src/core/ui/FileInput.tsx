@@ -7,7 +7,7 @@ import { useRef } from "react";
 import { Camera, Trash2 } from "lucide-react";
 import { Button } from "./Button";
 
-async function toResizedDataUrl(file: File, max = 1280): Promise<string> {
+export async function toResizedDataUrl(file: File, max = 1280): Promise<string> {
   const bitmap = await createImageBitmap(file);
   const scale = Math.min(1, max / Math.max(bitmap.width, bitmap.height));
   const canvas = document.createElement("canvas");

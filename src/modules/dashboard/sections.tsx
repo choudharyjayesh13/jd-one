@@ -16,7 +16,9 @@ import {
   lowStock,
   openLeads,
   openTasks,
+  openTickets,
   otaSplit,
+  teamPerformance,
   overdueFollowUps,
   salesMTDByUnit,
   sum,
@@ -24,6 +26,7 @@ import {
   type DashboardData,
 } from "./data";
 import Link from "next/link";
+import { medal } from "@/modules/scoreboard/compute";
 
 const unitName = (d: DashboardData, id: unknown) => String(d.units.find((u) => u.id === id)?.name ?? "—");
 const staffName = (d: DashboardData, id: unknown) => String(d.staff.find((s) => s.id === id)?.name ?? "—");
@@ -34,14 +37,27 @@ export function OperationsSection({ d }: { d: DashboardData }) {
   const house = inHouse(d);
   const low = lowStock(d);
   const tasks = openTasks(d);
+  const tickets = openTickets(d);
+  const perf = teamPerformance(d);
   return (
     <div className="space-y-4">
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-5">
         <Stat label="Arrivals today" value={arrivals.length} />
         <Stat label="Departures today" value={departures.length} />
         <Stat label="In house" value={`${house.length} bookings`} hint={`${sum(house, "units")} units occupied`} />
         <Stat label="Open tasks" value={tasks.length} tone={tasks.some((t) => t.due && String(t.due) < d.today) ? "bad" : "neutral"} />
+        <Stat label="Open tickets" value={tickets.length} hint={`${perf.rapid.over24h} older than 24 h`} tone={perf.rapid.over24h ? "bad" : "neutral"} />
       </div>
+      <Section title="Team performance (this month)" href="/scoreboard/">
+        {perf.top.length === 0 ? (
+          <p className="px-4 py-3 text-sm text-slate-500">No points scored yet this month — done tasks, resolved tickets, won leads and attendance all count.</p>
+        ) : (
+          <KeyValue rows={perf.top.map((r) => ({ label: `${medal(r.rank, r.score)} ${String(r.staff.name)}`, hint: `${r.tasksDone} tasks · ${r.ticketsResolved} tickets · ${r.presentDays} days`, value: `${r.score} pts` }))} />
+        )}
+        <p className="border-t border-line px-4 py-2 text-xs text-slate-500">
+          {tickets.length} open ticket{tickets.length === 1 ? "" : "s"} · {perf.rapid.unassigned} unassigned · avg first response {perf.rapid.avgFirstResponseHours ?? "—"} h
+        </p>
+      </Section>
       <div className="grid gap-4 lg:grid-cols-2">
         <Section title="Today's check-ins" href={listHref("bookings")}>
           <RecordList entity="bookings" rows={arrivals} primary={(r) => String(r.guest_name)} secondary={(r) => `${r.unit_type} · ${unitName(d, r.business_unit_id)} · balance ${formatMoney(r.balance)}`} badge={(r) => r.status} empty="No arrivals today" />
@@ -54,6 +70,9 @@ export function OperationsSection({ d }: { d: DashboardData }) {
         </Section>
         <Section title="Open tasks" href={listHref("tasks")}>
           <RecordList entity="tasks" rows={tasks} primary={(r) => String(r.title)} secondary={(r) => `${r.type} · due ${formatDate(r.due)} · ${staffName(d, r.assigned_to)}`} badge={(r) => r.priority} empty="No open tasks" />
+        </Section>
+        <Section title="Open tickets" href={listHref("tickets")}>
+          <RecordList entity="tickets" rows={tickets} primary={(r) => String(r.title)} secondary={(r) => `${r.category}${r.location ? ` · ${r.location}` : ""} · ${staffName(d, r.assigned_to)}`} badge={(r) => r.priority} empty="No open tickets" />
         </Section>
       </div>
     </div>

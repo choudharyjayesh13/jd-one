@@ -53,7 +53,16 @@ export type FieldType =
   | "phone"
   | "email"
   | "relation"
-  | "file";
+  | "file"
+  | "files";
+
+/** One item of a `files` field (photos/videos). LocalStore keeps data URLs; SupabaseStore uploads to Storage. */
+export interface FileItem {
+  url: string;
+  type: "image" | "video";
+  name: string;
+  size: number;
+}
 
 /** A stored record. Every table has these columns; modules add their own. */
 export type Row = {
@@ -75,6 +84,8 @@ export interface FieldDef {
   options?: readonly string[];
   /** relation: target entity name (url slug) */
   entity?: string;
+  /** relation(staff): new records default to the signed-in staff member unless this is false. */
+  defaultToMe?: boolean;
   /** default value for new records; a function is evaluated at form open */
   default?: unknown | (() => unknown);
   placeholder?: string;
@@ -145,7 +156,13 @@ export interface EntityAction {
   variant?: "primary" | "secondary" | "danger";
   /** Show the action only when this returns true. */
   visible?: (record: Row) => boolean;
-  run: (ctx: ActionContext) => Promise<void> | void;
+  /**
+   * Ask for a few fields first (e.g. "Mark done" → resolution notes + photo):
+   * the detail page opens the record's form limited to `fields`, applies
+   * `patch` on top, saves through the normal hooks, then calls `run` (if any).
+   */
+  form?: { title?: string; fields: string[]; patch?: FieldValues; submitLabel?: string };
+  run?: (ctx: ActionContext) => Promise<void> | void;
 }
 
 export interface EntityDef {
@@ -167,6 +184,8 @@ export interface EntityDef {
   searchFields: string[];
   reverse?: ReverseRelation[];
   defaultSort: { field: string; dir: "asc" | "desc" };
+  /** Tie-breaker applied after defaultSort (e.g. tickets: priority, then newest). */
+  secondarySort?: { field: string; dir: "asc" | "desc" };
   permissions: Permissions;
   /** Combinations of fields that must be unique (checked before save). */
   unique?: string[][];
@@ -180,6 +199,8 @@ export interface EntityDef {
   unitField?: string;
   /** Replaces the generic detail page (e.g. the customer 360° view). */
   customDetail?: ComponentType<{ id: string }>;
+  /** Rendered above the generic list page (e.g. pending sign-ups on Staff). */
+  listExtra?: ComponentType;
   /** Live hint shown in the form whenever one of `watch` fields changes. */
   liveHint?: { watch: string[]; compute: (values: FieldValues, store: DataStore) => Promise<LiveHint | null> };
 }

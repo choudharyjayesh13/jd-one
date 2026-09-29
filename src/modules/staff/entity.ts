@@ -1,5 +1,6 @@
 import { Users } from "lucide-react";
 import { defineEntity } from "@/core/schema/types";
+import { PendingSignups } from "./PendingSignups";
 
 export const STAFF_ROLES = ["owner", "manager", "hr", "accounts", "finance", "marketing", "staff"] as const;
 
@@ -15,6 +16,7 @@ export const staff = defineEntity({
   searchFields: ["name", "phone", "designation"],
   defaultSort: { field: "name", dir: "asc" },
   permissions: { create: ["owner", "manager", "hr"], update: ["owner", "manager", "hr"], delete: ["owner"] },
+  listExtra: PendingSignups,
   fields: [
     { name: "name", label: "Name", type: "text", required: true },
     { name: "phone", label: "Phone", type: "phone" },
@@ -33,6 +35,7 @@ export const staff = defineEntity({
   reverse: [
     { entity: "attendance", field: "staff_id", label: "Attendance" },
     { entity: "tasks", field: "assigned_to", label: "Tasks" },
+    { entity: "tickets", field: "assigned_to", label: "Tickets" },
     { entity: "leads", field: "assigned_to", label: "Leads" },
   ],
 });

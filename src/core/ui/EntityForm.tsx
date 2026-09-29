@@ -6,7 +6,7 @@
  */
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { Save } from "lucide-react";
-import type { EntityDef, FieldDef, FieldValues, LiveHint, Row } from "@/core/schema/types";
+import type { EntityDef, FieldDef, FieldValues, FileItem, LiveHint, Row } from "@/core/schema/types";
 import { getEntity } from "@/core/schema/registry";
 import { getStore } from "@/core/data";
 import { saveRecord, validate, type ValidationErrors } from "@/core/data/service";
@@ -16,6 +16,7 @@ import { Button } from "./Button";
 import { Field, Input, Select, Textarea } from "./Input";
 import { RelationSelect } from "./RelationSelect";
 import { FileInput } from "./FileInput";
+import { FilesInput } from "./FilesInput";
 import { Dialog } from "./Dialog";
 import { Loading, ErrorBox } from "./misc";
 import { useToast } from "./Toast";
@@ -28,6 +29,8 @@ interface Props {
   prefill?: FieldValues;
   /** Fields that must not be changed (shown disabled). */
   locked?: string[];
+  /** Render only these fields (other values are kept as loaded / prefilled). */
+  only?: string[];
   onSaved: (row: Row) => void;
   onCancel?: () => void;
   submitLabel?: string;
@@ -43,13 +46,13 @@ function initialValues(def: EntityDef, existing: Row | null, prefill: FieldValue
   }
   if (def.unitField && unitId) v[def.unitField] = unitId;
   // Sensible default: "done by / received by" defaults to the signed-in staff.
-  for (const f of def.fields) if (f.type === "relation" && f.entity === "staff" && staffId && !v[f.name]) v[f.name] = staffId;
+  for (const f of def.fields) if (f.type === "relation" && f.entity === "staff" && f.defaultToMe !== false && staffId && !v[f.name]) v[f.name] = staffId;
   if (existing) for (const f of def.fields) v[f.name] = existing[f.name] ?? (f.type === "boolean" ? false : "");
   if (prefill) for (const [k, val] of Object.entries(prefill)) if (def.fields.some((f) => f.name === k)) v[k] = val;
   return v;
 }
 
-export function EntityForm({ entity, id, prefill, locked = [], onSaved, onCancel, submitLabel, children }: Props) {
+export function EntityForm({ entity, id, prefill, locked = [], only, onSaved, onCancel, submitLabel, children }: Props) {
   const def = getEntity(entity);
   const user = useUser();
   const { toast } = useToast();
@@ -128,6 +131,7 @@ export function EntityForm({ entity, id, prefill, locked = [], onSaved, onCancel
 
   const renderField = (f: FieldDef) => {
     if (f.hidden) return null;
+    if (only && !only.includes(f.name)) return null;
     if (f.readOnly && !id) return null; // e.g. balance — kept by hooks
     const disabled = saving || lockedSet.has(f.name) || Boolean(f.readOnly);
     const v = values[f.name];
@@ -222,6 +226,9 @@ export function EntityForm({ entity, id, prefill, locked = [], onSaved, onCancel
         case "file":
           control = <FileInput value={(v as string) || null} onChange={(d) => set(f.name, d)} disabled={disabled} />;
           break;
+        case "files":
+          control = <FilesInput value={Array.isArray(v) ? (v as FileItem[]) : []} onChange={(d) => set(f.name, d)} disabled={disabled} />;
+          break;
         case "phone":
           control = <Input type="tel" inputMode="tel" value={String(v ?? "")} onChange={(e) => set(f.name, e.target.value)} disabled={disabled} invalid={invalid} placeholder={f.placeholder ?? "+91…"} />;
           break;
@@ -233,7 +240,7 @@ export function EntityForm({ entity, id, prefill, locked = [], onSaved, onCancel
       }
     }
     return (
-      <Field key={f.name} label={f.label} required={f.required} error={errors[f.name]} help={f.type === "boolean" ? undefined : f.help} wide={f.wide || f.type === "textarea" || f.type === "file"}>
+      <Field key={f.name} label={f.label} required={f.required} error={errors[f.name]} help={f.type === "boolean" ? undefined : f.help} wide={f.wide || f.type === "textarea" || f.type === "file" || f.type === "files"} plain={f.type === "files" || f.type === "multiselect"}>
         {control}
       </Field>
     );

@@ -5,6 +5,7 @@ import { addDays, currentMonth, monthRange, todayISO } from "@/core/format";
 import { crmSummary, type CrmSummary } from "@/modules/customers/crm-summary";
 import { OTA_SOURCES } from "@/modules/bookings/entity";
 import { OPEN_STAGES } from "@/modules/leads/options";
+import { computeScoreboard, rapidService, type ScoreRow } from "@/modules/scoreboard/compute";
 
 export interface DashboardData {
   today: string;
@@ -18,7 +19,10 @@ export interface DashboardData {
   leads: Row[];
   stock: Row[];
   tasks: Row[];
+  tickets: Row[];
   attendanceToday: Row[];
+  attendanceMonth: Row[];
+  activitiesMonth: Row[];
   expensesMonth: Row[];
   paymentsMonth: Row[];
   crm: CrmSummary;
@@ -29,7 +33,7 @@ export async function loadDashboard(store: DataStore, unitId: string | null): Pr
   const month = currentMonth();
   const { start, end } = monthRange(month);
   const unitFilter = unitId ? { business_unit_id: unitId } : {};
-  const [units, staff, bookings, reportsMonth, targets, leads, stock, tasks, attendanceToday, expensesMonth, paymentsMonth, crm, candidates] = await Promise.all([
+  const [units, staff, bookings, reportsMonth, targets, leads, stock, tasks, attendanceToday, expensesMonth, paymentsMonth, crm, candidates, tickets, attendanceMonth, activitiesMonth] = await Promise.all([
     store.list("business-units"),
     store.list("staff", { filter: unitFilter }),
     store.list("bookings", { filter: unitFilter }),
@@ -43,8 +47,11 @@ export async function loadDashboard(store: DataStore, unitId: string | null): Pr
     store.list("payments", { range: { date: { gte: start, lte: end } } }),
     crmSummary(store),
     store.list("candidates", { filter: unitFilter }),
+    store.list("tickets", { filter: unitFilter }),
+    store.list("attendance", { range: { date: { gte: start, lte: end } } }),
+    store.list("activities", { range: { at: { gte: `${start}T00:00:00+05:30`, lte: `${end}T23:59:59+05:30` } } }),
   ]);
-  return { today, month, units, staff, bookings, reportsMonth, targets, leads, stock, tasks, attendanceToday, expensesMonth, paymentsMonth, crm, candidates };
+  return { today, month, units, staff, bookings, reportsMonth, targets, leads, stock, tasks, tickets, attendanceToday, attendanceMonth, activitiesMonth, expensesMonth, paymentsMonth, crm, candidates };
 }
 
 /* ---- derived numbers shared by sections ---- */
@@ -112,4 +119,14 @@ export function leadsWonThisMonth(d: DashboardData) {
   const { start } = monthRange(d.month);
   const created = d.leads.filter((l) => String(l.created_at).slice(0, 10) >= start);
   return { created: created.length, won: created.filter((l) => l.stage === "Won").length, wonAll: d.leads.filter((l) => l.stage === "Won").length };
+}
+export function openTickets(d: DashboardData) {
+  return d.tickets.filter((t) => !["Done", "Verified"].includes(String(t.status)));
+}
+/** Month-to-date scoreboard for the Operations "Team performance" card. */
+export function teamPerformance(d: DashboardData): { top: ScoreRow[]; rapid: ReturnType<typeof rapidService> } {
+  const { start, end } = monthRange(d.month);
+  const staff = d.staff.filter((s) => s.active !== false && !s.left_on);
+  const { rows } = computeScoreboard({ today: d.today, start, end, staff, attendance: d.attendanceMonth, tasks: d.tasks, tickets: d.tickets, leads: d.leads, activities: d.activitiesMonth });
+  return { top: rows.filter((r) => r.score > 0).slice(0, 3), rapid: rapidService(d.tickets) };
 }

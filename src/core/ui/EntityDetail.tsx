@@ -31,6 +31,8 @@ export function EntityDetail({ entity, id, startEditing }: { entity: string; id:
   const [editing, setEditing] = useState(Boolean(startEditing));
   const [tab, setTab] = useState(0);
   const [busy, setBusy] = useState<string | null>(null);
+  // Action that asks for a few fields first (e.g. "Mark done" → resolution notes + photo).
+  const [formAction, setFormAction] = useState<EntityAction | null>(null);
 
   if (loading) return <Loading />;
   if (error) return <ErrorBox message={error} />;
@@ -39,18 +41,16 @@ export function EntityDetail({ entity, id, startEditing }: { entity: string; id:
   const staffId = (user.staff?.id as string | undefined) ?? null;
   const statusField = def.fields.find((f) => f.type === "select" && (f.name === "status" || f.name === "stage"));
 
+  const actionCtx = (record = row) => ({ record, store: getStore(), staffId, navigate: (href: string) => router.push(href), toast, confirm, refresh: reload });
+
   const runAction = async (a: EntityAction) => {
+    if (a.form) {
+      setFormAction(a);
+      return;
+    }
     setBusy(a.id);
     try {
-      await a.run({
-        record: row,
-        store: getStore(),
-        staffId,
-        navigate: (href) => router.push(href),
-        toast,
-        confirm,
-        refresh: reload,
-      });
+      await a.run?.(actionCtx());
     } catch (e) {
       toast((e as Error).message, "error");
     } finally {
@@ -105,7 +105,7 @@ export function EntityDetail({ entity, id, startEditing }: { entity: string; id:
           {def.fields
             .filter((f) => !f.hidden)
             .map((f) => (
-              <div key={f.name} className={cn(f.type === "textarea" && "sm:col-span-2 lg:col-span-3")}>
+              <div key={f.name} className={cn((f.type === "textarea" || f.type === "files") && "sm:col-span-2 lg:col-span-3")}>
                 <dt className="text-xs font-medium uppercase tracking-wide text-slate-500">{f.label}</dt>
                 <dd className="mt-0.5 text-sm text-slate-900">
                   <FieldValue field={f} value={f.computed ? f.computed(row) : row[f.name]} maps={maps} />
@@ -132,6 +132,29 @@ export function EntityDetail({ entity, id, startEditing }: { entity: string; id:
           {tabs[tab] && <EntityList key={tabs[tab].entity + tabs[tab].field} entity={tabs[tab].entity} fixedFilter={{ [tabs[tab].field]: id }} newPrefill={{ [tabs[tab].field]: id }} embedded />}
         </div>
       )}
+
+      <Dialog open={Boolean(formAction)} onClose={() => setFormAction(null)} title={formAction?.form?.title ?? formAction?.label ?? ""}>
+        {formAction?.form && (
+          <EntityForm
+            entity={entity}
+            id={id}
+            only={formAction.form.fields}
+            prefill={formAction.form.patch}
+            submitLabel={formAction.form.submitLabel ?? formAction.label}
+            onSaved={async (saved) => {
+              const a = formAction;
+              setFormAction(null);
+              try {
+                await a.run?.(actionCtx(saved));
+              } catch (e) {
+                toast((e as Error).message, "error");
+              }
+              void reload();
+            }}
+            onCancel={() => setFormAction(null)}
+          />
+        )}
+      </Dialog>
 
       <Dialog open={editing} onClose={() => setEditing(false)} title={`Edit ${def.labelSingular.toLowerCase()}`} wide>
         {editing && (

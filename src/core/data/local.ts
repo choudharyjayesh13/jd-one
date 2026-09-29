@@ -11,7 +11,7 @@ import { newId } from "./types";
 import { applyQuery } from "./query";
 
 const DB_NAME = "jd-one";
-const DB_VERSION = 4; // v2: messages, v3: candidates, v4: investors/investments/wallet_transactions
+const DB_VERSION = 5; // v2: messages, v3: candidates, v4: investors/investments/wallet_transactions, v5: tickets/signup_requests
 
 type Listener = () => void;
 
@@ -62,7 +62,9 @@ export class LocalStore implements DataStore {
     const def = getEntity(entity);
     const db = await this.db();
     const rows = (await db.getAll(def.table)) as Row[];
-    return applyQuery(rows, { sort: def.defaultSort, ...query }, def.searchFields);
+    const sort = query?.sort ?? def.defaultSort;
+    const thenBy = query?.thenBy ?? (query?.sort ? undefined : def.secondarySort);
+    return applyQuery(rows, { ...query, sort, thenBy }, def.searchFields);
   }
 
   async get(entity: string, id: string): Promise<Row | null> {

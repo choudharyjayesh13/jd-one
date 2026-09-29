@@ -3,22 +3,35 @@
 import { useState, type ReactNode } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, Settings, LogOut, Menu, X, CalendarDays, Camera } from "lucide-react";
+import { LayoutDashboard, Settings, LogOut, Menu, X, CalendarDays, Camera, Sun, Trophy } from "lucide-react";
 import { TEAMS } from "@/core/schema/types";
+import { getEntity } from "@/core/schema/registry";
 import { useAuth, useUser } from "@/core/auth/AuthProvider";
-import { navGroups, isAdmin } from "@/core/auth/access";
+import { navGroups, isAdmin, canRead, canUpdate } from "@/core/auth/access";
 import { listHref } from "@/core/routes";
+import { isOpenTicket } from "@/modules/tickets/entity";
+import { useList } from "./hooks";
 import { cn } from "./cn";
 
 type IconType = React.ComponentType<{ className?: string }>;
 
-function NavLink({ href, label, icon: Icon, active, onClick }: { href: string; label: string; icon: IconType; active: boolean; onClick: () => void }) {
+function NavLink({ href, label, icon: Icon, active, onClick, badge }: { href: string; label: string; icon: IconType; active: boolean; onClick: () => void; badge?: number }) {
   return (
     <Link href={href} onClick={onClick} className={cn("flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm", active ? "bg-white/10 text-white" : "text-slate-300 hover:bg-white/5 hover:text-white")}>
       <Icon className="h-4 w-4 shrink-0" />
       <span className="truncate">{label}</span>
+      {badge ? <span className="ml-auto rounded-full bg-gold px-1.5 py-0.5 text-[10px] font-semibold leading-none text-navy">{badge}</span> : null}
     </Link>
   );
+}
+
+/** Live counts shown as sidebar badges (open tickets, sign-ups waiting for approval). */
+function useNavBadges(role: ReturnType<typeof useUser>["role"]) {
+  const canTickets = canRead(role, getEntity("tickets"));
+  const canApprove = canUpdate(role, getEntity("signup-requests"));
+  const { rows: tickets } = useList(canTickets ? "tickets" : null);
+  const { rows: signups } = useList(canApprove ? "signup-requests" : null, { filter: { status: "Pending" } });
+  return { tickets: tickets.filter(isOpenTicket).length, signups: signups.length };
 }
 
 export function AppShell({ children }: { children: ReactNode }) {
@@ -27,24 +40,35 @@ export function AppShell({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
   const groups = navGroups(user.role);
+  const badges = useNavBadges(user.role);
   const active = (href: string) => (href === "/" ? pathname === "/" : pathname.startsWith(href));
+  const badgeFor = (entity: string) => (entity === "tickets" ? badges.tickets : entity === "staff" ? badges.signups : undefined);
+  const hasOps = groups.some((g) => g.team === "operations");
 
   const close = () => setOpen(false);
+
+  const myDay = <NavLink href="/my-day/" label="My Day" icon={Sun} active={active("/my-day/")} onClick={close} />;
+  const dashboard = <NavLink href="/" label="Dashboard" icon={LayoutDashboard} active={active("/")} onClick={close} />;
+  const scoreboard = <NavLink href="/scoreboard/" label="Scoreboard" icon={Trophy} active={active("/scoreboard/")} onClick={close} />;
 
   const nav = (
     <nav className="flex flex-col gap-4 p-3">
       <div className="space-y-0.5">
-        <NavLink href="/" label="Dashboard" icon={LayoutDashboard} active={active("/")} onClick={close} />
+        {/* Staff see My Day first; managers and teams start on the dashboard. */}
+        {user.role === "staff" ? myDay : dashboard}
+        {user.role === "staff" ? dashboard : myDay}
         <NavLink href="/attendance/checkin/" label="Mark attendance" icon={Camera} active={active("/attendance/checkin/")} onClick={close} />
         {groups.some((g) => g.team === "hr") && <NavLink href="/attendance/grid/" label="Attendance grid" icon={CalendarDays} active={active("/attendance/grid/")} onClick={close} />}
+        {!hasOps && scoreboard}
       </div>
       {groups.map((g) => (
         <div key={g.team}>
           <div className="mb-1 px-3 text-[11px] font-semibold uppercase tracking-wider text-gold">{TEAMS.find((t) => t.id === g.team)?.label}</div>
           <div className="space-y-0.5">
             {g.entities.map((e) => (
-              <NavLink key={e.name} href={listHref(e.name)} label={e.label} icon={e.icon} active={active(listHref(e.name))} onClick={close} />
+              <NavLink key={e.name} href={listHref(e.name)} label={e.label} icon={e.icon} active={active(listHref(e.name))} onClick={close} badge={badgeFor(e.name)} />
             ))}
+            {g.team === "operations" && scoreboard}
           </div>
         </div>
       ))}
@@ -55,6 +79,13 @@ export function AppShell({ children }: { children: ReactNode }) {
       )}
     </nav>
   );
+
+  const modules = groups.flatMap((g) => g.entities).filter((e, i, arr) => arr.findIndex((x) => x.name === e.name) === i);
+  const tabs = [
+    ...(user.role === "staff" ? [{ href: "/my-day/", label: "My Day", icon: Sun as IconType }] : []),
+    { href: "/", label: "Home", icon: LayoutDashboard as IconType },
+    ...modules.slice(0, user.role === "staff" ? 2 : 3).map((e) => ({ href: listHref(e.name), label: e.label, icon: e.icon as IconType })),
+  ];
 
   return (
     <div className="flex min-h-screen">
@@ -108,9 +139,9 @@ export function AppShell({ children }: { children: ReactNode }) {
         )}
         <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-4 pb-24 sm:px-6 lg:pb-8">{children}</main>
 
-        {/* Mobile bottom tabs: dashboard + first 3 modules + settings/menu */}
+        {/* Mobile bottom tabs: My Day (staff) / home + first modules + menu */}
         <nav className="fixed inset-x-0 bottom-0 z-40 flex border-t border-line bg-white lg:hidden" style={{ paddingBottom: "env(safe-area-inset-bottom)" }}>
-          {[{ href: "/", label: "Home", icon: LayoutDashboard }, ...groups.flatMap((g) => g.entities).filter((e, i, arr) => arr.findIndex((x) => x.name === e.name) === i).slice(0, 3).map((e) => ({ href: listHref(e.name), label: e.label, icon: e.icon }))].map((t) => (
+          {tabs.map((t) => (
             <Link key={t.href} href={t.href} className={cn("flex flex-1 flex-col items-center gap-0.5 py-2 text-[11px]", active(t.href) ? "text-navy font-medium" : "text-slate-500")}>
               <t.icon className="h-5 w-5" />
               {t.label}
