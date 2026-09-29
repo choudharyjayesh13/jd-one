@@ -7,8 +7,8 @@ import { LEAD_QUALIFICATIONS, LEAD_SOURCES, LEAD_STAGES } from "./options";
 
 export const leads = defineEntity({
   name: "leads",
-  label: "Leads",
-  labelSingular: "Lead",
+  label: "Inquiries & leads",
+  labelSingular: "Inquiry",
   icon: Target,
   table: "leads",
   teams: ["marketing"],

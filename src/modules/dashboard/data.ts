@@ -25,6 +25,11 @@ export interface DashboardData {
   activitiesMonth: Row[];
   expensesMonth: Row[];
   paymentsMonth: Row[];
+  rooms: Row[];
+  rates: Row[];
+  paymentRequests: Row[];
+  housekeepingToday: Row[];
+  pettyCash: Row[];
   crm: CrmSummary;
 }
 
@@ -33,7 +38,7 @@ export async function loadDashboard(store: DataStore, unitId: string | null): Pr
   const month = currentMonth();
   const { start, end } = monthRange(month);
   const unitFilter = unitId ? { business_unit_id: unitId } : {};
-  const [units, staff, bookings, reportsMonth, targets, leads, stock, tasks, attendanceToday, expensesMonth, paymentsMonth, crm, candidates, tickets, attendanceMonth, activitiesMonth] = await Promise.all([
+  const [units, staff, bookings, reportsMonth, targets, leads, stock, tasks, attendanceToday, expensesMonth, paymentsMonth, crm, candidates, tickets, attendanceMonth, activitiesMonth, rooms, rates, paymentRequests, housekeepingToday, pettyCash] = await Promise.all([
     store.list("business-units"),
     store.list("staff", { filter: unitFilter }),
     store.list("bookings", { filter: unitFilter }),
@@ -50,9 +55,45 @@ export async function loadDashboard(store: DataStore, unitId: string | null): Pr
     store.list("tickets", { filter: unitFilter }),
     store.list("attendance", { range: { date: { gte: start, lte: end } } }),
     store.list("activities", { range: { at: { gte: `${start}T00:00:00+05:30`, lte: `${end}T23:59:59+05:30` } } }),
+    // Property tables arrived with the 30 Sep 2026 migration; tolerate a backend that lacks them.
+    optional(store.list("rooms", { filter: { ...unitFilter, active: true } })),
+    optional(store.list("rates", { filter: unitFilter, range: { date_to: { gte: today } } })),
+    optional(store.list("payment-requests", { filter: unitFilter })),
+    optional(store.list("housekeeping-reports", { filter: { ...unitFilter, date: today } })),
+    optional(store.list("petty-cash", { filter: unitFilter })),
   ]);
-  return { today, month, units, staff, bookings, reportsMonth, targets, leads, stock, tasks, tickets, attendanceToday, attendanceMonth, activitiesMonth, expensesMonth, paymentsMonth, crm, candidates };
+  return { today, month, units, staff, bookings, reportsMonth, targets, leads, stock, tasks, tickets, attendanceToday, attendanceMonth, activitiesMonth, expensesMonth, paymentsMonth, crm, candidates, rooms, rates, paymentRequests, housekeepingToday, pettyCash };
 }
+
+/* ---- property (front office) ---- */
+export function occupancyToday(d: DashboardData): { occupied: number; total: number; pct: number | null } {
+  const total = d.rooms.length;
+  const occupied = d.bookings.filter((b) => (b.status === "Confirmed" || b.status === "Checked-in") && String(b.check_in) <= d.today && String(b.check_out) > d.today).reduce((s, b) => s + Number(b.units ?? 1), 0);
+  return { occupied: Math.min(occupied, total || occupied), total, pct: total ? Math.round((Math.min(occupied, total) / total) * 100) : null };
+}
+export function dirtyRooms(d: DashboardData) {
+  return d.rooms.filter((r) => r.hk_status === "Dirty" || r.hk_status === "Maintenance" || r.status === "Out of order");
+}
+export function pendingRequests(d: DashboardData) {
+  return d.paymentRequests.filter((r) => r.status === "Pending" || r.status === "Sent");
+}
+export function pettyCashBalance(d: DashboardData) {
+  return d.pettyCash.reduce((s, r) => s + (r.kind === "Cash in" ? 1 : -1) * Number(r.amount ?? 0), 0);
+}
+/** Tonight's room-only rate per type (latest row wins), for the rate strip. */
+export function ratesTonight(d: DashboardData): { type: string; rate: number | null; note: string | null }[] {
+  const types = Array.from(new Set(d.rooms.map((r) => String(r.unit_type))));
+  return types.map((type) => {
+    let best: Row | null = null;
+    for (const r of d.rates) {
+      if (r.unit_type !== type || r.meal_plan !== "EP" || String(r.date_from) > d.today || String(r.date_to) < d.today) continue;
+      if (!best || String(r.created_at) > String(best.created_at)) best = r;
+    }
+    return { type, rate: best ? Number(best.rate) : null, note: best?.closed ? "Closed" : ((best?.note as string | null) ?? null) };
+  });
+}
+
+const optional = (p: Promise<Row[]>) => p.catch(() => [] as Row[]);
 
 /* ---- derived numbers shared by sections ---- */
 export const sum = (rows: Row[], f: string) => rows.reduce((s, r) => s + Number(r[f] ?? 0), 0);
