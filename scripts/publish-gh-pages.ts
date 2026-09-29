@@ -7,6 +7,10 @@ const exists = (await $`git ls-remote --heads origin gh-pages`.text()).trim().le
 if (exists) await $`git worktree add .gh-pages origin/gh-pages`;
 else await $`git worktree add --detach .gh-pages`;
 await $`sh -c "cd .gh-pages && (git checkout -B gh-pages) && git rm -rq . 2>/dev/null; true"`;
+// Version the service worker per deploy so old caches are dropped on activate.
+const swPath = "out/sw.js";
+const sw = await Bun.file(swPath).text();
+await Bun.write(swPath, sw.replace(/const VERSION = "jd-one-[^"]*";/, `const VERSION = "jd-one-${Date.now().toString(36)}";`));
 await $`cp -R out/. .gh-pages/`;
 await $`touch .gh-pages/.nojekyll`;
 await $`sh -c "cd .gh-pages && git add -A && (git -c user.name='JD One deploy' -c user.email='noreply@anthropic.com' commit -qm '${msg}' || true) && git push -f origin gh-pages"`;

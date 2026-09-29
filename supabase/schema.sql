@@ -530,6 +530,16 @@ create policy "investor read own bookings" on public.bookings for select to auth
   using (exists (select 1 from public.investors i where i.auth_user_id = auth.uid() and i.portal_active
                  and (i.customer_id = bookings.customer_id or i.phone = bookings.phone)));
 
+
+-- daily_reports.sales_total is always cash + online (imports and syncs may omit it).
+create or replace function public.set_sales_total() returns trigger language plpgsql as $$
+begin
+  new.sales_total := coalesce(new.sales_cash, 0) + coalesce(new.sales_online, 0);
+  return new;
+end $$;
+drop trigger if exists set_sales_total on public.daily_reports;
+create trigger set_sales_total before insert or update on public.daily_reports for each row execute function public.set_sales_total();
+
 -- Lookup of unit types (the app also has them as select options).
 create table if not exists public.unit_types (
   id uuid primary key default gen_random_uuid(),
