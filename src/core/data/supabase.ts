@@ -82,10 +82,14 @@ export class SupabaseStore implements DataStore {
     if (error) throw new Error(error.message);
   }
 
+  private channelSeq = 0;
   subscribe(entity: string, callback: () => void): () => void {
     const def = getEntity(entity);
+    // Unique channel per subscriber: supabase-js returns the SAME channel object for a
+    // repeated name, and adding a listener after subscribe() throws (sidebar badge +
+    // dashboard both watching "tickets" crashed the app on 29 Sep).
     const channel = this.client
-      .channel(`jd-one:${def.table}`)
+      .channel(`jd-one:${def.table}:${++this.channelSeq}`)
       .on("postgres_changes", { event: "*", schema: SUPABASE_SCHEMA, table: def.table }, () => callback())
       .subscribe();
     return () => {
