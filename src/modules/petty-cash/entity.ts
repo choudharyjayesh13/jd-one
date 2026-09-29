@@ -37,6 +37,7 @@ export const pettyCash = defineEntity({
     { name: "handled_by", label: "Handled by", type: "relation", entity: "staff", defaultToMe: true },
     { name: "receipt", label: "Receipt photo", type: "file" },
     { name: "notes", label: "Notes", type: "textarea" },
+    { name: "payment_id", label: "Payment", type: "relation", entity: "payments", readOnly: true, hidden: true },
   ],
   listColumns: ["date", "kind", "amount", "purpose", "category", "handled_by", "business_unit_id"],
 });

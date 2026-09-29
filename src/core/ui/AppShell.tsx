@@ -3,7 +3,7 @@
 import { useState, type ReactNode } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, Settings, LogOut, Menu, X, CalendarDays, Camera, Sun, Trophy, CalendarCheck, LayoutGrid, CalendarRange, Hotel } from "lucide-react";
+import { LayoutDashboard, Settings, LogOut, Menu, X, CalendarDays, Camera, Sun, Trophy, CalendarCheck, LayoutGrid, CalendarRange, Hotel, BarChart3 } from "lucide-react";
 import { TEAMS } from "@/core/schema/types";
 import { getEntity } from "@/core/schema/registry";
 import { useAuth, useUser } from "@/core/auth/AuthProvider";
@@ -76,7 +76,12 @@ export function AppShell({ children }: { children: ReactNode }) {
             {g.entities.map((e) => (
               <NavLink key={e.name} href={listHref(e.name)} label={e.label} icon={e.icon} active={active(listHref(e.name))} onClick={close} badge={badgeFor(e.name)} />
             ))}
-            {g.team === "property" && <NavLink href="/hotel-details/" label="Hotel details" icon={Hotel} active={active("/hotel-details/")} onClick={close} />}
+            {g.team === "property" && (
+              <>
+                <NavLink href="/reports/" label="Reports" icon={BarChart3} active={active("/reports/")} onClick={close} />
+                <NavLink href="/hotel-details/" label="Hotel details" icon={Hotel} active={active("/hotel-details/")} onClick={close} />
+              </>
+            )}
             {g.team === "operations" && scoreboard}
           </div>
         </div>

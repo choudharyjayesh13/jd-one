@@ -32,6 +32,8 @@ import { promotions } from "@/modules/promotions/entity";
 import { paymentRequests } from "@/modules/payment-requests/entity";
 import { housekeepingReports } from "@/modules/housekeeping/entity";
 import { pettyCash } from "@/modules/petty-cash/entity";
+import { agents } from "@/modules/agents/entity";
+import { addOns } from "@/modules/add-ons/entity";
 
 export const entities: EntityDef[] = [
   businessUnits,
@@ -46,6 +48,8 @@ export const entities: EntityDef[] = [
   paymentRequests,
   housekeepingReports,
   pettyCash,
+  addOns,
+  agents,
   payments,
   checkins,
   dailyReports,

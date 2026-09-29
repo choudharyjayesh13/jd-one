@@ -4,6 +4,8 @@ import { todayISO } from "@/core/format";
 import { UNIT_TYPES } from "@/modules/bookings/entity";
 
 const WRITE_ROLES = ["owner", "manager", "marketing"] as const;
+/** The discount families AsiaTech offers, so every offer we run has a home here. */
+export const OFFER_TYPES = ["Seasonal offer", "Coupon code", "Early bird", "Last minute", "Long stay", "Bulk booking", "Loyalty", "Meals", "Limited offer", "OTA discount", "Special user"] as const;
 
 /** Offers / coupon codes (AsiaTech "Promotions"): applied by staff when quoting or on the website. */
 export const promotions = defineEntity({
@@ -21,7 +23,8 @@ export const promotions = defineEntity({
   permissions: { create: [...WRITE_ROLES], update: [...WRITE_ROLES], delete: ["owner", "manager"] },
   fields: [
     { name: "name", label: "Name", type: "text", required: true, placeholder: "Monsoon 10% off" },
-    { name: "code", label: "Coupon code", type: "text", placeholder: "UDAISAROVAR10" },
+    { name: "offer_type", label: "Offer type", type: "select", options: OFFER_TYPES, required: true, default: "Seasonal offer" },
+    { name: "code", label: "Coupon code", type: "text", placeholder: "UDAISAROVAR10", help: "Only for Coupon code offers" },
     { name: "business_unit_id", label: "Property", type: "relation", entity: "business-units", required: true },
     { name: "kind", label: "Discount type", type: "select", options: ["Percent", "Flat per night", "Free night"], default: "Percent", required: true },
     { name: "value", label: "Value", type: "number", min: 0, help: "10 = 10% or ₹10 depending on type" },
@@ -33,5 +36,5 @@ export const promotions = defineEntity({
     { name: "active", label: "Active", type: "boolean", default: true },
     { name: "terms", label: "Terms", type: "textarea" },
   ],
-  listColumns: ["name", "code", "kind", "value", "unit_type", "date_from", "date_to", "active"],
+  listColumns: ["name", "offer_type", "code", "kind", "value", "date_from", "date_to", "active"],
 });
