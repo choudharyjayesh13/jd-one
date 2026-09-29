@@ -11,7 +11,7 @@ import { newId } from "./types";
 import { applyQuery } from "./query";
 
 const DB_NAME = "jd-one";
-const DB_VERSION = 6; // v2: messages, v3: candidates, v4: investors/investments/wallet_transactions, v5: tickets/signup_requests, v6: kots/purchases/pay/vendors/property_assets…
+const DB_VERSION = 7; // … v6: kots/purchases/pay/vendors/property_assets, v7: rooms/rates/promotions/payment_requests/housekeeping_reports/petty_cash
 
 type Listener = () => void;
 

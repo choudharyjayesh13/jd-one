@@ -25,7 +25,7 @@ export function visibleEntities(role: Role): EntityDef[] {
 /** Sidebar groups: team → modules. A module in several teams appears under each. */
 export function navGroups(role: Role): { team: Team; entities: EntityDef[] }[] {
   const mine = teamsForRole(role);
-  const order: Team[] = ["operations", "marketing", "accounts", "finance", "hr"];
+  const order: Team[] = ["property", "operations", "marketing", "accounts", "finance", "hr"];
   return order
     .filter((t) => mine.includes(t))
     .map((team) => ({ team, entities: visibleEntities(role).filter((e) => e.teams.includes(team)) }))

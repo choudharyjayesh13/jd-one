@@ -36,6 +36,12 @@ import { staffPay } from "@/modules/staff-pay/entity";
 import { salaryPayments } from "@/modules/salary-payments/entity";
 import { vendors } from "@/modules/vendors/entity";
 import { signupRequests } from "@/modules/signup-requests/entity";
+import { rooms } from "@/modules/rooms/entity";
+import { rates } from "@/modules/rates/entity";
+import { promotions } from "@/modules/promotions/entity";
+import { paymentRequests } from "@/modules/payment-requests/entity";
+import { housekeepingReports } from "@/modules/housekeeping/entity";
+import { pettyCash } from "@/modules/petty-cash/entity";
 
 export const entities: EntityDef[] = [
   businessUnits,
@@ -44,6 +50,12 @@ export const entities: EntityDef[] = [
   leads,
   activities,
   bookings,
+  rooms,
+  rates,
+  promotions,
+  paymentRequests,
+  housekeepingReports,
+  pettyCash,
   payments,
   checkins,
   dailyReports,
