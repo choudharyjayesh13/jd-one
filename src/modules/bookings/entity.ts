@@ -1,4 +1,5 @@
-import { BedDouble, LogIn, LogOut, IndianRupee } from "lucide-react";
+import { BedDouble, LogIn, LogOut, IndianRupee, MessageSquareHeart } from "lucide-react";
+import { feedbackRequestMessage } from "@/modules/feedback/entity";
 import { defineEntity } from "@/core/schema/types";
 import { normalizePhone } from "@/core/phone";
 import { newHref } from "@/core/routes";
@@ -109,6 +110,20 @@ export const bookings = defineEntity({
         await store.update("bookings", record.id, { status: "Checked-out" });
         toast("Checked out");
         await refresh();
+      },
+    },
+    {
+      id: "ask-feedback",
+      label: "Ask for feedback",
+      icon: MessageSquareHeart,
+      visible: (r) => r.status === "Checked-out",
+      async run({ record, store, staffId, toast }) {
+        const unit = record.business_unit_id ? await store.get("business-units", String(record.business_unit_id)) : null;
+        const what = `${record.unit_type ?? "stay"}, ${record.check_in} → ${record.check_out}`;
+        await store.create("feedback", { business_unit_id: record.business_unit_id, customer_name: record.guest_name, phone: record.phone, customer_id: record.customer_id ?? null, booking_id: record.id, what, date: record.check_out, status: "Requested", created_by: staffId });
+        const phone = normalizePhone(record.phone).replace(/^\+/, "");
+        if (phone) window.open(`https://wa.me/${phone}?text=${encodeURIComponent(feedbackRequestMessage(record.guest_name, unit?.name, what))}`, "_blank", "noopener");
+        toast("Feedback requested — record their reply under Customer feedback");
       },
     },
     {

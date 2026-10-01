@@ -1,4 +1,5 @@
-import { ShoppingBag, MessageCircle, ExternalLink, Send, CheckCircle2 } from "lucide-react";
+import { ShoppingBag, MessageCircle, ExternalLink, Send, CheckCircle2, MessageSquareHeart } from "lucide-react";
+import { feedbackRequestMessage } from "@/modules/feedback/entity";
 import { ALL_ROLES, defineEntity, type FieldValues, type Row } from "@/core/schema/types";
 import { todayISO } from "@/core/format";
 import { normalizePhone } from "@/core/phone";
@@ -132,6 +133,19 @@ export const orders = defineEntity({
         await store.update("orders", record.id, { dispatch_status: "Queued" });
         toast("Queued for the seller's system");
         await refresh();
+      },
+    },
+    {
+      id: "ask-feedback",
+      label: "Ask customer for feedback",
+      icon: MessageSquareHeart,
+      visible: (r) => r.status === "Fulfilled",
+      async run({ record, store, staffId, toast }) {
+        const seller = await store.get("business-units", String(record.business_unit_id));
+        await store.create("feedback", { business_unit_id: record.business_unit_id, customer_name: record.customer_name, phone: record.phone, customer_id: record.customer_id ?? null, order_id: record.id, what: record.items, date: todayISO(), status: "Requested", created_by: staffId });
+        const phone = normalizePhone(record.phone).replace(/^\+/, "");
+        if (phone) window.open(`https://wa.me/${phone}?text=${encodeURIComponent(feedbackRequestMessage(record.customer_name, seller?.name, record.items))}`, "_blank", "noopener");
+        toast("Feedback requested");
       },
     },
     {

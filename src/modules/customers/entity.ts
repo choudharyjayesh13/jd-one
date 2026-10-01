@@ -5,6 +5,8 @@ import { LEAD_SOURCES } from "@/modules/leads/options";
 import { Customer360 } from "./Customer360";
 
 export const CUSTOMER_TAGS = ["Family", "Couple", "Friends", "Corporate", "Wedding", "Repeat", "VIP", "Agent"] as const;
+/** Match the members' service_category values so the network can recommend by interest. */
+export const CUSTOMER_INTERESTS = ["Stay", "Stay & events", "Events", "Food & dining", "Salon & beauty", "Fuel", "Kids footwear", "Aloe vera products", "Wellness", "Shopping", "Transport", "Property"] as const;
 
 /** The CRM contact. Phone is the unique key so leads/bookings never create duplicates. */
 export const customers = defineEntity({
@@ -33,7 +35,10 @@ export const customers = defineEntity({
     { name: "first_seen", label: "First seen", type: "date" },
     { name: "birthday", label: "Birthday", type: "date" },
     { name: "anniversary", label: "Anniversary", type: "date" },
-    { name: "preferences", label: "Preferences", type: "textarea", placeholder: "Room type, meals, occasions…" },
+    { name: "interests", label: "Interested in", type: "multiselect", options: CUSTOMER_INTERESTS, wide: true, help: "Services/products they like — drives network recommendations; learned from 4–5★ feedback" },
+    { name: "budget", label: "Budget", type: "select", options: ["Economy", "Mid-range", "Premium", "Luxury"] },
+    { name: "taste", label: "Taste & feel", type: "multiselect", options: ["Quiet", "Lively", "Nature", "Heritage", "Modern", "Family", "Couple", "Group", "Veg only", "Non-veg", "Jain food", "Adventure", "Wellness"], wide: true },
+    { name: "preferences", label: "Preferences", type: "textarea", placeholder: "Room type, meals, occasions…", help: "Feedback notes are appended here automatically" },
     { name: "notes", label: "Notes", type: "textarea" },
   ],
   listColumns: ["name", "phone", "city", "tags", "owner_id", "first_source"],

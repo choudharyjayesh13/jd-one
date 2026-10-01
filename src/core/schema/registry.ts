@@ -36,6 +36,8 @@ import { agents } from "@/modules/agents/entity";
 import { addOns } from "@/modules/add-ons/entity";
 import { owners } from "@/modules/owners/entity";
 import { orders } from "@/modules/orders/entity";
+import { vendors } from "@/modules/vendors/entity";
+import { feedback } from "@/modules/feedback/entity";
 
 export const entities: EntityDef[] = [
   owners,
@@ -54,6 +56,8 @@ export const entities: EntityDef[] = [
   addOns,
   agents,
   orders,
+  vendors,
+  feedback,
   payments,
   checkins,
   dailyReports,

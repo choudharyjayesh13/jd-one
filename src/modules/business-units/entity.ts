@@ -19,6 +19,10 @@ export const BUSINESS_UNIT_SEED = [
 
 export const BUSINESS_TYPES = ["Hotel", "Resort", "Fuel station", "Restaurant", "Shop / retail", "Events", "Consultancy", "Transport", "Salon", "Clinic", "Education", "Manufacturing", "Farm", "HQ", "Other"] as const;
 
+export const INDIAN_STATES = ["Rajasthan", "Gujarat", "Madhya Pradesh", "Maharashtra", "Delhi", "Haryana", "Punjab", "Uttar Pradesh", "Uttarakhand", "Himachal Pradesh", "Jammu & Kashmir", "Bihar", "Jharkhand", "West Bengal", "Odisha", "Chhattisgarh", "Telangana", "Andhra Pradesh", "Karnataka", "Tamil Nadu", "Kerala", "Goa", "Assam", "Other"] as const;
+/** Network rule (Jayesh, 1 Oct 2026): at most this many member businesses per city. */
+export const CITY_MEMBER_CAP = 300;
+
 export const ERP_SYSTEMS = ["None", "Own website", "Shopify", "WooCommerce", "Zoho", "Tally", "Vyapar", "Custom webhook", "WhatsApp only"] as const;
 
 export const HOTEL_AMENITIES = ["Swimming pool", "Lake view", "Garden", "Bonfire", "Restaurant", "Room service", "Free Wi-Fi", "Free parking", "Air conditioning", "Power backup", "Indoor games", "Pet-friendly", "Wedding lawn", "Banquet", "Camping", "Boating", "Spa", "Gym", "Bar"] as const;
@@ -39,7 +43,15 @@ export const businessUnits = defineEntity({
     { name: "owner_id", label: "Owner", type: "relation", entity: "owners", help: "The network member who owns this business" },
     { name: "short_code", label: "Short code", type: "text", placeholder: "UDS" },
     { name: "type", label: "Type", type: "select", options: BUSINESS_TYPES },
-    { name: "city", label: "City", type: "text", default: "Udaipur" },
+    { name: "state", label: "State", type: "select", options: INDIAN_STATES, default: "Rajasthan", help: "Main network division: State → District → City" },
+    { name: "district", label: "District", type: "text", default: "Udaipur" },
+    { name: "city", label: "City", type: "text", default: "Udaipur", help: "Max 300 network members per city" },
+    { name: "service_category", label: "Main service / product", type: "text", placeholder: "Stay, Fuel, Salon, Footwear…", help: "What this member covers for the city's network" },
+    { name: "manager_name", label: "Manager name", type: "text" },
+    { name: "manager_phone", label: "Manager mobile", type: "phone", help: "Members call this number directly from the Network page" },
+    { name: "google_maps_url", label: "Google Maps / reviews link", type: "text", placeholder: "https://maps.app.goo.gl/…" },
+    { name: "google_rating", label: "Google rating", type: "number", min: 0, max: 5, step: 0.1 },
+    { name: "google_reviews_count", label: "Google reviews", type: "number", min: 0 },
     { name: "phone", label: "Phone", type: "phone" },
     { name: "email", label: "Email", type: "email" },
     { name: "website", label: "Website", type: "text", placeholder: "https://…" },
