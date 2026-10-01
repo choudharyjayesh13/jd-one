@@ -35,7 +35,7 @@ export function LoginScreen() {
   const [pin2, setPin2] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [form, setForm] = useState({ name: "", phone: "", email: "", password: "", designation: "", business_unit_id: "" });
+  const [form, setForm] = useState({ kind: "staff" as "owner" | "staff" | "customer", name: "", phone: "", email: "", password: "", designation: "", business_unit_id: "", business_name: "", business_type: "Hotel", city: "Udaipur" });
   const [units, setUnits] = useState<Unit[]>([]);
   const [unitsError, setUnitsError] = useState<string | null>(null);
   const [done, setDone] = useState<string | null>(null);
@@ -66,9 +66,12 @@ export function LoginScreen() {
       } else if (tab === "signup") {
         if (!form.name.trim() || !form.email.trim() || !form.password) throw new Error("Name, email and password are required");
         if (form.password.length < 6) throw new Error("Password must be at least 6 characters");
-        if (!form.business_unit_id) throw new Error("Choose your business unit");
-        const { needsEmailConfirmation } = await signUp({ ...form, name: form.name.trim(), email: form.email.trim().toLowerCase(), phone: form.phone.trim(), designation: form.designation.trim() });
-        setDone(needsEmailConfirmation ? "Check your email to confirm, then sign in. Your account is activated once JD Group approves it." : "Account created. Your account is activated once JD Group approves it.");
+        if (form.kind === "staff" && !form.business_unit_id) throw new Error("Choose the business you work at");
+        if (form.kind === "owner" && !form.business_name.trim()) throw new Error("Enter your business name");
+        if (!form.phone.trim()) throw new Error("Phone is required");
+        const { needsEmailConfirmation } = await signUp({ ...form, name: form.name.trim(), email: form.email.trim().toLowerCase(), phone: form.phone.trim(), designation: form.designation.trim(), business_name: form.business_name.trim(), city: form.city.trim() });
+        const after = form.kind === "customer" ? "Your customer account is ready once JD Group approves it; you'll then use the customer portal." : form.kind === "owner" ? "JD Group will approve your business and you'll get the owner's dashboard." : "Your account is activated once your business owner or JD Group approves it.";
+        setDone(needsEmailConfirmation ? `Check your email to confirm, then sign in. ${after}` : `Account created. ${after}`);
       } else {
         await signInWithPassword(email.trim(), password);
       }
@@ -94,17 +97,31 @@ export function LoginScreen() {
   // Signed in, but not a staff member yet: waiting for HR.
   if (mode === "supabase" && pendingSignup) {
     const rejected = pendingSignup.status === "Rejected";
+    const customer = pendingSignup.status === "Customer";
+    const portal = `${process.env.NEXT_PUBLIC_BASE_PATH ?? ""}/portal/`;
     return (
       <div className="flex min-h-screen items-center justify-center bg-navy px-4">
         <div className="w-full max-w-sm rounded-2xl bg-white p-6 shadow-xl">
           {header}
-          <div className={cn("rounded-xl px-4 py-4 text-sm", rejected ? "bg-red-50 text-red-800" : "bg-amber-50 text-amber-900")}>
+          <div className={cn("rounded-xl px-4 py-4 text-sm", rejected ? "bg-red-50 text-red-800" : customer ? "bg-emerald-50 text-emerald-900" : "bg-amber-50 text-amber-900")}>
             <div className="mb-1 flex items-center gap-2 text-base font-semibold">
-              <Clock className="h-4 w-4" /> {rejected ? "Sign-up not approved" : "Pending approval"}
+              <Clock className="h-4 w-4" /> {rejected ? "Sign-up not approved" : customer ? "Customer account" : "Pending approval"}
             </div>
             <p>
-              Hi {pendingSignup.name.split(" ")[0]}. {rejected ? "JD Group did not approve this account." : "Your account is waiting for JD Group (HR) to approve it. We'll notify you — then just sign in again."}
+              Hi {pendingSignup.name.split(" ")[0]}.{" "}
+              {rejected
+                ? "JD Group did not approve this account."
+                : customer
+                  ? "This is the staff app. Your bookings, credits and statements are in the customer portal."
+                  : pendingSignup.kind === "owner"
+                    ? "Your business is waiting for JD Group to approve it. You'll then get the owner's dashboard — just sign in again."
+                    : "Your account is waiting for your business owner or JD Group (HR) to approve it. We'll notify you — then just sign in again."}
             </p>
+            {customer && (
+              <a href={portal} className="mt-3 inline-block rounded-lg bg-navy px-3 py-2 font-medium text-white">
+                Open the customer portal
+              </a>
+            )}
             {pendingSignup.note && <p className="mt-2 italic">“{pendingSignup.note}”</p>}
             {pendingSignup.email && <p className="mt-2 text-xs opacity-80">Signed in as {pendingSignup.email}</p>}
           </div>
@@ -180,6 +197,24 @@ export function LoginScreen() {
               </div>
             ) : (
               <div className="space-y-3">
+                <Field label="I am joining as" required plain>
+                  <div className="grid grid-cols-3 gap-1 rounded-lg bg-slate-100 p-1 text-sm">
+                    {(
+                      [
+                        ["owner", "Owner"],
+                        ["staff", "Staff"],
+                        ["customer", "Customer"],
+                      ] as const
+                    ).map(([k, label]) => (
+                      <button key={k} type="button" onClick={() => setForm((f) => ({ ...f, kind: k }))} className={cn("rounded-md py-1.5 font-medium", form.kind === k ? "bg-white text-navy shadow-sm" : "text-slate-500")}>
+                        {label}
+                      </button>
+                    ))}
+                  </div>
+                  <p className="mt-1 text-xs text-slate-500">
+                    {form.kind === "owner" ? "You run a business and want it on the JD One network." : form.kind === "staff" ? "You work at a business that is already on JD One." : "You use services of businesses on JD One."}
+                  </p>
+                </Field>
                 <Field label="Full name" required>
                   <Input autoComplete="name" value={form.name} onChange={setF("name")} autoFocus />
                 </Field>
@@ -192,21 +227,51 @@ export function LoginScreen() {
                 <Field label="Password" required help="At least 6 characters">
                   <Input type="password" autoComplete="new-password" value={form.password} onChange={setF("password")} />
                 </Field>
-                <Field label="Designation" required>
-                  <Input value={form.designation} onChange={setF("designation")} placeholder="Front office, Chef, Housekeeping…" />
-                </Field>
-                <Field label="Business unit" required error={unitsError ?? undefined}>
-                  <Select value={form.business_unit_id} onChange={setF("business_unit_id")}>
-                    <option value="">{units.length ? "Select…" : "Loading…"}</option>
-                    {units.map((u) => (
-                      <option key={u.id} value={u.id}>
-                        {u.name}
-                        {u.short_code ? ` (${u.short_code})` : ""}
-                      </option>
-                    ))}
-                  </Select>
-                </Field>
-                <p className="text-xs text-slate-500">Your account is activated once JD Group (HR) approves it.</p>
+                {form.kind === "staff" && (
+                  <>
+                    <Field label="Designation" required>
+                      <Input value={form.designation} onChange={setF("designation")} placeholder="Front office, Chef, Housekeeping, Pump attendant…" />
+                    </Field>
+                    <Field label="Business you work at" required error={unitsError ?? undefined}>
+                      <Select value={form.business_unit_id} onChange={setF("business_unit_id")}>
+                        <option value="">{units.length ? "Select…" : "Loading…"}</option>
+                        {units.map((u) => (
+                          <option key={u.id} value={u.id}>
+                            {u.name}
+                            {u.short_code ? ` (${u.short_code})` : ""}
+                          </option>
+                        ))}
+                      </Select>
+                    </Field>
+                  </>
+                )}
+                {form.kind === "owner" && (
+                  <>
+                    <Field label="Business name" required>
+                      <Input value={form.business_name} onChange={setF("business_name")} placeholder="Hotel Kirti Plaza, BPCL Petrol Pump…" />
+                    </Field>
+                    <Field label="Business type" required>
+                      <Select value={form.business_type} onChange={setF("business_type")}>
+                        {["Hotel", "Resort", "Fuel station", "Restaurant", "Shop / retail", "Events", "Consultancy", "Transport", "Salon", "Clinic", "Education", "Manufacturing", "Farm", "Other"].map((t) => (
+                          <option key={t} value={t}>
+                            {t}
+                          </option>
+                        ))}
+                      </Select>
+                    </Field>
+                    <Field label="City" required>
+                      <Input value={form.city} onChange={setF("city")} />
+                    </Field>
+                  </>
+                )}
+                {form.kind === "customer" && (
+                  <Field label="City">
+                    <Input value={form.city} onChange={setF("city")} />
+                  </Field>
+                )}
+                <p className="text-xs text-slate-500">
+                  {form.kind === "owner" ? "JD Group approves new businesses; you then manage your staff and customers yourself." : form.kind === "staff" ? "Your business owner or JD Group approves you; attendance and tasks start right after." : "Approved customers use the customer portal for bookings, credits and statements."}
+                </p>
               </div>
             )}
           </>

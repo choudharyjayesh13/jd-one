@@ -26,17 +26,24 @@ export interface AuthUser {
 export interface PendingSignup {
   email: string | null;
   name: string;
-  status: "Pending" | "Approved" | "Rejected";
+  /** Customer = approved as a customer of the network: the staff app is not for them; the portal is. */
+  status: "Pending" | "Approved" | "Rejected" | "Customer";
+  kind?: "owner" | "staff" | "customer";
   note: string | null;
 }
 
 export interface SignUpInput {
+  /** owner = brings a business to the network; staff = works at an existing business; customer = uses the services. */
+  kind: "owner" | "staff" | "customer";
   name: string;
   phone: string;
   email: string;
   password: string;
   designation: string;
   business_unit_id: string;
+  business_name: string;
+  business_type: string;
+  city: string;
 }
 
 interface AuthState {
@@ -81,21 +88,29 @@ function userFromStaff(id: string, email: string | null, staff: Row | null): Aut
  */
 async function ensureSignupRequest(authUserId: string, email: string | null, meta: Record<string, unknown>): Promise<PendingSignup> {
   const name = String(meta.name ?? meta.full_name ?? email ?? "New user");
+  const kind = (meta.kind as PendingSignup["kind"]) ?? "staff";
   try {
     const store = getStore();
+    // Approved customers have a customer row with their login: send them to the portal.
+    const customer = (await store.list("customers", { filter: { auth_user_id: authUserId } }).catch(() => []))[0];
+    if (customer) return { email, name: String(customer.name ?? name), status: "Customer", kind: "customer", note: null };
     const existing = (await store.list("signup-requests", { filter: { auth_user_id: authUserId } }))[0];
-    if (existing) return { email, name: String(existing.name ?? name), status: (existing.status as PendingSignup["status"]) ?? "Pending", note: (existing.note as string | null) ?? null };
+    if (existing) return { email, name: String(existing.name ?? name), status: (existing.status as PendingSignup["status"]) ?? "Pending", kind: (existing.kind as PendingSignup["kind"]) ?? kind, note: (existing.note as string | null) ?? null };
     const row = await store.create("signup-requests", {
       auth_user_id: authUserId,
+      kind,
       name,
       phone: (meta.phone as string | undefined) ?? null,
       email,
       designation: (meta.designation as string | undefined) ?? null,
       business_unit_id: (meta.business_unit_id as string | undefined) || null,
+      business_name: (meta.business_name as string | undefined) || null,
+      business_type: (meta.business_type as string | undefined) || null,
+      city: (meta.city as string | undefined) || null,
       status: "Pending",
       requested_at: new Date().toISOString(),
     });
-    return { email, name: String(row.name ?? name), status: "Pending", note: null };
+    return { email, name: String(row.name ?? name), status: "Pending", kind, note: null };
   } catch {
     // RLS or table missing (schema not updated yet): still show the pending screen.
     return { email, name, status: "Pending", note: null };
@@ -176,7 +191,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const { data, error } = await client.auth.signUp({
           email: input.email,
           password: input.password,
-          options: { data: { name: input.name, phone: input.phone, designation: input.designation, business_unit_id: input.business_unit_id } },
+          options: { data: { kind: input.kind, name: input.name, phone: input.phone, designation: input.designation, business_unit_id: input.business_unit_id, business_name: input.business_name, business_type: input.business_type, city: input.city } },
         });
         if (error) throw new Error(error.message);
         // With "Confirm email" on, Supabase returns a user but no session until the link is clicked.

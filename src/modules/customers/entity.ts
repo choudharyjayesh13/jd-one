@@ -23,6 +23,7 @@ export const customers = defineEntity({
     { name: "customer_no", label: "Customer no.", type: "text", readOnly: true, help: "Assigned automatically (JDC-00001…)" },
     { name: "name", label: "Name", type: "text", required: true },
     { name: "phone", label: "Phone", type: "phone", required: true, help: "Unique — used to match leads and bookings" },
+    { name: "auth_user_id", label: "Login user id", type: "text", readOnly: true, hidden: true },
     { name: "email", label: "Email", type: "email" },
     { name: "city", label: "City", type: "text" },
     { name: "company", label: "Company", type: "text" },

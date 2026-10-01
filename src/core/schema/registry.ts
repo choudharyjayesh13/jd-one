@@ -34,8 +34,10 @@ import { housekeepingReports } from "@/modules/housekeeping/entity";
 import { pettyCash } from "@/modules/petty-cash/entity";
 import { agents } from "@/modules/agents/entity";
 import { addOns } from "@/modules/add-ons/entity";
+import { owners } from "@/modules/owners/entity";
 
 export const entities: EntityDef[] = [
+  owners,
   businessUnits,
   staff,
   customers,
