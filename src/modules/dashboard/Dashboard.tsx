@@ -11,12 +11,13 @@ import { Button } from "@/core/ui/Button";
 import { Loading, ErrorBox, PageHeader } from "@/core/ui/misc";
 import { cn } from "@/core/ui/cn";
 import { loadDashboard, type DashboardData } from "./data";
-import { AccountsSection, FinanceSection, HrSection, MarketingSection, OperationsSection, OverviewSection } from "./sections";
+import { AccountsSection, FinanceSection, HrSection, MarketingSection, OperationsSection, OverviewSection, PropertySection } from "./sections";
 
 type Tab = "all" | Team;
 const TAB_KEY = "jdone.dashboardTab";
 
 const sectionFor: Record<Team, (d: DashboardData) => React.ReactNode> = {
+  property: (d) => <PropertySection d={d} />,
   operations: (d) => <OperationsSection d={d} />,
   marketing: (d) => <MarketingSection d={d} />,
   accounts: (d) => <AccountsSection d={d} />,
@@ -48,7 +49,7 @@ export function Dashboard() {
         .then((d) => !cancelled && setData(d))
         .catch((e) => !cancelled && setError((e as Error).message));
     void load();
-    const unsubs = ["bookings", "leads", "tasks", "tickets", "activities", "stock", "daily-reports", "expenses", "payments", "attendance", "customers", "targets"].map((e) => getStore().subscribe?.(e, () => void load()));
+    const unsubs = ["bookings", "leads", "tasks", "tickets", "activities", "stock", "daily-reports", "expenses", "payments", "attendance", "customers", "targets", "rooms", "rates", "payment-requests", "housekeeping-reports", "petty-cash"].map((e) => getStore().subscribe?.(e, () => void load()));
     return () => {
       cancelled = true;
       unsubs.forEach((u) => u?.());

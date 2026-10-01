@@ -1,4 +1,5 @@
-import { BedDouble, LogIn, LogOut, IndianRupee } from "lucide-react";
+import { BedDouble, LogIn, LogOut, IndianRupee, MessageSquareHeart } from "lucide-react";
+import { feedbackRequestMessage } from "@/modules/feedback/entity";
 import { defineEntity } from "@/core/schema/types";
 import { normalizePhone } from "@/core/phone";
 import { newHref } from "@/core/routes";
@@ -7,8 +8,9 @@ import { nightsBetween } from "@/modules/customers/stats";
 import { paidForBooking } from "./balance";
 
 export const UNIT_TYPES = ["Lake View Cottage", "Pool View Cottage", "Family Suite", "Camping", "Glass House", "Other"] as const;
-export const BOOKING_SOURCES = ["Direct", "MMT/Goibibo", "Booking.com", "Airbnb", "Agoda", "Expedia", "Walk-in", "Corporate"] as const;
-export const BOOKING_STATUSES = ["Enquiry", "Confirmed", "Checked-in", "Checked-out", "Cancelled", "No-show"] as const;
+export const BOOKING_SOURCES = ["Direct", "MMT/Goibibo", "Booking.com", "Airbnb", "Agoda", "Expedia", "EaseMyTrip", "Cleartrip", "Google Hotels", "Travel agent", "Walk-in", "Corporate"] as const;
+/** "On hold" = tentative block (AsiaTech Hold Booking): holds inventory until confirmed or released. */
+export const BOOKING_STATUSES = ["Enquiry", "On hold", "Confirmed", "Checked-in", "Checked-out", "Cancelled", "No-show"] as const;
 export const OTA_SOURCES: readonly string[] = ["MMT/Goibibo", "Booking.com", "Airbnb", "Agoda", "Expedia"];
 
 const WRITE_ROLES = ["owner", "manager", "staff", "marketing", "accounts"] as const;
@@ -19,7 +21,7 @@ export const bookings = defineEntity({
   labelSingular: "Booking",
   icon: BedDouble,
   table: "bookings",
-  teams: ["operations", "finance"],
+  teams: ["property", "operations", "finance"],
   unitField: "business_unit_id",
   titleField: "guest_name",
   searchFields: ["guest_name", "phone", "unit_type"],
@@ -36,6 +38,7 @@ export const bookings = defineEntity({
     { name: "check_in", label: "Check-in", type: "date", required: true },
     { name: "check_out", label: "Check-out", type: "date", required: true },
     { name: "unit_type", label: "Unit type", type: "select", options: UNIT_TYPES, required: true },
+    { name: "room_id", label: "Room / cottage", type: "relation", entity: "rooms", help: "Assign the exact room; shows on the room chart" },
     { name: "units", label: "Units", type: "number", min: 1, default: 1 },
     { name: "adults", label: "Adults", type: "number", min: 0, default: 2 },
     { name: "children", label: "Children", type: "number", min: 0, default: 0 },
@@ -46,6 +49,8 @@ export const bookings = defineEntity({
     { name: "paid", label: "Paid", type: "money", readOnly: true },
     { name: "balance", label: "Balance", type: "money", readOnly: true },
     { name: "source", label: "Source", type: "select", options: BOOKING_SOURCES, required: true, default: "Direct" },
+    { name: "agent_id", label: "Agent", type: "relation", entity: "agents", help: "Travel / corporate agent who sent the booking" },
+    { name: "hold_until", label: "Hold until", type: "datetime", help: "For On hold bookings: release if not confirmed by then" },
     { name: "status", label: "Status", type: "select", options: BOOKING_STATUSES, required: true, default: "Confirmed" },
     { name: "special_requests", label: "Special requests", type: "textarea" },
     { name: "booked_by", label: "Booked by", type: "text", help: "Staff member or channel that created the booking" },
@@ -80,7 +85,7 @@ export const bookings = defineEntity({
       label: "Check in now",
       icon: LogIn,
       variant: "primary",
-      visible: (r) => r.status === "Confirmed" || r.status === "Enquiry",
+      visible: (r) => r.status === "Confirmed" || r.status === "Enquiry" || r.status === "On hold",
       async run({ record, store, staffId, toast, refresh, confirm }) {
         if (!(await confirm(`Check in ${record.guest_name}? A check-in record will be created.`))) return;
         await store.create("checkins", { booking_id: record.id, actual_in: new Date().toISOString(), handled_by: staffId, created_by: staffId });
@@ -105,6 +110,20 @@ export const bookings = defineEntity({
         await store.update("bookings", record.id, { status: "Checked-out" });
         toast("Checked out");
         await refresh();
+      },
+    },
+    {
+      id: "ask-feedback",
+      label: "Ask for feedback",
+      icon: MessageSquareHeart,
+      visible: (r) => r.status === "Checked-out",
+      async run({ record, store, staffId, toast }) {
+        const unit = record.business_unit_id ? await store.get("business-units", String(record.business_unit_id)) : null;
+        const what = `${record.unit_type ?? "stay"}, ${record.check_in} → ${record.check_out}`;
+        await store.create("feedback", { business_unit_id: record.business_unit_id, customer_name: record.guest_name, phone: record.phone, customer_id: record.customer_id ?? null, booking_id: record.id, what, date: record.check_out, status: "Requested", created_by: staffId });
+        const phone = normalizePhone(record.phone).replace(/^\+/, "");
+        if (phone) window.open(`https://wa.me/${phone}?text=${encodeURIComponent(feedbackRequestMessage(record.guest_name, unit?.name, what))}`, "_blank", "noopener");
+        toast("Feedback requested — record their reply under Customer feedback");
       },
     },
     {

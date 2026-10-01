@@ -8,6 +8,11 @@ import { Section, RecordList, KeyValue, Progress } from "./widgets";
 import {
   arrivalsToday,
   bookingsThisMonth,
+  dirtyRooms,
+  occupancyToday,
+  pendingRequests,
+  pettyCashBalance,
+  ratesTonight,
   departuresToday,
   groupBy,
   inHouse,
@@ -30,6 +35,51 @@ import { medal } from "@/modules/scoreboard/compute";
 
 const unitName = (d: DashboardData, id: unknown) => String(d.units.find((u) => u.id === id)?.name ?? "—");
 const staffName = (d: DashboardData, id: unknown) => String(d.staff.find((s) => s.id === id)?.name ?? "—");
+
+/** Front-office view, laid out like a channel-manager dashboard: occupancy, movements, money, housekeeping. */
+export function PropertySection({ d }: { d: DashboardData }) {
+  const arrivals = arrivalsToday(d);
+  const departures = departuresToday(d);
+  const house = inHouse(d);
+  const occ = occupancyToday(d);
+  const dirty = dirtyRooms(d);
+  const requests = pendingRequests(d);
+  const cash = pettyCashBalance(d);
+  const tonight = ratesTonight(d);
+  const monthBookings = bookingsThisMonth(d);
+  return (
+    <div className="space-y-4">
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-6">
+        <Stat label="Occupancy tonight" value={occ.pct === null ? "—" : `${occ.pct}%`} hint={occ.total ? `${occ.occupied} of ${occ.total} rooms` : "Add rooms to track"} tone={occ.pct !== null && occ.pct >= 80 ? "good" : "neutral"} />
+        <Stat label="Arrivals" value={arrivals.length} hint="today" />
+        <Stat label="Departures" value={departures.length} hint="today" />
+        <Stat label="In house" value={house.length} hint={`${sum(house, "units")} units`} />
+        <Stat label="Rooms to clean" value={dirty.length} tone={dirty.length ? "bad" : "good"} hint={`${d.housekeepingToday.length} HK reports today`} />
+        <Stat label="Money requested" value={formatMoney(sum(requests, "amount"))} hint={`${requests.length} pending`} tone={requests.length ? "bad" : "neutral"} />
+      </div>
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+        <Stat label="Bookings this month" value={monthBookings.length} hint={formatMoney(sum(monthBookings, "total"))} />
+        <Stat label="Balance due (in house)" value={formatMoney(sum(house, "balance"))} tone={sum(house, "balance") > 0 ? "bad" : "good"} />
+        <Stat label="Petty cash in hand" value={formatMoney(cash)} tone={cash < 0 ? "bad" : "neutral"} />
+        <Stat label="Tonight's rate (EP)" value={tonight.length ? formatMoney(Math.min(...tonight.map((t) => t.rate ?? Infinity).filter((r) => Number.isFinite(r)) as number[])) : "—"} hint={tonight.map((t) => `${t.type.split(" ")[0]} ${t.note === "Closed" ? "closed" : t.rate ? Number(t.rate).toLocaleString("en-IN") : "—"}`).join(" · ") || "Set rates"} />
+      </div>
+      <div className="grid gap-4 lg:grid-cols-2">
+        <Section title="Today's check-ins" href="/room-chart/">
+          <RecordList entity="bookings" rows={arrivals} primary={(r) => String(r.guest_name)} secondary={(r) => `${r.unit_type} · ${r.meal_plan ?? ""} · balance ${formatMoney(r.balance)}`} badge={(r) => r.status} empty="No arrivals today" />
+        </Section>
+        <Section title="Today's check-outs" href="/room-chart/">
+          <RecordList entity="bookings" rows={departures} primary={(r) => String(r.guest_name)} secondary={(r) => `${r.unit_type} · balance ${formatMoney(r.balance)}`} badge={(r) => r.status} empty="No departures today" />
+        </Section>
+        <Section title="Housekeeping" href={listHref("rooms")}>
+          <RecordList entity="rooms" rows={dirty} primary={(r) => String(r.name)} secondary={(r) => `${r.unit_type} · ${r.status}`} badge={(r) => r.hk_status} empty="All rooms clean" />
+        </Section>
+        <Section title="Payment requests" href={listHref("payment-requests")}>
+          <RecordList entity="payment-requests" rows={requests} primary={(r) => `${r.guest_name} · ${formatMoney(r.amount)}`} secondary={(r) => `${r.purpose} · due ${formatDate(r.due)}`} badge={(r) => r.status} empty="Nothing pending" />
+        </Section>
+      </div>
+    </div>
+  );
+}
 
 export function OperationsSection({ d }: { d: DashboardData }) {
   const arrivals = arrivalsToday(d);

@@ -3,7 +3,7 @@
 import { useState, type ReactNode } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, Settings, LogOut, Menu, X, CalendarDays, Camera, Sun, Trophy } from "lucide-react";
+import { LayoutDashboard, Settings, LogOut, Menu, X, CalendarDays, Camera, Sun, Trophy, CalendarCheck, LayoutGrid, CalendarRange, Hotel, BarChart3, Network } from "lucide-react";
 import { TEAMS } from "@/core/schema/types";
 import { getEntity } from "@/core/schema/registry";
 import { useAuth, useUser } from "@/core/auth/AuthProvider";
@@ -58,6 +58,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         {user.role === "staff" ? myDay : dashboard}
         {user.role === "staff" ? dashboard : myDay}
         <NavLink href="/attendance/checkin/" label="Mark attendance" icon={Camera} active={active("/attendance/checkin/")} onClick={close} />
+        <NavLink href="/network/" label="JD One network" icon={Network} active={active("/network/")} onClick={close} />
         {groups.some((g) => g.team === "hr") && <NavLink href="/attendance/grid/" label="Attendance grid" icon={CalendarDays} active={active("/attendance/grid/")} onClick={close} />}
         {!hasOps && scoreboard}
       </div>
@@ -65,9 +66,23 @@ export function AppShell({ children }: { children: ReactNode }) {
         <div key={g.team}>
           <div className="mb-1 px-3 text-[11px] font-semibold uppercase tracking-wider text-gold">{TEAMS.find((t) => t.id === g.team)?.label}</div>
           <div className="space-y-0.5">
+            {/* Property (front office) mirrors the channel-manager layout: calendars first, then the registers. */}
+            {g.team === "property" && (
+              <>
+                <NavLink href="/availability/" label="Availability calendar" icon={CalendarCheck} active={active("/availability/")} onClick={close} />
+                <NavLink href="/room-chart/" label="Room chart" icon={LayoutGrid} active={active("/room-chart/")} onClick={close} />
+                <NavLink href="/rates-calendar/" label="Rates calendar" icon={CalendarRange} active={active("/rates-calendar/")} onClick={close} />
+              </>
+            )}
             {g.entities.map((e) => (
               <NavLink key={e.name} href={listHref(e.name)} label={e.label} icon={e.icon} active={active(listHref(e.name))} onClick={close} badge={badgeFor(e.name)} />
             ))}
+            {g.team === "property" && (
+              <>
+                <NavLink href="/reports/" label="Reports" icon={BarChart3} active={active("/reports/")} onClick={close} />
+                <NavLink href="/hotel-details/" label="Hotel details" icon={Hotel} active={active("/hotel-details/")} onClick={close} />
+              </>
+            )}
             {g.team === "operations" && scoreboard}
           </div>
         </div>
@@ -81,10 +96,12 @@ export function AppShell({ children }: { children: ReactNode }) {
   );
 
   const modules = groups.flatMap((g) => g.entities).filter((e, i, arr) => arr.findIndex((x) => x.name === e.name) === i);
+  const hasProperty = groups.some((g) => g.team === "property");
   const tabs = [
     ...(user.role === "staff" ? [{ href: "/my-day/", label: "My Day", icon: Sun as IconType }] : []),
     { href: "/", label: "Home", icon: LayoutDashboard as IconType },
-    ...modules.slice(0, user.role === "staff" ? 2 : 3).map((e) => ({ href: listHref(e.name), label: e.label, icon: e.icon as IconType })),
+    ...(hasProperty ? [{ href: "/room-chart/", label: "Rooms", icon: LayoutGrid as IconType }] : []),
+    ...modules.slice(0, user.role === "staff" ? 1 : hasProperty ? 2 : 3).map((e) => ({ href: listHref(e.name), label: e.label, icon: e.icon as IconType })),
   ];
 
   return (

@@ -11,9 +11,10 @@ import type { DataStore } from "@/core/data/types";
 export type Role = "owner" | "manager" | "hr" | "accounts" | "finance" | "marketing" | "staff";
 
 /** Teams group modules in the sidebar and sections on the dashboard. */
-export type Team = "hr" | "accounts" | "finance" | "marketing" | "operations";
+export type Team = "property" | "hr" | "accounts" | "finance" | "marketing" | "operations";
 
 export const TEAMS: { id: Team; label: string }[] = [
+  { id: "property", label: "Property" },
   { id: "operations", label: "Operations" },
   { id: "marketing", label: "Marketing" },
   { id: "accounts", label: "Accounts" },
@@ -36,7 +37,7 @@ export function teamsForRole(role: Role): Team[] {
     case "marketing":
       return ["marketing"];
     default:
-      return ["operations"];
+      return ["property", "operations"];
   }
 }
 

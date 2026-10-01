@@ -26,14 +26,38 @@ import { investments } from "@/modules/investments/entity";
 import { walletTransactions } from "@/modules/wallet-transactions/entity";
 import { tickets } from "@/modules/tickets/entity";
 import { signupRequests } from "@/modules/signup-requests/entity";
+import { rooms } from "@/modules/rooms/entity";
+import { rates } from "@/modules/rates/entity";
+import { promotions } from "@/modules/promotions/entity";
+import { paymentRequests } from "@/modules/payment-requests/entity";
+import { housekeepingReports } from "@/modules/housekeeping/entity";
+import { pettyCash } from "@/modules/petty-cash/entity";
+import { agents } from "@/modules/agents/entity";
+import { addOns } from "@/modules/add-ons/entity";
+import { owners } from "@/modules/owners/entity";
+import { orders } from "@/modules/orders/entity";
+import { vendors } from "@/modules/vendors/entity";
+import { feedback } from "@/modules/feedback/entity";
 
 export const entities: EntityDef[] = [
+  owners,
   businessUnits,
   staff,
   customers,
   leads,
   activities,
   bookings,
+  rooms,
+  rates,
+  promotions,
+  paymentRequests,
+  housekeepingReports,
+  pettyCash,
+  addOns,
+  agents,
+  orders,
+  vendors,
+  feedback,
   payments,
   checkins,
   dailyReports,
