@@ -35,6 +35,7 @@ import { pettyCash } from "@/modules/petty-cash/entity";
 import { agents } from "@/modules/agents/entity";
 import { addOns } from "@/modules/add-ons/entity";
 import { owners } from "@/modules/owners/entity";
+import { orders } from "@/modules/orders/entity";
 
 export const entities: EntityDef[] = [
   owners,
@@ -52,6 +53,7 @@ export const entities: EntityDef[] = [
   pettyCash,
   addOns,
   agents,
+  orders,
   payments,
   checkins,
   dailyReports,

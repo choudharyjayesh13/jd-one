@@ -6,9 +6,9 @@
  */
 import { useMemo } from "react";
 import Link from "next/link";
-import { MessageCircle, Phone, Globe } from "lucide-react";
+import { MessageCircle, Phone, Globe, ShoppingBag } from "lucide-react";
 import { useUser } from "@/core/auth/AuthProvider";
-import { viewHref } from "@/core/routes";
+import { newHref, viewHref } from "@/core/routes";
 import { Card, CardBody, CardHeader, Stat } from "@/core/ui/Card";
 import { useList } from "@/core/ui/hooks";
 import { Loading, PageHeader } from "@/core/ui/misc";
@@ -70,10 +70,13 @@ export function Network() {
                           <div className="mt-1 flex flex-wrap gap-3 text-xs text-slate-500">
                             <span className="rounded bg-emerald-50 px-1.5 py-0.5 text-emerald-800">customers {String(u.network_customer_discount_pct ?? CUSTOMER_DEFAULT)}% off</span>
                             <span className="rounded bg-sky-50 px-1.5 py-0.5 text-sky-800">owners {String(u.network_owner_discount_pct ?? OWNER_DEFAULT)}% off</span>
-                            {/* contact links follow */}
+                            {u.order_webhook_url || u.order_page_url ? <span className="rounded bg-slate-100 px-1.5 py-0.5 text-slate-700">orders go to {String(u.erp_name && u.erp_name !== "None" ? u.erp_name : "their system")}</span> : null}
                           </div>
                         </div>
                         <div className="flex shrink-0 gap-2">
+                          <Link href={newHref("orders", { business_unit_id: u.id, ...(user.unitId && user.unitId !== u.id ? { buyer_unit_id: user.unitId } : {}) })} className="inline-flex items-center gap-1 rounded-lg bg-navy px-2.5 py-2 text-xs font-medium text-white hover:bg-navy-700" title="Place an order with this member">
+                            <ShoppingBag className="h-4 w-4" /> Order
+                          </Link>
                           {phone && (
                             <a href={`https://wa.me/${phone}`} target="_blank" rel="noopener" className="rounded-lg border border-line p-2 text-navy hover:bg-slate-50" title="WhatsApp">
                               <MessageCircle className="h-4 w-4" />
@@ -99,7 +102,9 @@ export function Network() {
           ))}
         </div>
       )}
-      <p className="mt-3 text-xs text-slate-500">How the discount works: when a customer or owner books or buys directly (not through an OTA or marketplace), apply the member&apos;s network percentage at billing and note &ldquo;JD One network&rdquo; on the bill. Each business sets its own percentages under Hotel details → Edit.</p>
+      <p className="mt-3 text-xs text-slate-500">
+        How it works: press <strong>Order</strong> to place an order with a member; the network discount is applied automatically (customer rate, or the owner rate when your business is the buyer). The order is forwarded to the member&apos;s own order system (webhook / ERP) the moment it is saved, and can also be sent on WhatsApp or opened on their website. Each member sets their discounts and integration under their business → Edit.
+      </p>
     </div>
   );
 }

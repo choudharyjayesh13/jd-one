@@ -9,7 +9,7 @@ export const BUSINESS_UNIT_SEED = [
   { name: "JD Group HQ", short_code: "HQ", type: "HQ", city: "Udaipur" },
   { name: "The Belmonte House", short_code: "TBH", type: "Hotel", city: "Udaipur" },
   { name: "Stepwhere", short_code: "STW", type: "Shop / retail", city: "Udaipur" },
-  { name: "LOECEL", short_code: "LOE", type: "Shop / retail", city: "Udaipur" },
+  { name: "Aloe E-Cell", short_code: "AEC", type: "Manufacturing", city: "Udaipur" },
   { name: "Hotel Kirti Plaza", short_code: "HKP", type: "Hotel", city: "Chittorgarh" },
   { name: "BPCL Petrol Pump", short_code: "BPCL", type: "Fuel station", city: "Chittorgarh" },
   { name: "BPCL Petrol Pump – Badi Sadi", short_code: "BPBS", type: "Fuel station", city: "Badi Sadi" },
@@ -18,6 +18,8 @@ export const BUSINESS_UNIT_SEED = [
 ];
 
 export const BUSINESS_TYPES = ["Hotel", "Resort", "Fuel station", "Restaurant", "Shop / retail", "Events", "Consultancy", "Transport", "Salon", "Clinic", "Education", "Manufacturing", "Farm", "HQ", "Other"] as const;
+
+export const ERP_SYSTEMS = ["None", "Own website", "Shopify", "WooCommerce", "Zoho", "Tally", "Vyapar", "Custom webhook", "WhatsApp only"] as const;
 
 export const HOTEL_AMENITIES = ["Swimming pool", "Lake view", "Garden", "Bonfire", "Restaurant", "Room service", "Free Wi-Fi", "Free parking", "Air conditioning", "Power backup", "Indoor games", "Pet-friendly", "Wedding lawn", "Banquet", "Camping", "Boating", "Spa", "Gym", "Bar"] as const;
 
@@ -53,6 +55,12 @@ export const businessUnits = defineEntity({
     { name: "network_customer_discount_pct", label: "Network discount: customers %", type: "number", min: 0, max: 100, default: 10, help: "Off for any JD One customer who deals with you directly" },
     { name: "network_owner_discount_pct", label: "Network discount: owners %", type: "number", min: 0, max: 100, default: 15, help: "Off for other network owners and their businesses" },
     { name: "network_offer", label: "What you offer the network", type: "textarea", help: "Shown on the Network page: products, services, who to contact" },
+    // Integrations: where an order from the network should land (the member's own website / ERP / order system).
+    { name: "erp_name", label: "Order system", type: "select", options: ERP_SYSTEMS, default: "None", help: "Where your orders live today; JD One sends network orders there" },
+    { name: "order_page_url", label: "Order page link", type: "text", placeholder: "https://stepwhere.in/order?name={name}&phone={phone}&items={items}", help: "Opened for the customer with {name} {phone} {items} {amount} {order_no} filled in" },
+    { name: "order_webhook_url", label: "Order webhook (ERP) URL", type: "text", placeholder: "https://erp.example.com/jdone/orders", help: "JD One POSTs each network order here as JSON the moment it is placed" },
+    { name: "order_webhook_secret", label: "Webhook secret", type: "text", help: "Sent as the X-JDOne-Secret header so your system can trust the call" },
+    { name: "order_email", label: "Order email", type: "email", help: "Copy of each network order (if set)" },
     { name: "amenities", label: "Amenities", type: "multiselect", options: HOTEL_AMENITIES, wide: true },
     { name: "policies", label: "Policies", type: "textarea", wide: true, help: "Cancellation, ID proof, couples, pets, smoking…" },
     { name: "maps_url", label: "Google Maps link", type: "text" },

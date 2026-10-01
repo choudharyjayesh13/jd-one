@@ -13,8 +13,9 @@ select v.name, v.city, 'Individual', v.notes
 from (values
   ('Deepak Chaudhary', 'Udaipur', 'Owns The Artist House and The Belmonte House'),
   ('Neelam Mevada', 'Udaipur', 'Owns House of Beauty'),
-  ('Navin Suman', 'Udaipur', 'Jayesh''s friend — Stepwhere (child-safety footwear) and LOECEL; co-owners: Shubham Rao (Stepwhere), Navin''s wife (LOECEL — name needed)'),
-  ('Shubham Rao', 'Udaipur', 'Jayesh''s friend — co-owner of Stepwhere')
+  ('Navin Suman', 'Udaipur', 'Jayesh''s friend — co-founder of Stepwhere (child-safety footwear) with Shubham Rao'),
+  ('Shubham Rao', 'Udaipur', 'Jayesh''s friend — co-founder of Stepwhere'),
+  ('Naveen Suman', 'Udaipur', 'Owner of Aloe E-Cell; co-owner: Naveen''s wife (name needed)')
 ) as v(name, city, notes)
 where not exists (select 1 from jdone.owners o where o.name = v.name);
 
@@ -24,7 +25,7 @@ select v.name, v.short_code, v.type, v.city, true, v.offer
 from (values
   ('The Belmonte House', 'TBH', 'Hotel', 'Udaipur', 'Boutique stay near Geetanjali Hospital, Udaipur'),
   ('Stepwhere', 'STW', 'Shop / retail', 'Udaipur', 'Smart child-safety footwear (stepwhere.in)'),
-  ('LOECEL', 'LOE', 'Shop / retail', 'Udaipur', null)
+  ('Aloe E-Cell', 'AEC', 'Manufacturing', 'Udaipur', 'Aloe E-Cell products')
 ) as v(name, short_code, type, city, offer)
 on conflict (name) do nothing;
 
@@ -37,9 +38,11 @@ update jdone.business_units set owner_id = (select id from jdone.owners where na
 update jdone.business_units set owner_id = (select id from jdone.owners where name = 'Neelam Mevada')
  where owner_id is null and name = 'House of Beauty';
 update jdone.business_units set owner_id = (select id from jdone.owners where name = 'Navin Suman')
- where owner_id is null and name in ('Stepwhere', 'LOECEL');
+ where owner_id is null and name = 'Stepwhere';
+update jdone.business_units set owner_id = (select id from jdone.owners where name = 'Naveen Suman')
+ where owner_id is null and name = 'Aloe E-Cell';
 
--- Co-owner: Shubham Rao gets an owner-role seat at Stepwhere (sees that business once his login is linked by email).
+-- Co-founder: Shubham Rao gets an owner-role seat at Stepwhere (sees that business once his login is linked by email).
 insert into jdone.staff (name, role, business_unit_id, designation, active, notes)
 select 'Shubham Rao', 'owner', (select id from jdone.business_units where name = 'Stepwhere'), 'Co-owner', true, 'Co-owner of Stepwhere; add email so sign-up links automatically'
 where not exists (select 1 from jdone.staff s where s.name = 'Shubham Rao' and s.business_unit_id = (select id from jdone.business_units where name = 'Stepwhere'));
