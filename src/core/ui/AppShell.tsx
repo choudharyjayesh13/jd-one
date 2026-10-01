@@ -3,7 +3,7 @@
 import { useState, type ReactNode } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, Settings, LogOut, Menu, X, CalendarDays, Camera, Sun, Trophy, CalendarCheck, LayoutGrid, CalendarRange, Hotel, BarChart3 } from "lucide-react";
+import { LayoutDashboard, Settings, LogOut, Menu, X, CalendarDays, Camera, Sun, Trophy, CalendarCheck, LayoutGrid, CalendarRange, Hotel, BarChart3, Network } from "lucide-react";
 import { TEAMS } from "@/core/schema/types";
 import { getEntity } from "@/core/schema/registry";
 import { useAuth, useUser } from "@/core/auth/AuthProvider";
@@ -58,6 +58,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         {user.role === "staff" ? myDay : dashboard}
         {user.role === "staff" ? dashboard : myDay}
         <NavLink href="/attendance/checkin/" label="Mark attendance" icon={Camera} active={active("/attendance/checkin/")} onClick={close} />
+        <NavLink href="/network/" label="JD One network" icon={Network} active={active("/network/")} onClick={close} />
         {groups.some((g) => g.team === "hr") && <NavLink href="/attendance/grid/" label="Attendance grid" icon={CalendarDays} active={active("/attendance/grid/")} onClick={close} />}
         {!hasOps && scoreboard}
       </div>
