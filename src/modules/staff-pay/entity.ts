@@ -15,9 +15,18 @@ export const staffPay = defineEntity({
   permissions: { create: ["owner", "manager", "hr"], update: ["owner", "manager", "hr"], delete: ["owner"] },
   fields: [
     { name: "staff_id", label: "Staff", type: "relation", entity: "staff", required: true },
-    { name: "monthly_salary", label: "Monthly salary", type: "money", min: 0 },
+    { name: "fixed_salary", label: "Fixed salary", type: "money", min: 0 },
+    { name: "incentive_max", label: "Incentive to unlock (max)", type: "money", min: 0 },
+    { name: "monthly_salary", label: "Up to (fixed + incentive)", type: "money", min: 0, help: "Leave blank to calculate" },
+    { name: "incentive_rule", label: "How to unlock the incentive", type: "textarea", help: "Separate conditions with ·" },
     { name: "role_in_plan", label: "Role (pay grade)", type: "text" },
     { name: "pay_note", label: "Note", type: "textarea" },
   ],
-  listColumns: ["staff_id", "role_in_plan", "monthly_salary", "pay_note"],
+  listColumns: ["staff_id", "role_in_plan", "fixed_salary", "incentive_max", "monthly_salary"],
+  hooks: {
+    beforeSave(values) {
+      const f = Number(values.fixed_salary ?? 0), i = Number(values.incentive_max ?? 0);
+      return values.fixed_salary != null && (values.monthly_salary == null || values.monthly_salary === "") ? { ...values, monthly_salary: f + i } : values;
+    },
+  },
 });

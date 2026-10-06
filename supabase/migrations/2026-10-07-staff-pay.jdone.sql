@@ -24,3 +24,6 @@ insert into jdone.staff_pay (staff_id, monthly_salary, pay_note)
   on conflict (staff_id) do nothing;
 update jdone.staff set salary = null where salary is not null;
 notify pgrst, 'reload schema';
+
+-- 7 Oct: fixed + incentive (to unlock) split
+alter table jdone.staff_pay add column if not exists fixed_salary numeric(12,2), add column if not exists incentive_max numeric(12,2), add column if not exists incentive_rule text;

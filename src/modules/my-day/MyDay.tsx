@@ -21,7 +21,7 @@ import { cn } from "@/core/ui/cn";
 import { PropertyStrip, photoOfDay } from "@/core/ui/property";
 import { CompleteTaskDialog } from "@/core/ui/CompleteTask";
 import { AwardsBanner } from "@/modules/rewards/AwardsBanner";
-import { INCENTIVES } from "@/modules/rewards/rewards";
+import { INCENTIVES, loadAwards } from "@/modules/rewards/rewards";
 import { activeRest, phaseAt, pretty, routineOf, shiftsOf } from "@/modules/attendance/shifts";
 import { ATTENDANCE_LABELS } from "@/modules/attendance/entity";
 import { isOpenTicket } from "@/modules/tickets/entity";
@@ -108,6 +108,13 @@ export function MyDay() {
   const { rows: allStaff } = useList("staff");
   const { rows: payRows } = useList(me ? "staff-pay" : null, { filter: { staff_id: me } });
   const pay = payRows[0] ?? null;
+  const [month, setMonth] = useState<ScoreRow | null>(null);
+  useEffect(() => {
+    if (!me) return;
+    let cancel = false;
+    void loadAwards(getStore()).then((a) => !cancel && setMonth(a.monthRows.find((r) => r.staff.id === me) ?? null)).catch(() => undefined);
+    return () => { cancel = true; };
+  }, [me]);
 
   useEffect(() => {
     if (!me) return;
@@ -395,12 +402,41 @@ export function MyDay() {
           {/* My pay & rewards */}
           <Panel title="My pay & rewards" subtitle="Only you can see this" icon={Trophy} className="border-emerald-200">
             <div className="space-y-5">
-              <div className="rounded-2xl bg-gradient-to-br from-emerald-50 to-white px-5 py-4">
-                <div className="text-xs font-semibold uppercase tracking-wide text-emerald-700">Monthly salary</div>
-                <div className="mt-1 text-3xl font-bold tabular-nums text-navy">{pay?.monthly_salary != null ? `${String(pay.pay_note ?? "").startsWith("Up to") ? "Up to " : ""}₹${Number(pay.monthly_salary).toLocaleString("en-IN")}` : "To be set"}</div>
-                <div className="text-xs text-slate-500">{pay?.role_in_plan ? String(pay.role_in_plan) : "Your pay grade will be added by management"}</div>
-                {pay?.pay_note && String(pay.pay_note).includes("incentive") ? <div className="mt-2 rounded-lg bg-gold/15 px-3 py-2 text-xs font-medium text-amber-900">🎯 {String(pay.pay_note).split(". Actual")[0]}</div> : null}
-              </div>
+              {(() => {
+                const fixed = pay?.fixed_salary != null ? Number(pay.fixed_salary) : pay?.monthly_salary != null ? Number(pay.monthly_salary) : null;
+                const inc = Number(pay?.incentive_max ?? 0);
+                const dayOfMonth = now.getDate();
+                const present = month?.presentDays ?? 0, onTime = month?.onTimeDays ?? 0, overdue = month?.tasksOverdue ?? 0, done = month?.tasksDone ?? 0;
+                const checks = [
+                  { ok: present >= Math.max(1, dayOfMonth - Math.ceil(dayOfMonth / 7)), label: `Attendance: ${present} days present this month · ${onTime} on time` },
+                  { ok: overdue === 0, label: overdue === 0 ? "No overdue tasks" : `${overdue} overdue task${overdue === 1 ? "" : "s"} — finish them` },
+                  { ok: done > 0, label: `${done} job${done === 1 ? "" : "s"} completed with photo this month` },
+                ];
+                const extra = String(pay?.incentive_rule ?? "").split("·").map((x) => x.trim()).filter((x) => x && !/present every|overdue|photo/i.test(x));
+                const onTrack = checks.every((c) => c.ok);
+                return (
+                  <div className="space-y-3">
+                    <div className="rounded-2xl bg-gradient-to-br from-emerald-50 to-white px-5 py-4">
+                      <div className="text-xs font-semibold uppercase tracking-wide text-emerald-700">Fixed monthly salary</div>
+                      <div className="mt-1 text-3xl font-bold tabular-nums text-navy">{fixed != null ? `₹${fixed.toLocaleString("en-IN")}` : "To be set"}</div>
+                      <div className="text-xs text-slate-500">{pay?.role_in_plan ? String(pay.role_in_plan) : "Your pay grade will be added by management"}</div>
+                    </div>
+                    {inc > 0 && (
+                      <div className={cn("rounded-2xl border-2 px-5 py-4", onTrack ? "border-emerald-300 bg-emerald-50" : "border-gold/60 bg-gold/10")}>
+                        <div className="flex items-center justify-between gap-2">
+                          <div className="text-sm font-semibold text-navy">{onTrack ? "🔓 On track to unlock" : "🔒 Incentive to unlock"}</div>
+                          <div className="text-xl font-bold tabular-nums text-navy">+₹{inc.toLocaleString("en-IN")}</div>
+                        </div>
+                        <div className="text-xs text-slate-600">Up to ₹{((fixed ?? 0) + inc).toLocaleString("en-IN")} this month</div>
+                        <ul className="mt-3 space-y-1.5 text-xs">
+                          {checks.map((c) => <li key={c.label} className={c.ok ? "text-emerald-700" : "text-amber-800"}>{c.ok ? "✅" : "⬜"} {c.label}</li>)}
+                          {extra.map((x) => <li key={x} className="text-slate-600">🎯 {x} <span className="text-slate-400">(checked by management)</span></li>)}
+                        </ul>
+                      </div>
+                    )}
+                  </div>
+                );
+              })()}
               <div>
                 <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">Earn more — bonus & incentives</h3>
                 <ul className="space-y-2">
