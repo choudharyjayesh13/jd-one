@@ -3,7 +3,7 @@
 import { useState, type ReactNode } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, Settings, LogOut, Menu, X, CalendarDays, Camera, Sun, Trophy } from "lucide-react";
+import { LayoutDashboard, Settings, LogOut, Menu, X, CalendarDays, Camera, Sun, Trophy, KeyRound } from "lucide-react";
 import { TEAMS } from "@/core/schema/types";
 import { getEntity } from "@/core/schema/registry";
 import { useAuth, useUser } from "@/core/auth/AuthProvider";
@@ -72,6 +72,9 @@ export function AppShell({ children }: { children: ReactNode }) {
           </div>
         </div>
       ))}
+      <div className="space-y-0.5">
+        <NavLink href="/account/" label="My account" icon={KeyRound} active={active("/account/")} onClick={close} />
+      </div>
       {isAdmin(user.role) && (
         <div className="space-y-0.5">
           <NavLink href="/settings/" label="Settings" icon={Settings} active={active("/settings/")} onClick={close} />

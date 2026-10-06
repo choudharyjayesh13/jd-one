@@ -5,6 +5,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { useAuth } from "@/core/auth/AuthProvider";
 import { AppShell } from "./AppShell";
 import { Loading } from "./misc";
+import { PasswordPrompt } from "@/core/auth/ChangePassword";
 
 export function AuthGate({ children }: { children: ReactNode }) {
   const { loading, user } = useAuth();
@@ -16,5 +17,10 @@ export function AuthGate({ children }: { children: ReactNode }) {
   }, [loading, user, router, pathname]);
 
   if (loading || !user) return <Loading label="Opening JD One…" />;
-  return <AppShell>{children}</AppShell>;
+  return (
+    <AppShell>
+      <PasswordPrompt />
+      {children}
+    </AppShell>
+  );
 }
