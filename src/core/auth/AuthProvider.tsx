@@ -176,7 +176,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const { data, error } = await client.auth.signUp({
           email: input.email,
           password: input.password,
-          options: { data: { name: input.name, phone: input.phone, designation: input.designation, business_unit_id: input.business_unit_id } },
+          options: {
+            // Bring staff back to the staff app (not the customer portal / Site URL) after confirming their email.
+            emailRedirectTo: typeof window !== "undefined" ? `${window.location.origin}${process.env.NEXT_PUBLIC_BASE_PATH ?? ""}/login/` : undefined,
+            data: { name: input.name, phone: input.phone, designation: input.designation, business_unit_id: input.business_unit_id },
+          },
         });
         if (error) throw new Error(error.message);
         // With "Confirm email" on, Supabase returns a user but no session until the link is clicked.
