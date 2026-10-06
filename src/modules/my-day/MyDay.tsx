@@ -1,11 +1,12 @@
 "use client";
 /**
- * /my-day: the one page a staff member opens in the morning — attendance,
- * their tasks and tickets, today's numbers for their unit and their score.
+ * /my-day — the staff home. Spacious, card-based: welcome + attendance, quick actions,
+ * today's tasks, upcoming tasks, my role (job description, 5 KPIs, 5 KRAs), tickets,
+ * today's numbers and my score.
  */
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import Link from "next/link";
-import { Camera, Plus, Trophy, Wrench } from "lucide-react";
+import { Camera, CalendarClock, ChefHat, ClipboardList, Plus, QrCode, ShoppingCart, Target, Trophy, Wrench, Briefcase, Flag } from "lucide-react";
 import type { Row } from "@/core/schema/types";
 import { getStore } from "@/core/data";
 import { useUser } from "@/core/auth/AuthProvider";
@@ -13,14 +14,65 @@ import { formatDate, formatDateTime, todayISO } from "@/core/format";
 import { listHref, newHref, viewHref } from "@/core/routes";
 import { Badge } from "@/core/ui/Badge";
 import { Button } from "@/core/ui/Button";
-import { Card, CardBody, CardHeader, Stat } from "@/core/ui/Card";
 import { Input, Select } from "@/core/ui/Input";
 import { useList } from "@/core/ui/hooks";
-import { PageHeader } from "@/core/ui/misc";
 import { useToast } from "@/core/ui/Toast";
+import { cn } from "@/core/ui/cn";
 import { ATTENDANCE_LABELS } from "@/modules/attendance/entity";
 import { isOpenTicket } from "@/modules/tickets/entity";
 import { computeScoreboard, loadScoreboardData, medal, type ScoreRow } from "@/modules/scoreboard/compute";
+
+/* ---------- small building blocks ---------- */
+function Panel({ title, icon: Icon, action, children, className, subtitle }: { title: string; icon: React.ComponentType<{ className?: string }>; action?: ReactNode; children: ReactNode; className?: string; subtitle?: string }) {
+  return (
+    <section className={cn("rounded-2xl border border-line bg-white shadow-sm", className)}>
+      <header className="flex items-start justify-between gap-3 px-5 pt-5 sm:px-6">
+        <div className="flex items-center gap-3">
+          <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-navy/5 text-navy"><Icon className="h-5 w-5" /></span>
+          <div>
+            <h2 className="text-base font-semibold text-navy">{title}</h2>
+            {subtitle && <p className="text-xs text-slate-500">{subtitle}</p>}
+          </div>
+        </div>
+        {action}
+      </header>
+      <div className="px-5 pb-5 pt-4 sm:px-6">{children}</div>
+    </section>
+  );
+}
+function Tile({ label, value, hint, tone = "navy", icon: Icon, href }: { label: string; value: ReactNode; hint?: string; tone?: "navy" | "gold" | "green" | "red"; icon: React.ComponentType<{ className?: string }>; href?: string }) {
+  const tones = { navy: "bg-navy/5 text-navy", gold: "bg-gold/15 text-amber-800", green: "bg-emerald-50 text-emerald-700", red: "bg-red-50 text-red-600" } as const;
+  const inner = (
+    <div className="flex h-full items-center gap-4 rounded-2xl border border-line bg-white p-4 shadow-sm transition hover:shadow-md sm:p-5">
+      <span className={cn("flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl", tones[tone])}><Icon className="h-6 w-6" /></span>
+      <div className="min-w-0">
+        <div className="text-2xl font-bold tabular-nums text-navy">{value}</div>
+        <div className="text-xs font-medium uppercase tracking-wide text-slate-500">{label}</div>
+        {hint && <div className="truncate text-xs text-slate-400">{hint}</div>}
+      </div>
+    </div>
+  );
+  return href ? <Link href={href} className="block">{inner}</Link> : inner;
+}
+function Numbered({ items, empty }: { items: (string | null | undefined)[]; empty: string }) {
+  return (
+    <ol className="space-y-2.5">
+      {items.map((t, i) => (
+        <li key={i} className="flex items-start gap-3">
+          <span className={cn("mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-bold", t ? "bg-gold text-navy" : "bg-slate-100 text-slate-400")}>{i + 1}</span>
+          <span className={cn("pt-1 text-sm leading-snug", t ? "text-slate-800" : "italic text-slate-400")}>{t || empty}</span>
+        </li>
+      ))}
+    </ol>
+  );
+}
+const dayLabel = (iso: string, today: string) => {
+  const d = new Date(iso + "T00:00:00"), t = new Date(today + "T00:00:00");
+  const diff = Math.round((d.getTime() - t.getTime()) / 86400000);
+  if (diff === 1) return "Tomorrow";
+  if (diff < 7) return d.toLocaleDateString("en-IN", { weekday: "long" });
+  return d.toLocaleDateString("en-IN", { weekday: "short", day: "numeric", month: "short" });
+};
 
 export function MyDay() {
   const user = useUser();
@@ -38,6 +90,7 @@ export function MyDay() {
     return () => clearInterval(t);
   }, []);
 
+  const { rows: meRows } = useList(me ? "staff" : null, { filter: { id: me } });
   const { rows: attendance } = useList(me ? "attendance" : null, { filter: { date: today, staff_id: me } });
   const { rows: tasks, reload: reloadTasks } = useList(me ? "tasks" : null, { filter: { assigned_to: me } });
   const { rows: tickets } = useList("tickets");
@@ -45,7 +98,6 @@ export function MyDay() {
   const { rows: reports } = useList("daily-reports", { filter: unitId ? { business_unit_id: unitId } : {}, sort: { field: "date", dir: "desc" }, limit: 1 });
   const { rows: units } = useList("business-units");
 
-  // My score today (same maths as the scoreboard).
   useEffect(() => {
     if (!me) return;
     let cancelled = false;
@@ -61,39 +113,36 @@ export function MyDay() {
     };
   }, [me]);
 
+  const profile: Row = meRows[0] ?? user.staff ?? ({} as Row);
   const att = attendance[0] ?? null;
-  const myTasks = tasks.filter((t) => t.status !== "Done" && (!t.due || String(t.due) <= today)).sort((a, b) => String(a.due ?? "9").localeCompare(String(b.due ?? "9")));
+  const open = tasks.filter((t) => t.status !== "Done");
+  const myTasks = open.filter((t) => !t.due || String(t.due) <= today).sort((a, b) => String(a.due ?? "9").localeCompare(String(b.due ?? "9")));
+  const upcoming = open.filter((t) => t.due && String(t.due) > today).sort((a, b) => String(a.due).localeCompare(String(b.due)));
+  const upcomingByDay = upcoming.reduce<Record<string, Row[]>>((acc, t) => ((acc[String(t.due)] ??= []).push(t), acc), {});
+  const in7 = new Date(now.getTime() + 7 * 86400000).toISOString().slice(0, 10);
   const myTickets = tickets.filter((t) => isOpenTicket(t) && (t.reported_by === me || t.assigned_to === me));
   const arrivals = bookings.filter((b) => b.check_in === today && (b.status === "Confirmed" || b.status === "Enquiry"));
   const departures = bookings.filter((b) => b.check_out === today && b.status === "Checked-in");
   const inHouse = bookings.filter((b) => b.status === "Checked-in");
   const report = reports[0] ?? null;
-  const unitName = String(units.find((u) => u.id === unitId)?.name ?? "all units");
+  const unitName = String(units.find((u) => u.id === unitId)?.name ?? "JD Group");
+  const kpis = [1, 2, 3, 4, 5].map((i) => profile[`kpi_${i}`] as string | null);
+  const kras = [1, 2, 3, 4, 5].map((i) => profile[`kra_${i}`] as string | null);
+  const hour = now.getHours();
 
-  const markDone = async (t: Row, done: boolean) => {
+  const markDone = async (t: Row) => {
     try {
-      await getStore().update("tasks", t.id, { status: done ? "Done" : "Open", completed_at: done ? new Date().toISOString() : null });
-      if (done) toast(`Done: ${t.title}`);
+      await getStore().update("tasks", t.id, { status: "Done", completed_at: new Date().toISOString() });
+      toast(`Done: ${t.title}`);
       await reloadTasks();
     } catch (e) {
       toast((e as Error).message, "error");
     }
   };
-
   const addTask = async () => {
     if (!draft.title.trim()) return toast("Give the task a title", "error");
     try {
-      await getStore().create("tasks", {
-        title: draft.title.trim(),
-        business_unit_id: unitId,
-        type: "Other",
-        priority: draft.priority,
-        assigned_to: me,
-        due: draft.due || null,
-        status: "Open",
-        points: 1,
-        created_by: me,
-      });
+      await getStore().create("tasks", { title: draft.title.trim(), business_unit_id: unitId, type: "Other", priority: draft.priority, assigned_to: me, due: draft.due || null, status: "Open", points: 1, created_by: me });
       setDraft({ title: "", priority: "Medium", due: today });
       setAdding(false);
       toast("Task added");
@@ -103,164 +152,189 @@ export function MyDay() {
     }
   };
 
-  return (
-    <div className="mx-auto max-w-3xl space-y-4">
-      <PageHeader
-        title={`Good ${now.getHours() < 12 ? "morning" : now.getHours() < 17 ? "afternoon" : "evening"}, ${user.name.split(" ")[0]}`}
-        subtitle={
-          <span className="flex flex-wrap items-baseline gap-2">
-            <span className="text-2xl font-semibold tabular-nums text-navy">{now.toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit", second: "2-digit" })}</span>
-            <span>{now.toLocaleDateString("en-IN", { weekday: "long", day: "numeric", month: "long", year: "numeric" })}</span>
+  const taskRow = (t: Row, showDue: boolean) => {
+    const overdue = t.due && String(t.due) < today;
+    return (
+      <li key={t.id} className="flex items-center gap-4 rounded-xl border border-line px-4 py-3.5 transition hover:border-navy/20 hover:bg-slate-50">
+        <input type="checkbox" className="h-6 w-6 shrink-0 cursor-pointer accent-navy" checked={false} onChange={() => void markDone(t)} aria-label={`Mark ${t.title} done`} />
+        <Link href={viewHref("tasks", t.id)} className="min-w-0 flex-1">
+          <span className="block font-medium text-navy">{String(t.title)}</span>
+          <span className={cn("text-xs", overdue ? "font-medium text-red-600" : "text-slate-500")}>
+            {showDue ? (t.due ? `${overdue ? "Overdue · " : ""}due ${formatDate(t.due)}` : "No due date") + " · " : ""}
+            {String(t.type ?? "Task")} · {Number(t.points ?? 1)} pt
           </span>
-        }
-      />
+        </Link>
+        <Badge value={t.priority} />
+      </li>
+    );
+  };
+
+  return (
+    <div className="mx-auto max-w-6xl space-y-6 pb-10">
+      {/* Welcome */}
+      <section className="overflow-hidden rounded-3xl bg-gradient-to-br from-navy via-navy-700 to-navy p-6 text-white shadow-lg sm:p-8">
+        <div className="flex flex-col gap-6 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <p className="text-sm text-white/70">{now.toLocaleDateString("en-IN", { weekday: "long", day: "numeric", month: "long", year: "numeric" })}</p>
+            <h1 className="mt-1 text-3xl font-bold sm:text-4xl">Good {hour < 12 ? "morning" : hour < 17 ? "afternoon" : "evening"}, {user.name.split(" ")[0]} 👋</h1>
+            <div className="mt-3 flex flex-wrap gap-2 text-xs">
+              {profile.designation ? <span className="rounded-full bg-white/10 px-3 py-1">{String(profile.designation)}</span> : null}
+              <span className="rounded-full bg-white/10 px-3 py-1">{unitName}</span>
+              <span className="rounded-full bg-gold/90 px-3 py-1 font-semibold capitalize text-navy">{user.role}</span>
+            </div>
+          </div>
+          <div className="text-left sm:text-right">
+            <div className="text-4xl font-bold tabular-nums sm:text-5xl">{now.toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" })}</div>
+            <p className="mt-1 text-sm text-white/70">
+              {att ? `${ATTENDANCE_LABELS[String(att.status)] ?? att.status}${att.checked_in_at ? ` · in ${formatDateTime(att.checked_in_at).slice(-8)}` : ""}${att.checked_out_at ? ` · out ${formatDateTime(att.checked_out_at).slice(-8)}` : ""}` : "Attendance not marked yet"}
+            </p>
+          </div>
+        </div>
+        <Link href="/attendance/checkin/" className="mt-6 flex w-full items-center justify-center gap-2 rounded-2xl bg-gold px-6 py-4 text-base font-semibold text-navy shadow transition hover:brightness-105 sm:w-auto sm:inline-flex">
+          <Camera className="h-5 w-5" /> {att?.checked_in_at ? (att.checked_out_at ? "View attendance" : "Check out") : "Mark attendance with selfie"}
+        </Link>
+      </section>
 
       {!me && (
-        <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800">
-          Your login is not linked to a staff record, so tasks, tickets and score cannot be shown for you.{user.role === "owner" ? " In local mode choose “Preview the app as” under Settings." : " Ask HR to link your staff record."}
+        <div className="rounded-2xl border border-amber-200 bg-amber-50 px-5 py-4 text-sm text-amber-800">
+          Your login is not linked to a staff record yet, so your tasks and role cannot be shown. Please ask the office to link it.
         </div>
       )}
 
-      {/* Attendance */}
-      <Card>
-        <CardHeader
-          title="Attendance"
-          subtitle={att ? `${ATTENDANCE_LABELS[String(att.status)] ?? att.status} today${att.checked_in_at ? ` · in ${formatDateTime(att.checked_in_at).slice(-8)}` : ""}${att.checked_out_at ? ` · out ${formatDateTime(att.checked_out_at).slice(-8)}` : ""}` : "Not marked yet today"}
-          action={
-            <Link href="/attendance/checkin/">
-              <Button size="sm" icon={Camera} variant={att?.checked_in_at ? "secondary" : "primary"}>
-                {att?.checked_in_at ? (att.checked_out_at ? "Attendance" : "Check out") : "Mark attendance"}
-              </Button>
-            </Link>
-          }
-        />
-      </Card>
+      {/* At a glance */}
+      <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+        <Tile icon={ClipboardList} label="Tasks today" value={myTasks.length} hint={myTasks.some((t) => t.due && String(t.due) < today) ? "some overdue" : "due today or earlier"} tone={myTasks.length ? "gold" : "green"} />
+        <Tile icon={CalendarClock} label="Upcoming (7 days)" value={upcoming.filter((t) => String(t.due) <= in7).length} hint={upcoming.length ? `${upcoming.length} planned in total` : "nothing planned yet"} />
+        <Tile icon={Wrench} label="Open tickets" value={myTickets.length} tone={myTickets.length ? "red" : "green"} href={listHref("tickets")} />
+        <Tile icon={Trophy} label="My score today" value={score ? `${medal(score.rank, score.score)} ${score.score}`.trim() : "—"} hint={score ? `rank #${score.rank}` : undefined} tone="green" href="/scoreboard/" />
+      </div>
 
-      {/* Tasks */}
-      <Card>
-        <CardHeader
-          title={`My tasks today${myTasks.length ? ` (${myTasks.length})` : ""}`}
-          subtitle="Due today, overdue or undated"
-          action={
-            <Button size="sm" variant="secondary" icon={Plus} onClick={() => setAdding((a) => !a)} disabled={!me}>
-              Add task
-            </Button>
-          }
-        />
-        <CardBody className="p-0">
-          {adding && (
-            <form
-              className="grid grid-cols-1 gap-2 border-b border-line bg-slate-50 p-3 sm:grid-cols-[1fr_auto_auto_auto]"
-              onSubmit={(e) => {
-                e.preventDefault();
-                void addTask();
-              }}
-            >
-              <Input autoFocus placeholder="What needs doing?" value={draft.title} onChange={(e) => setDraft((d) => ({ ...d, title: e.target.value }))} />
-              <Select value={draft.priority} onChange={(e) => setDraft((d) => ({ ...d, priority: e.target.value }))} className="sm:w-32">
-                {["High", "Medium", "Low"].map((p) => (
-                  <option key={p}>{p}</option>
+      {/* Quick actions */}
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+        {[
+          { href: newHref("kots"), label: "New KOT order", icon: ChefHat },
+          { href: "/pay-qr/", label: "Scan to pay QR", icon: QrCode },
+          { href: newHref("purchases"), label: "Add purchase", icon: ShoppingCart },
+          { href: newHref("tickets", me ? { reported_by: me } : undefined), label: "Report an issue", icon: Wrench },
+        ].map((a) => (
+          <Link key={a.label} href={a.href} className="flex items-center gap-3 rounded-2xl border border-line bg-white px-4 py-4 text-sm font-medium text-navy shadow-sm transition hover:border-gold hover:shadow-md">
+            <a.icon className="h-5 w-5 text-gold" /> {a.label}
+          </Link>
+        ))}
+      </div>
+
+      <div className="grid gap-6 lg:grid-cols-5">
+        <div className="space-y-6 lg:col-span-3">
+          {/* Today */}
+          <Panel
+            title={`Today's tasks${myTasks.length ? ` · ${myTasks.length}` : ""}`}
+            subtitle="Due today, overdue or without a date — tick to complete"
+            icon={ClipboardList}
+            action={<Button size="sm" variant="secondary" icon={Plus} onClick={() => setAdding((a) => !a)} disabled={!me}>Add</Button>}
+          >
+            {adding && (
+              <form className="mb-4 grid grid-cols-1 gap-2 rounded-xl bg-slate-50 p-3 sm:grid-cols-[1fr_auto_auto_auto]" onSubmit={(e) => { e.preventDefault(); void addTask(); }}>
+                <Input autoFocus placeholder="What needs doing?" value={draft.title} onChange={(e) => setDraft((d) => ({ ...d, title: e.target.value }))} />
+                <Select value={draft.priority} onChange={(e) => setDraft((d) => ({ ...d, priority: e.target.value }))} className="sm:w-32">
+                  {["High", "Medium", "Low"].map((p) => <option key={p}>{p}</option>)}
+                </Select>
+                <Input type="date" value={draft.due} onChange={(e) => setDraft((d) => ({ ...d, due: e.target.value }))} className="sm:w-40" />
+                <Button type="submit" icon={Plus}>Add</Button>
+              </form>
+            )}
+            {myTasks.length === 0 ? (
+              <p className="rounded-xl bg-emerald-50 px-4 py-6 text-center text-sm text-emerald-700">{me ? "All clear for today 🎉" : "—"}</p>
+            ) : (
+              <ul className="space-y-2.5">{myTasks.map((t) => taskRow(t, true))}</ul>
+            )}
+          </Panel>
+
+          {/* Upcoming */}
+          <Panel title="Upcoming tasks" subtitle="Planned for you by your manager" icon={CalendarClock}>
+            {upcoming.length === 0 ? (
+              <p className="rounded-xl bg-slate-50 px-4 py-6 text-center text-sm text-slate-500">No upcoming tasks yet.</p>
+            ) : (
+              <div className="space-y-5">
+                {Object.entries(upcomingByDay).slice(0, 10).map(([day, list]) => (
+                  <div key={day}>
+                    <div className="mb-2 flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-slate-500">
+                      <span>{dayLabel(day, today)}</span><span className="h-px flex-1 bg-line" /><span>{formatDate(day)}</span>
+                    </div>
+                    <ul className="space-y-2.5">{list.map((t) => taskRow(t, false))}</ul>
+                  </div>
                 ))}
-              </Select>
-              <Input type="date" value={draft.due} onChange={(e) => setDraft((d) => ({ ...d, due: e.target.value }))} className="sm:w-40" />
-              <Button type="submit" icon={Plus}>
-                Add
-              </Button>
-            </form>
-          )}
-          {myTasks.length === 0 ? (
-            <p className="px-4 py-3 text-sm text-slate-500">{me ? "Nothing due today. Enjoy the calm or add a task." : "—"}</p>
-          ) : (
-            <ul className="divide-y divide-line">
-              {myTasks.map((t) => {
-                const overdue = t.due && String(t.due) < today;
-                return (
-                  <li key={t.id} className="flex items-center gap-3 px-4 py-2 text-sm">
-                    <input type="checkbox" className="h-5 w-5 accent-navy" checked={false} onChange={() => void markDone(t, true)} aria-label={`Mark ${t.title} done`} />
-                    <Link href={viewHref("tasks", t.id)} className="min-w-0 flex-1">
-                      <span className="block truncate font-medium text-navy">{String(t.title)}</span>
-                      <span className={overdue ? "text-xs text-red-600" : "text-xs text-slate-500"}>
-                        {t.due ? `${overdue ? "Overdue · " : ""}due ${formatDate(t.due)}` : "No due date"} · {String(t.type ?? "")} · {Number(t.points ?? 1)} pt
+              </div>
+            )}
+          </Panel>
+
+          {/* Tickets */}
+          <Panel title={`My tickets${myTickets.length ? ` · ${myTickets.length}` : ""}`} subtitle="Open issues I reported or am fixing" icon={Wrench}>
+            {myTickets.length === 0 ? (
+              <p className="rounded-xl bg-slate-50 px-4 py-6 text-center text-sm text-slate-500">No open tickets.</p>
+            ) : (
+              <ul className="space-y-2.5">
+                {myTickets.map((t) => (
+                  <li key={t.id}>
+                    <Link href={viewHref("tickets", t.id)} className="flex items-center justify-between gap-3 rounded-xl border border-line px-4 py-3.5 hover:bg-slate-50">
+                      <span className="min-w-0">
+                        <span className="block truncate font-medium text-navy">{String(t.title)}</span>
+                        <span className="block truncate text-xs text-slate-500">{String(t.category ?? "")}{t.location ? ` · ${t.location}` : ""} · {formatDateTime(t.created_at)}</span>
                       </span>
+                      <span className="flex shrink-0 gap-1"><Badge value={t.priority} /><Badge value={t.status} /></span>
                     </Link>
-                    <Badge value={t.priority} />
                   </li>
-                );
-              })}
-            </ul>
-          )}
-        </CardBody>
-      </Card>
+                ))}
+              </ul>
+            )}
+          </Panel>
+        </div>
 
-      {/* Tickets */}
-      <Card>
-        <CardHeader
-          title={`My tickets${myTickets.length ? ` (${myTickets.length})` : ""}`}
-          subtitle="Open tickets I reported or am assigned"
-          action={
-            <Link href={newHref("tickets", me ? { reported_by: me } : undefined)}>
-              <Button size="sm" variant="secondary" icon={Wrench}>
-                New ticket
-              </Button>
-            </Link>
-          }
-        />
-        <CardBody className="p-0">
-          {myTickets.length === 0 ? (
-            <p className="px-4 py-3 text-sm text-slate-500">No open tickets.</p>
-          ) : (
-            <ul className="divide-y divide-line">
-              {myTickets.map((t) => (
-                <li key={t.id}>
-                  <Link href={viewHref("tickets", t.id)} className="flex items-center justify-between gap-3 px-4 py-2 text-sm hover:bg-slate-50">
-                    <span className="min-w-0">
-                      <span className="block truncate font-medium text-navy">{String(t.title)}</span>
-                      <span className="block truncate text-xs text-slate-500">
-                        {String(t.category ?? "")}
-                        {t.location ? ` · ${t.location}` : ""} · {t.assigned_to === me ? "assigned to me" : "reported by me"} · {formatDateTime(t.created_at)}
-                      </span>
-                    </span>
-                    <span className="flex shrink-0 gap-1">
-                      <Badge value={t.priority} />
-                      <Badge value={t.status} />
-                    </span>
-                  </Link>
-                </li>
+        <div className="space-y-6 lg:col-span-2">
+          {/* My role */}
+          <Panel title="My role" subtitle="Job description, KPIs and KRAs" icon={Briefcase} className="border-gold/40">
+            <div className="space-y-6">
+              <div>
+                <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">Job description</h3>
+                <p className={cn("whitespace-pre-line rounded-xl px-4 py-3 text-sm leading-relaxed", profile.job_description ? "bg-slate-50 text-slate-800" : "bg-slate-50 italic text-slate-400")}>
+                  {(profile.job_description as string) || "Your job description will be added by management."}
+                </p>
+              </div>
+              <div>
+                <h3 className="mb-3 flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-slate-500"><Target className="h-4 w-4 text-gold" /> My KPIs · how I&apos;m measured</h3>
+                <Numbered items={kpis} empty="To be set by management" />
+              </div>
+              <div>
+                <h3 className="mb-3 flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-slate-500"><Flag className="h-4 w-4 text-gold" /> My KRAs · what I&apos;m responsible for</h3>
+                <Numbered items={kras} empty="To be set by management" />
+              </div>
+            </div>
+          </Panel>
+
+          {/* Today's numbers */}
+          <Panel title="Today at the property" subtitle={unitName} icon={CalendarClock} action={<Link href={listHref("bookings")} className="text-xs font-medium text-navy hover:underline">Bookings</Link>}>
+            <div className="grid grid-cols-2 gap-3">
+              {[["Arrivals", arrivals.length], ["Departures", departures.length], ["In house", inHouse.length], ["Occupancy", report?.occupancy_units != null ? String(report.occupancy_units) : "—"]].map(([l, v]) => (
+                <div key={String(l)} className="rounded-xl bg-slate-50 px-4 py-3">
+                  <div className="text-2xl font-bold tabular-nums text-navy">{v}</div>
+                  <div className="text-xs text-slate-500">{l}</div>
+                </div>
               ))}
-            </ul>
-          )}
-        </CardBody>
-      </Card>
+            </div>
+          </Panel>
 
-      {/* Today's numbers */}
-      <Card>
-        <CardHeader title="Today's numbers" subtitle={unitName} action={<Link href={listHref("bookings")} className="text-xs text-navy hover:underline">Bookings</Link>} />
-        <CardBody className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-          <Stat label="Arrivals" value={arrivals.length} />
-          <Stat label="Departures" value={departures.length} />
-          <Stat label="In house" value={inHouse.length} hint="bookings checked in" />
-          <Stat label="Occupancy" value={report?.occupancy_units != null ? String(report.occupancy_units) : "—"} hint={report ? `units · report of ${formatDate(report.date)}` : "no daily report yet"} />
-        </CardBody>
-      </Card>
-
-      {/* Score */}
-      <Card>
-        <CardHeader
-          title="My score today"
-          subtitle="Task points + 2 × tickets + 5 × leads won + present − overdue"
-          action={
-            <Link href="/scoreboard/" className="inline-flex items-center gap-1 text-xs text-navy hover:underline">
-              <Trophy className="h-3.5 w-3.5" /> Scoreboard
-            </Link>
-          }
-        />
-        <CardBody className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-          <Stat label="Score" value={score ? `${medal(score.rank, score.score)} ${score.score}`.trim() : "—"} hint={score ? `rank #${score.rank}` : undefined} tone={score && score.score > 0 ? "good" : "neutral"} />
-          <Stat label="Tasks done" value={score?.tasksDone ?? 0} hint={`${score?.taskPoints ?? 0} points`} />
-          <Stat label="Tickets resolved" value={score?.ticketsResolved ?? 0} />
-          <Stat label="Overdue" value={score?.tasksOverdue ?? 0} tone={score?.tasksOverdue ? "bad" : "good"} />
-        </CardBody>
-      </Card>
+          {/* Score */}
+          <Panel title="My score today" subtitle="Task points + 2 × tickets + 5 × leads won + present − overdue" icon={Trophy} action={<Link href="/scoreboard/" className="text-xs font-medium text-navy hover:underline">Scoreboard</Link>}>
+            <div className="grid grid-cols-2 gap-3">
+              {[["Score", score ? score.score : "—"], ["Tasks done", score?.tasksDone ?? 0], ["Tickets resolved", score?.ticketsResolved ?? 0], ["Overdue", score?.tasksOverdue ?? 0]].map(([l, v]) => (
+                <div key={String(l)} className="rounded-xl bg-slate-50 px-4 py-3">
+                  <div className={cn("text-2xl font-bold tabular-nums", l === "Overdue" && Number(v) > 0 ? "text-red-600" : "text-navy")}>{v}</div>
+                  <div className="text-xs text-slate-500">{l}</div>
+                </div>
+              ))}
+            </div>
+          </Panel>
+        </div>
+      </div>
     </div>
   );
 }

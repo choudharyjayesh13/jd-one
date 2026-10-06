@@ -83,7 +83,8 @@ export function LoginScreen() {
 
   const header = (
     <div className="mb-6 flex items-center gap-3">
-      <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-gold text-lg font-bold text-navy">JD</span>
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img src={`${process.env.NEXT_PUBLIC_BASE_PATH ?? ""}/icons/icon-192.png`} alt="JD Group" className="h-12 w-12 shadow rounded-full" />
       <div>
         <h1 className="text-lg font-semibold text-navy">JD One</h1>
         <p className="text-xs text-slate-500">JD Group staff app</p>

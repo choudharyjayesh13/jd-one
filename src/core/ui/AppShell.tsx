@@ -3,7 +3,7 @@
 import { useState, type ReactNode } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, Settings, LogOut, Menu, X, CalendarDays, Camera, Sun, Trophy, KeyRound } from "lucide-react";
+import { LayoutDashboard, Settings, LogOut, Menu, X, CalendarDays, Camera, Sun, Trophy, KeyRound, QrCode } from "lucide-react";
 import { TEAMS } from "@/core/schema/types";
 import { getEntity } from "@/core/schema/registry";
 import { useAuth, useUser } from "@/core/auth/AuthProvider";
@@ -58,6 +58,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         {user.role === "staff" ? myDay : dashboard}
         {user.role === "staff" ? dashboard : myDay}
         <NavLink href="/attendance/checkin/" label="Mark attendance" icon={Camera} active={active("/attendance/checkin/")} onClick={close} />
+        <NavLink href="/pay-qr/" label="Scan to pay (QR)" icon={QrCode} active={active("/pay-qr/")} onClick={close} />
         {groups.some((g) => g.team === "hr") && <NavLink href="/attendance/grid/" label="Attendance grid" icon={CalendarDays} active={active("/attendance/grid/")} onClick={close} />}
         {!hasOps && scoreboard}
       </div>
@@ -95,7 +96,8 @@ export function AppShell({ children }: { children: ReactNode }) {
       {/* Desktop sidebar */}
       <aside className="hidden w-60 shrink-0 flex-col bg-navy text-white lg:flex">
         <div className="flex items-center gap-2 px-4 py-4">
-          <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-gold text-sm font-bold text-navy">JD</span>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={`${process.env.NEXT_PUBLIC_BASE_PATH ?? ""}/icons/icon-192.png`} alt="JD Group" className="h-8 w-8 rounded-full" />
           <span className="text-base font-semibold">JD One</span>
         </div>
         <div className="flex-1 overflow-y-auto">{nav}</div>
@@ -114,7 +116,8 @@ export function AppShell({ children }: { children: ReactNode }) {
         {/* Mobile header */}
         <header className="sticky top-0 z-40 flex items-center justify-between bg-navy px-4 py-3 text-white lg:hidden" style={{ paddingTop: "max(0.75rem, env(safe-area-inset-top))" }}>
           <Link href="/" className="flex items-center gap-2">
-            <span className="flex h-7 w-7 items-center justify-center rounded-md bg-gold text-xs font-bold text-navy">JD</span>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={`${process.env.NEXT_PUBLIC_BASE_PATH ?? ""}/icons/icon-192.png`} alt="JD Group" className="h-7 w-7 rounded-full" />
             <span className="font-semibold">JD One</span>
           </Link>
           <button type="button" onClick={() => setOpen((o) => !o)} className="rounded-lg p-1.5 hover:bg-white/10" aria-label="Menu">

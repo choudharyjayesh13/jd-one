@@ -16,6 +16,8 @@ import { dailyReports } from "@/modules/daily-reports/entity";
 import { attendance } from "@/modules/attendance/entity";
 import { expenses } from "@/modules/expenses/entity";
 import { stock } from "@/modules/stock/entity";
+import { kots } from "@/modules/kot/entity";
+import { purchases } from "@/modules/purchases/entity";
 import { tasks } from "@/modules/tasks/entity";
 import { targets } from "@/modules/targets/entity";
 import { importRuns } from "@/modules/import-runs/entity";
@@ -39,6 +41,8 @@ export const entities: EntityDef[] = [
   dailyReports,
   attendance,
   expenses,
+  kots,
+  purchases,
   stock,
   tasks,
   targets,
