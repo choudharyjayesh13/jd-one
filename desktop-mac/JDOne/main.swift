@@ -8,8 +8,8 @@ import AppKit
 import WebKit
 import CoreLocation
 
-let STAFF_URL = URL(string: "https://choudharyjayesh13.github.io/jd-one/")!
-let CUSTOMER_URL = URL(string: "https://choudharyjayesh13.github.io/jd-one/portal/")!
+let STAFF_URL = URL(string: "https://app.myjdgroup.com/")!
+let CUSTOMER_URL = URL(string: "https://app.myjdgroup.com/portal/")!
 
 final class Door: NSObject, WKUIDelegate, WKNavigationDelegate {
     let name: String
