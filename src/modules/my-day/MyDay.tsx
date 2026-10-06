@@ -397,7 +397,7 @@ export function MyDay() {
             <div className="space-y-5">
               <div className="rounded-2xl bg-gradient-to-br from-emerald-50 to-white px-5 py-4">
                 <div className="text-xs font-semibold uppercase tracking-wide text-emerald-700">Monthly salary</div>
-                <div className="mt-1 text-3xl font-bold tabular-nums text-navy">{pay?.monthly_salary != null ? `₹${Number(pay.monthly_salary).toLocaleString("en-IN")}` : "To be set"}</div>
+                <div className="mt-1 text-3xl font-bold tabular-nums text-navy">{pay?.monthly_salary != null ? `${String(pay.pay_note ?? "").startsWith("Up to") ? "Up to " : ""}₹${Number(pay.monthly_salary).toLocaleString("en-IN")}` : "To be set"}</div>
                 <div className="text-xs text-slate-500">{pay?.role_in_plan ? String(pay.role_in_plan) : "Your pay grade will be added by management"}</div>
                 {pay?.pay_note && String(pay.pay_note).includes("incentive") ? <div className="mt-2 rounded-lg bg-gold/15 px-3 py-2 text-xs font-medium text-amber-900">🎯 {String(pay.pay_note).split(". Actual")[0]}</div> : null}
               </div>
