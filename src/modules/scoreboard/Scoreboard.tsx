@@ -44,12 +44,13 @@ export function Scoreboard() {
 
   const [showTable, setShowTable] = useState(false);
   const rows = result?.rows ?? [];
-  const top = rows.slice(0, 3);
+  const top = rows.filter((r) => r.score > 0).slice(0, 3);
   const maxScore = Math.max(1, ...rows.map((r) => r.score));
   const mine = rows.find((r) => r.staff.id === me) ?? null;
   const initials = (n: unknown) => String(n ?? "?").split(" ").map((w) => w[0]).join("").slice(0, 2).toUpperCase();
   const podiumStyle = ["from-amber-300 to-yellow-500 text-navy", "from-slate-200 to-slate-400 text-navy", "from-orange-300 to-amber-700 text-white"];
   const podiumOrder = top.length === 3 ? [top[1], top[0], top[2]] : top;
+  const podiumCols = top.length === 1 ? "grid-cols-1 max-w-xs mx-auto" : top.length === 2 ? "grid-cols-2 max-w-2xl mx-auto" : "grid-cols-3";
 
   return (
     <div className="mx-auto max-w-6xl space-y-6 pb-10">
@@ -89,8 +90,15 @@ export function Scoreboard() {
       ) : (
         <>
           {/* Podium */}
+          {top.length === 0 && (
+            <section className="rounded-2xl border-2 border-dashed border-gold/50 bg-gold/5 px-6 py-8 text-center">
+              <div className="text-4xl">🏆</div>
+              <p className="mt-2 font-semibold text-navy">The race hasn&apos;t started yet</p>
+              <p className="text-sm text-slate-500">Mark attendance, finish tasks and fix tickets to get on the podium.</p>
+            </section>
+          )}
           {top.length > 0 && (
-            <section className="grid grid-cols-3 items-end gap-3 sm:gap-6">
+            <section className={cn("grid items-end gap-3 sm:gap-6", podiumCols)}>
               {podiumOrder.map((r) => {
                 const place = r.rank;
                 const height = place === 1 ? "pt-10 pb-6" : place === 2 ? "pt-6 pb-5" : "pt-4 pb-4";
@@ -116,7 +124,7 @@ export function Scoreboard() {
                 <div>
                   <div className="font-semibold text-navy">Your position · {mine.score} points</div>
                   <div className="text-xs text-slate-600">
-                    {mine.rank === 1 ? "You are leading the team — keep it up! 🔥" : `${(rows[mine.rank - 2]?.score ?? mine.score) - mine.score + 1} more points to move up a place`}
+                    {mine.rank === 1 && mine.score > 0 ? "You are leading the team — keep it up! 🔥" : mine.score === 0 && (rows[0]?.score ?? 0) === 0 ? "Everyone starts at 0 — finish a task to take the lead" : `${Math.max(1, (rows[mine.rank - 2]?.score ?? mine.score) - mine.score + 1)} more point${Math.max(1, (rows[mine.rank - 2]?.score ?? mine.score) - mine.score + 1) === 1 ? "" : "s"} to move up a place`}
                   </div>
                 </div>
               </div>
