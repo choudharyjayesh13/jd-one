@@ -30,6 +30,8 @@ import { tickets } from "@/modules/tickets/entity";
 import { serviceVendors } from "@/modules/service-vendors/entity";
 import { restPeriods } from "@/modules/rest-periods/entity";
 import { staffPay } from "@/modules/staff-pay/entity";
+import { salaryPayments } from "@/modules/salary-payments/entity";
+import { vendors } from "@/modules/vendors/entity";
 import { signupRequests } from "@/modules/signup-requests/entity";
 
 export const entities: EntityDef[] = [
@@ -44,6 +46,8 @@ export const entities: EntityDef[] = [
   dailyReports,
   attendance,
   expenses,
+  salaryPayments,
+  vendors,
   kots,
   purchases,
   stock,

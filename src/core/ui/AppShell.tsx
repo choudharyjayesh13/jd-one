@@ -3,7 +3,7 @@
 import { useState, type ReactNode } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, Settings, LogOut, Menu, X, CalendarDays, Camera, Sun, Trophy, KeyRound, QrCode, KanbanSquare, Hammer } from "lucide-react";
+import { LayoutDashboard, Settings, LogOut, Menu, X, CalendarDays, Camera, Sun, Trophy, KeyRound, QrCode, KanbanSquare, Hammer, TrendingUp } from "lucide-react";
 import { TEAMS } from "@/core/schema/types";
 import { getEntity } from "@/core/schema/registry";
 import { useAuth, useUser } from "@/core/auth/AuthProvider";
@@ -11,6 +11,7 @@ import { navGroups, isAdmin, canRead, canUpdate } from "@/core/auth/access";
 import { listHref } from "@/core/routes";
 import { isOpenTicket } from "@/modules/tickets/entity";
 import { useList } from "./hooks";
+import { canSeePerformance } from "@/modules/performance/Performance";
 import { cn } from "./cn";
 
 type IconType = React.ComponentType<{ className?: string }>;
@@ -62,6 +63,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         <NavLink href="/attendance/checkin/" label="Mark attendance" icon={Camera} active={active("/attendance/checkin/")} onClick={close} />
         <NavLink href="/report-issue/" label="Report an issue" icon={Hammer} active={active("/report-issue/")} onClick={close} />
         <NavLink href="/pay-qr/" label="Scan to pay (QR)" icon={QrCode} active={active("/pay-qr/")} onClick={close} />
+        {canSeePerformance(user.role, user.staff) && <NavLink href="/performance/" label="Sales & occupancy" icon={TrendingUp} active={active("/performance/")} onClick={close} />}
         {groups.some((g) => g.team === "hr") && <NavLink href="/attendance/grid/" label="Attendance grid" icon={CalendarDays} active={active("/attendance/grid/")} onClick={close} />}
         {!hasOps && scoreboard}
       </div>

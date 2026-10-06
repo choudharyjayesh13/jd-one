@@ -28,6 +28,7 @@ export const businessUnits = defineEntity({
     { name: "short_code", label: "Short code", type: "text", placeholder: "UDS" },
     { name: "type", label: "Type", type: "select", options: ["Hotel", "Resort", "Events", "Consultancy", "HQ", "Salon", "Other"] },
     { name: "city", label: "City", type: "text", default: "Udaipur" },
+    { name: "rooms", label: "Rooms (for occupancy)", type: "number", min: 0 },
     { name: "phone", label: "Phone", type: "phone" },
     { name: "active", label: "Active", type: "boolean", default: true, help: "Shown in filters and forms" },
     { name: "address", label: "Address", type: "textarea" },

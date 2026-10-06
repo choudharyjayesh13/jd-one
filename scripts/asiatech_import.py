@@ -4,7 +4,7 @@
   python3 scripts/asiatech_import.py <dir-with-xls> --excel ~/Desktop/JD-Customers.xlsx [--push]
 
 - Merges all .xls files (dedupes by Booking ID).
-- Customers: one per mobile number (fallback: name+email); customer number JDC-00001…
+- Customers: one per mobile number (fallback: name+email); customer number JDG00001…
   in order of first booking; keeps name (best-cased), phone, email, first/last visit,
   stays, spend, who created the first booking.
 - Bookings: check-in/out, nights, room, guests, meal plan, amount/received/pending,
@@ -106,17 +106,17 @@ try:
     existing_no = {g["phone"]: g["customer_no"] for g in got if g.get("customer_no")}
 except Exception as e:
     print("note: could not read existing customer numbers:", e)
-next_no = max([int(v.split("-")[1]) for v in existing_no.values() if re.match(r"JDC-\d+$", v)] or [0]) + 1
+next_no = max([int(v[3:]) for v in existing_no.values() if re.match(r"JDG\d+$", v)] or [0]) + 1
 for k, c in sorted(customers.items(), key=lambda kv: (kv[1]["first_seen"] or "9999", kv[1]["name"])):
     ph_key = c["phone"] or None
     known = existing_no.get(ph_key) if ph_key else None
     if known:
         c["customer_no"] = known
     else:
-        c["customer_no"] = f"JDC-{next_no:05d}"; next_no += 1
+        c["customer_no"] = f"JDG{next_no:05d}"; next_no += 1
     c["id"] = str(uuid.uuid5(uuid.NAMESPACE_URL, "jdone-customer-" + (c["phone"] or k)))
     if not c["phone"]:
-        c["phone_placeholder"] = existing_no and next((p for p, n in existing_no.items() if n == c["customer_no"]), None) or f"JDC{c['customer_no'][-5:]}"
+        c["phone_placeholder"] = existing_no and next((p for p, n in existing_no.items() if n == c["customer_no"]), None) or c["customer_no"]
     for rec in c["bookings"]:
         if status_map(rec) in ("Confirmed", "Checked-in", "Checked-out"):
             c["stays"] += 1; c["nights"] += int(num(rec.get("No. Nights"))); c["spend"] += num(rec.get("Received Amount"))
@@ -185,13 +185,13 @@ if push:
         except urllib.error.HTTPError as e:
             print("REST error", table, e.code, e.read().decode()[:300]); raise
     uds = json.loads(urllib.request.urlopen(urllib.request.Request(f"{url}/rest/v1/business_units?select=id&short_code=eq.UDS", headers={"apikey": key, "Authorization": f"Bearer {key}", "Accept-Profile": schema})).read())[0]["id"]
-    cust_rows = [{"customer_no": c["customer_no"], "name": c["name"], "phone": c["phone"] or c.get("phone_placeholder") or f"JDC{c['customer_no'][-5:]}", "email": c["email"] or None, "first_source": "AsiaTech", "first_seen": c["first_seen"], "notes": f"Imported from AsiaTech {date.today()}; first booking created by {c['created_by']}"} for c in cl]
+    cust_rows = [{"customer_no": c["customer_no"], "name": c["name"], "phone": c["phone"] or c.get("phone_placeholder") or c["customer_no"], "email": c["email"] or None, "first_source": "AsiaTech", "first_seen": c["first_seen"], "notes": f"Imported from AsiaTech {date.today()}; first booking created by {c['created_by']}"} for c in cl]
     for i in range(0, len(cust_rows), 200): rest("customers", cust_rows[i:i+200], "phone")
     # Re-read ids by phone: an existing customer with the same phone keeps its own id.
     got = json.loads(urllib.request.urlopen(urllib.request.Request(f"{url}/rest/v1/customers?select=id,phone,customer_no&limit=5000", headers={"apikey": key, "Authorization": f"Bearer {key}", "Accept-Profile": schema})).read())
     id_by_phone = {g["phone"]: g["id"] for g in got}
     for c in cl:
-        c["id"] = id_by_phone.get(c["phone"] or c.get("phone_placeholder") or f"JDC{c['customer_no'][-5:]}", c["id"])
+        c["id"] = id_by_phone.get(c["phone"] or c.get("phone_placeholder") or c["customer_no"], c["id"])
     for b in bookings:
         b["customer_id"] = next((c["id"] for c in cl if c["customer_no"] == b["customer_no"]), b["customer_id"])
     book_rows = [{"id": b["id"], "external_ref": b["external_ref"], "customer_id": b["customer_id"], "guest_name": b["guest_name"], "phone": b["phone"] or "", "business_unit_id": uds,
