@@ -6,6 +6,7 @@
  */
 import { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { photoOfDay } from "@/core/ui/property";
 import { Clock, LockKeyhole, LogIn, LogOut, RefreshCw, UserRoundPlus } from "lucide-react";
 import { getSupabaseClient } from "@/core/data";
 import { useAuth } from "./AuthProvider";
@@ -96,7 +97,7 @@ export function LoginScreen() {
   if (mode === "supabase" && pendingSignup) {
     const rejected = pendingSignup.status === "Rejected";
     return (
-      <div className="flex min-h-screen items-center justify-center bg-navy px-4">
+      <div className="relative flex min-h-screen items-center justify-center bg-navy px-4" style={{ backgroundImage: `linear-gradient(rgba(11,31,58,.55), rgba(11,31,58,.85)), url(${photoOfDay().url})`, backgroundSize: "cover", backgroundPosition: "center" }}>
         <div className="w-full max-w-sm rounded-2xl bg-white p-6 shadow-xl">
           {header}
           <div className={cn("rounded-xl px-4 py-4 text-sm", rejected ? "bg-red-50 text-red-800" : "bg-amber-50 text-amber-900")}>
@@ -123,7 +124,7 @@ export function LoginScreen() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-navy px-4">
+    <div className="relative flex min-h-screen items-center justify-center bg-navy px-4" style={{ backgroundImage: `linear-gradient(rgba(11,31,58,.55), rgba(11,31,58,.85)), url(${photoOfDay().url})`, backgroundSize: "cover", backgroundPosition: "center" }}>
       <form
         className="w-full max-w-sm rounded-2xl bg-white p-6 shadow-xl"
         onSubmit={(e) => {

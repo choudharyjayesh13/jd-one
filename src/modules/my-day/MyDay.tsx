@@ -18,6 +18,7 @@ import { Input, Select } from "@/core/ui/Input";
 import { useList } from "@/core/ui/hooks";
 import { useToast } from "@/core/ui/Toast";
 import { cn } from "@/core/ui/cn";
+import { PropertyStrip, photoOfDay } from "@/core/ui/property";
 import { ATTENDANCE_LABELS } from "@/modules/attendance/entity";
 import { isOpenTicket } from "@/modules/tickets/entity";
 import { computeScoreboard, loadScoreboardData, medal, type ScoreRow } from "@/modules/scoreboard/compute";
@@ -172,7 +173,11 @@ export function MyDay() {
   return (
     <div className="mx-auto max-w-6xl space-y-6 pb-10">
       {/* Welcome */}
-      <section className="overflow-hidden rounded-3xl bg-gradient-to-br from-navy via-navy-700 to-navy p-6 text-white shadow-lg sm:p-8">
+      <section className="relative overflow-hidden rounded-3xl text-white shadow-lg">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src={photoOfDay().url} alt="" className="absolute inset-0 h-full w-full object-cover" />
+        <div className="absolute inset-0 bg-gradient-to-br from-navy/95 via-navy/80 to-navy/40" />
+        <div className="relative p-6 sm:p-8">
         <div className="flex flex-col gap-6 sm:flex-row sm:items-end sm:justify-between">
           <div>
             <p className="text-sm text-white/70">{now.toLocaleDateString("en-IN", { weekday: "long", day: "numeric", month: "long", year: "numeric" })}</p>
@@ -193,6 +198,8 @@ export function MyDay() {
         <Link href="/attendance/checkin/" className="mt-6 flex w-full items-center justify-center gap-2 rounded-2xl bg-gold px-6 py-4 text-base font-semibold text-navy shadow transition hover:brightness-105 sm:w-auto sm:inline-flex">
           <Camera className="h-5 w-5" /> {att?.checked_in_at ? (att.checked_out_at ? "View attendance" : "Check out") : "Mark attendance with selfie"}
         </Link>
+        <p className="mt-4 text-xs text-white/60">📍 {photoOfDay().caption} · The Udaisarovar</p>
+        </div>
       </section>
 
       {!me && (
@@ -203,8 +210,8 @@ export function MyDay() {
 
       {/* At a glance */}
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-        <Tile icon={ClipboardList} label="Tasks today" value={myTasks.length} hint={myTasks.some((t) => t.due && String(t.due) < today) ? "some overdue" : "due today or earlier"} tone={myTasks.length ? "gold" : "green"} />
-        <Tile icon={CalendarClock} label="Upcoming (7 days)" value={upcoming.filter((t) => String(t.due) <= in7).length} hint={upcoming.length ? `${upcoming.length} planned in total` : "nothing planned yet"} />
+        <Tile icon={ClipboardList} href="/task-board/" label="Tasks today" value={myTasks.length} hint={myTasks.some((t) => t.due && String(t.due) < today) ? "some overdue" : "due today or earlier"} tone={myTasks.length ? "gold" : "green"} />
+        <Tile icon={CalendarClock} href="/task-board/" label="Upcoming (7 days)" value={upcoming.filter((t) => String(t.due) <= in7).length} hint={upcoming.length ? `${upcoming.length} planned in total` : "nothing planned yet"} />
         <Tile icon={Wrench} label="Open tickets" value={myTickets.length} tone={myTickets.length ? "red" : "green"} href={listHref("tickets")} />
         <Tile icon={Trophy} label="My score today" value={score ? `${medal(score.rank, score.score)} ${score.score}`.trim() : "—"} hint={score ? `rank #${score.rank}` : undefined} tone="green" href="/scoreboard/" />
       </div>
@@ -215,7 +222,7 @@ export function MyDay() {
           { href: newHref("kots"), label: "New KOT order", icon: ChefHat },
           { href: "/pay-qr/", label: "Scan to pay QR", icon: QrCode },
           { href: newHref("purchases"), label: "Add purchase", icon: ShoppingCart },
-          { href: newHref("tickets", me ? { reported_by: me } : undefined), label: "Report an issue", icon: Wrench },
+          { href: "/report-issue/", label: "Report an issue", icon: Wrench },
         ].map((a) => (
           <Link key={a.label} href={a.href} className="flex items-center gap-3 rounded-2xl border border-line bg-white px-4 py-4 text-sm font-medium text-navy shadow-sm transition hover:border-gold hover:shadow-md">
             <a.icon className="h-5 w-5 text-gold" /> {a.label}
@@ -335,6 +342,8 @@ export function MyDay() {
           </Panel>
         </div>
       </div>
+
+      <PropertyStrip />
     </div>
   );
 }

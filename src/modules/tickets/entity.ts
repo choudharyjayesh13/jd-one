@@ -1,7 +1,7 @@
 import { Wrench, Play, CheckCircle2, ShieldCheck } from "lucide-react";
 import { defineEntity, type FieldValues, type Row } from "@/core/schema/types";
 
-export const TICKET_CATEGORIES = ["Carpenter", "AC / cooling", "Electrical", "Plumbing", "Housekeeping", "Kitchen equipment", "IT / WiFi", "Pool", "Garden", "Safety", "Other"] as const;
+export const TICKET_CATEGORIES = ["Carpenter", "AC / cooling", "Electrical", "Plumbing", "Painter", "Pest control", "Housekeeping", "Kitchen equipment", "IT / WiFi", "Pool", "Garden", "Safety", "Other"] as const;
 export const TICKET_PRIORITIES = ["Urgent", "High", "Medium", "Low"] as const;
 export const TICKET_STATUSES = ["Open", "In progress", "Waiting parts", "Done", "Verified"] as const;
 export const TICKET_CLOSED: readonly string[] = ["Done", "Verified"];
@@ -36,6 +36,7 @@ export const tickets = defineEntity({
     { name: "description", label: "Description", type: "textarea" },
     { name: "media", label: "Photos / videos", type: "files" },
     { name: "reported_by", label: "Reported by", type: "relation", entity: "staff" },
+    { name: "vendor_id", label: "Repair contact", type: "relation", entity: "service-vendors", help: "Outside carpenter / technician called for this job" },
     { name: "assigned_to", label: "Assigned to", type: "relation", entity: "staff", defaultToMe: false, help: "A task is created in their My Day" },
     { name: "status", label: "Status", type: "select", options: TICKET_STATUSES, required: true, default: "Open" },
     { name: "due", label: "Due", type: "date" },

@@ -3,7 +3,7 @@
 import { useState, type ReactNode } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, Settings, LogOut, Menu, X, CalendarDays, Camera, Sun, Trophy, KeyRound, QrCode } from "lucide-react";
+import { LayoutDashboard, Settings, LogOut, Menu, X, CalendarDays, Camera, Sun, Trophy, KeyRound, QrCode, KanbanSquare, Hammer } from "lucide-react";
 import { TEAMS } from "@/core/schema/types";
 import { getEntity } from "@/core/schema/registry";
 import { useAuth, useUser } from "@/core/auth/AuthProvider";
@@ -50,6 +50,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   const myDay = <NavLink href="/my-day/" label="My Day" icon={Sun} active={active("/my-day/")} onClick={close} />;
   const dashboard = <NavLink href="/" label="Dashboard" icon={LayoutDashboard} active={active("/")} onClick={close} />;
   const scoreboard = <NavLink href="/scoreboard/" label="Scoreboard" icon={Trophy} active={active("/scoreboard/")} onClick={close} />;
+  const taskBoard = <NavLink href="/task-board/" label="Task board" icon={KanbanSquare} active={active("/task-board/")} onClick={close} />;
 
   const nav = (
     <nav className="flex flex-col gap-4 p-3">
@@ -57,7 +58,9 @@ export function AppShell({ children }: { children: ReactNode }) {
         {/* Staff see My Day first; managers and teams start on the dashboard. */}
         {user.role === "staff" ? myDay : dashboard}
         {user.role === "staff" ? dashboard : myDay}
+        {taskBoard}
         <NavLink href="/attendance/checkin/" label="Mark attendance" icon={Camera} active={active("/attendance/checkin/")} onClick={close} />
+        <NavLink href="/report-issue/" label="Report an issue" icon={Hammer} active={active("/report-issue/")} onClick={close} />
         <NavLink href="/pay-qr/" label="Scan to pay (QR)" icon={QrCode} active={active("/pay-qr/")} onClick={close} />
         {groups.some((g) => g.team === "hr") && <NavLink href="/attendance/grid/" label="Attendance grid" icon={CalendarDays} active={active("/attendance/grid/")} onClick={close} />}
         {!hasOps && scoreboard}
