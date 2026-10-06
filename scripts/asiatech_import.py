@@ -98,24 +98,30 @@ for rec in order:
     c["bookings"].append(rec)
 # Customer numbers are permanent: reuse numbers already in JD One (matched by phone), then continue after the highest.
 existing_no = {}
+placeholder_by_name = {}
 try:
     envx = {}
     for line in open(os.path.expanduser("~/jd-one/.env.local")):
         if "=" in line and not line.startswith("#"): k_, v_ = line.strip().split("=", 1); envx[k_] = v_
     got = json.loads(urllib.request.urlopen(urllib.request.Request(f"{envx['SUPABASE_URL']}/rest/v1/customers?select=phone,customer_no&customer_no=not.is.null&limit=5000", headers={"apikey": envx["SUPABASE_SERVICE_ROLE_KEY"], "Authorization": f"Bearer {envx['SUPABASE_SERVICE_ROLE_KEY']}", "Accept-Profile": envx.get("SUPABASE_SCHEMA", "public")}), timeout=30).read())
     existing_no = {g["phone"]: g["customer_no"] for g in got if g.get("customer_no")}
+    # Guests with no phone are stored with their JDG number as a placeholder phone: match them by name (lowest number wins).
+    got_n = json.loads(urllib.request.urlopen(urllib.request.Request(f"{envx['SUPABASE_URL']}/rest/v1/customers?select=name,phone,customer_no&phone=like.JDG*&order=customer_no.asc&limit=5000", headers={"apikey": envx["SUPABASE_SERVICE_ROLE_KEY"], "Authorization": f"Bearer {envx['SUPABASE_SERVICE_ROLE_KEY']}", "Accept-Profile": envx.get("SUPABASE_SCHEMA", "public")}), timeout=30).read())
+    for g in got_n: placeholder_by_name.setdefault(g["name"].strip().lower(), (g["phone"], g["customer_no"]))
 except Exception as e:
     print("note: could not read existing customer numbers:", e)
 next_no = max([int(v[3:]) for v in existing_no.values() if re.match(r"JDG\d+$", v)] or [0]) + 1
 for k, c in sorted(customers.items(), key=lambda kv: (kv[1]["first_seen"] or "9999", kv[1]["name"])):
     ph_key = c["phone"] or None
     known = existing_no.get(ph_key) if ph_key else None
+    if not ph_key and c["name"].strip().lower() in placeholder_by_name:
+        c["phone_placeholder"], known = placeholder_by_name.pop(c["name"].strip().lower())
     if known:
         c["customer_no"] = known
     else:
         c["customer_no"] = f"JDG{next_no:05d}"; next_no += 1
     c["id"] = str(uuid.uuid5(uuid.NAMESPACE_URL, "jdone-customer-" + (c["phone"] or k)))
-    if not c["phone"]:
+    if not c["phone"] and not c.get("phone_placeholder"):
         c["phone_placeholder"] = existing_no and next((p for p, n in existing_no.items() if n == c["customer_no"]), None) or c["customer_no"]
     for rec in c["bookings"]:
         if status_map(rec) in ("Confirmed", "Checked-in", "Checked-out"):

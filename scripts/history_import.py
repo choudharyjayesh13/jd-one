@@ -127,11 +127,15 @@ if "bookings" in ONLY:
         if "checked in" in t: return "Checked-in"
         return "Confirmed"
     CH = {"MakeMyTrip": "MMT/Goibibo", "Goibibo": "MMT/Goibibo", "Airbnb": "Airbnb", "Agoda": "Agoda", "Booking.com": "Booking.com"}
-    rows, dup = [], 0
+    rows, dup, review = [], 0, []
     for r in load("reservations"):
         if not r.get("check_in"): continue
         if r.get("ota_booking_id") and r["ota_booking_id"] in refs: dup += 1; continue
         if any(same(b, r) for b in have): dup += 1; continue
+        # Accounts-group lines and nameless entries are payment notes that often repeat an AsiaTech booking
+        # under another name — list them for review instead of adding sales twice.
+        if not r.get("guest_name") or (r.get("source") or "").startswith("Accounts"):
+            review.append(r); continue
         co = r.get("check_out") or (_d.fromisoformat(r["check_in"]) + timedelta(days=1)).isoformat()
         ph = digits(r.get("phone"))
         total = float(r.get("total") or 0); adv = float(r.get("advance") or 0)
@@ -144,6 +148,8 @@ if "bookings" in ONLY:
                      "source": CH.get(r.get("channel"), "Direct"), "status": status(r.get("notes")), "import_source": "WhatsApp: " + (r.get("source") or ""),
                      "special_requests": r.get("notes") or None, "created_at": (r.get("booked_on") or r["check_in"]) + "T09:00:00+05:30"})
     report["bookings_already_in_app"] = dup
+    report["bookings_for_review"] = len(review)
+    json.dump(review, open(os.path.join(d, "reservations_to_review.json"), "w"), indent=1, ensure_ascii=False)
     push("bookings", rows, "external_ref")
 
 print(json.dumps(report, indent=1), "PUSHED" if PUSH else "(dry run — add --push)")
