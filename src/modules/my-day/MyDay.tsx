@@ -20,6 +20,8 @@ import { useToast } from "@/core/ui/Toast";
 import { cn } from "@/core/ui/cn";
 import { PropertyStrip, photoOfDay } from "@/core/ui/property";
 import { CompleteTaskDialog } from "@/core/ui/CompleteTask";
+import { AwardsBanner } from "@/modules/rewards/AwardsBanner";
+import { INCENTIVES } from "@/modules/rewards/rewards";
 import { activeRest, phaseAt, pretty, routineOf, shiftsOf } from "@/modules/attendance/shifts";
 import { ATTENDANCE_LABELS } from "@/modules/attendance/entity";
 import { isOpenTicket } from "@/modules/tickets/entity";
@@ -104,6 +106,8 @@ export function MyDay() {
   const { rows: units } = useList("business-units");
   const { rows: rests } = useList(me ? "rest-periods" : null, { filter: { date: today, staff_id: me } });
   const { rows: allStaff } = useList("staff");
+  const { rows: payRows } = useList(me ? "staff-pay" : null, { filter: { staff_id: me } });
+  const pay = payRows[0] ?? null;
 
   useEffect(() => {
     if (!me) return;
@@ -277,6 +281,8 @@ export function MyDay() {
         </div>
       </section>
 
+      <AwardsBanner me={me} />
+
       {/* At a glance */}
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
         <Tile icon={ClipboardList} href="/task-board/" label="Tasks today" value={myTasks.length} hint={myTasks.some((t) => t.due && String(t.due) < today) ? "some overdue" : "due today or earlier"} tone={myTasks.length ? "gold" : "green"} />
@@ -382,6 +388,30 @@ export function MyDay() {
               <div>
                 <h3 className="mb-3 flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-slate-500"><Flag className="h-4 w-4 text-gold" /> My KRAs · what I&apos;m responsible for</h3>
                 <Numbered items={kras} empty="To be set by management" />
+              </div>
+            </div>
+          </Panel>
+
+          {/* My pay & rewards */}
+          <Panel title="My pay & rewards" subtitle="Only you can see this" icon={Trophy} className="border-emerald-200">
+            <div className="space-y-5">
+              <div className="rounded-2xl bg-gradient-to-br from-emerald-50 to-white px-5 py-4">
+                <div className="text-xs font-semibold uppercase tracking-wide text-emerald-700">Monthly salary</div>
+                <div className="mt-1 text-3xl font-bold tabular-nums text-navy">{pay?.monthly_salary != null ? `₹${Number(pay.monthly_salary).toLocaleString("en-IN")}` : "To be set"}</div>
+                <div className="text-xs text-slate-500">{pay?.role_in_plan ? String(pay.role_in_plan) : "Your pay grade will be added by management"}</div>
+              </div>
+              <div>
+                <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">Earn more — bonus & incentives</h3>
+                <ul className="space-y-2">
+                  {INCENTIVES.map((x) => (
+                    <li key={x.title} className="flex items-start gap-3 rounded-xl border border-line px-3 py-2.5">
+                      <span className="text-xl">{x.emoji}</span>
+                      <div className="min-w-0 flex-1"><div className="text-sm font-semibold text-navy">{x.title}</div><div className="text-xs text-slate-500">{x.rule}</div></div>
+                      <span className="shrink-0 rounded-full bg-gold/20 px-2.5 py-1 text-xs font-bold text-amber-800">+₹{x.amount.toLocaleString("en-IN")}</span>
+                    </li>
+                  ))}
+                </ul>
+                <p className="mt-2 text-[11px] text-slate-400">Draft scheme — final amounts are decided by management.</p>
               </div>
             </div>
           </Panel>

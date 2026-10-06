@@ -27,7 +27,6 @@ export const staff = defineEntity({
     { name: "active", label: "Active", type: "boolean", default: true, help: "Currently employed" },
     { name: "joined_on", label: "Joined on", type: "date" },
     { name: "left_on", label: "Left on", type: "date" },
-    { name: "salary", label: "Salary (monthly)", type: "money", min: 0 },
     { name: "auth_user_id", label: "Login user id", type: "text", help: "Supabase Auth user id (shared mode). Leave blank in local mode." },
     { name: "notes", label: "Notes", type: "textarea" },
     { name: "shift1_start", label: "Shift 1 starts", type: "text", default: "07:00", placeholder: "07:00" },

@@ -29,6 +29,7 @@ import { walletTransactions } from "@/modules/wallet-transactions/entity";
 import { tickets } from "@/modules/tickets/entity";
 import { serviceVendors } from "@/modules/service-vendors/entity";
 import { restPeriods } from "@/modules/rest-periods/entity";
+import { staffPay } from "@/modules/staff-pay/entity";
 import { signupRequests } from "@/modules/signup-requests/entity";
 
 export const entities: EntityDef[] = [
@@ -57,6 +58,7 @@ export const entities: EntityDef[] = [
   tickets,
   serviceVendors,
   restPeriods,
+  staffPay,
   signupRequests,
 ];
 

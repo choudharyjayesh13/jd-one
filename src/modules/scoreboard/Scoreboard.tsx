@@ -12,6 +12,7 @@ import { useList } from "@/core/ui/hooks";
 import { Loading, ErrorBox } from "@/core/ui/misc";
 import { cn } from "@/core/ui/cn";
 import { photoOfDay } from "@/core/ui/property";
+import { AwardsBanner } from "@/modules/rewards/AwardsBanner";
 import { computeScoreboard, loadScoreboardData, medal, rapidService, PERIODS, type Period, type ScoreboardInput } from "./compute";
 
 const WATCH = ["attendance", "tasks", "tickets", "leads", "activities", "staff"];
@@ -89,6 +90,8 @@ export function Scoreboard() {
         <Loading label="Computing scores…" />
       ) : (
         <>
+          <AwardsBanner me={me} />
+
           {/* Podium */}
           {top.length === 0 && (
             <section className="rounded-2xl border-2 border-dashed border-gold/50 bg-gold/5 px-6 py-8 text-center">
