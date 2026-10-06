@@ -15,7 +15,7 @@ export const tasks = defineEntity({
   fields: [
     { name: "title", label: "Title", type: "text", required: true },
     { name: "business_unit_id", label: "Business unit", type: "relation", entity: "business-units", required: true },
-    { name: "type", label: "Type", type: "select", options: ["Maintenance", "Housekeeping", "Purchase", "Follow-up", "Other"], required: true, default: "Other" },
+    { name: "type", label: "Type", type: "select", options: ["Routine", "Room making", "Cleaning", "Maintenance", "Housekeeping", "Purchase", "Follow-up", "Other"], required: true, default: "Other" },
     { name: "priority", label: "Priority", type: "select", options: ["High", "Medium", "Low"], default: "Medium" },
     { name: "assigned_to", label: "Assigned to", type: "relation", entity: "staff" },
     { name: "due", label: "Due", type: "date" },
@@ -25,6 +25,8 @@ export const tasks = defineEntity({
     { name: "customer_id", label: "Customer", type: "relation", entity: "customers" },
     { name: "ticket_id", label: "Ticket", type: "relation", entity: "tickets" },
     { name: "completed_at", label: "Completed", type: "datetime", readOnly: true },
+    { name: "completion_photo", label: "Proof photo (name + time stamped)", type: "file" },
+    { name: "routine_key", label: "Routine key", type: "text", hidden: true, readOnly: true },
     { name: "notes", label: "Notes", type: "textarea" },
   ],
   listColumns: ["title", "status", "priority", "type", "assigned_to", "due", "business_unit_id"],

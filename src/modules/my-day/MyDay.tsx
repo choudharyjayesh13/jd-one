@@ -4,7 +4,7 @@
  * today's tasks, upcoming tasks, my role (job description, 5 KPIs, 5 KRAs), tickets,
  * today's numbers and my score.
  */
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import Link from "next/link";
 import { Camera, CalendarClock, ChefHat, ClipboardList, Plus, QrCode, ShoppingCart, Target, Trophy, Wrench, Briefcase, Flag } from "lucide-react";
 import type { Row } from "@/core/schema/types";
@@ -19,6 +19,8 @@ import { useList } from "@/core/ui/hooks";
 import { useToast } from "@/core/ui/Toast";
 import { cn } from "@/core/ui/cn";
 import { PropertyStrip, photoOfDay } from "@/core/ui/property";
+import { CompleteTaskDialog } from "@/core/ui/CompleteTask";
+import { activeRest, phaseAt, pretty, routineOf, shiftsOf } from "@/modules/attendance/shifts";
 import { ATTENDANCE_LABELS } from "@/modules/attendance/entity";
 import { isOpenTicket } from "@/modules/tickets/entity";
 import { computeScoreboard, loadScoreboardData, medal, type ScoreRow } from "@/modules/scoreboard/compute";
@@ -85,6 +87,8 @@ export function MyDay() {
   const [adding, setAdding] = useState(false);
   const [draft, setDraft] = useState({ title: "", priority: "Medium", due: today });
   const [score, setScore] = useState<ScoreRow | null>(null);
+  const [completing, setCompleting] = useState<Row | null>(null);
+  const routineMade = useRef(false);
 
   useEffect(() => {
     const t = setInterval(() => setNow(new Date()), 1000);
@@ -98,6 +102,8 @@ export function MyDay() {
   const { rows: bookings } = useList("bookings", { filter: unitId ? { business_unit_id: unitId } : {} });
   const { rows: reports } = useList("daily-reports", { filter: unitId ? { business_unit_id: unitId } : {}, sort: { field: "date", dir: "desc" }, limit: 1 });
   const { rows: units } = useList("business-units");
+  const { rows: rests } = useList(me ? "rest-periods" : null, { filter: { date: today, staff_id: me } });
+  const { rows: allStaff } = useList("staff");
 
   useEffect(() => {
     if (!me) return;
@@ -116,6 +122,25 @@ export function MyDay() {
 
   const profile: Row = meRows[0] ?? user.staff ?? ({} as Row);
   const att = attendance[0] ?? null;
+  const routine = routineOf(profile);
+  const shifts = shiftsOf(profile);
+  const phase = phaseAt(profile, now);
+  const rest = activeRest(rests, now);
+  const restBy = rest ? String(allStaff.find((x) => x.id === rest.assigned_by)?.name ?? "your leader") : "";
+
+  // Turn the daily routine into today's tasks once a day, so each one is completed with a stamped photo.
+  useEffect(() => {
+    if (!me || routineMade.current || !meRows[0] || routine.length === 0) return;
+    routineMade.current = true;
+    const existing = new Set(tasks.filter((t) => t.due === today && t.routine_key).map((t) => String(t.routine_key)));
+    const missing = routine.filter((r) => !existing.has(`${r.time ?? ""}|${r.text}`));
+    if (!missing.length) return;
+    void Promise.all(
+      missing.map((r) =>
+        getStore().create("tasks", { title: r.text, business_unit_id: unitId, type: "Routine", priority: "Medium", assigned_to: me, due: today, status: "Open", points: 1, routine_key: `${r.time ?? ""}|${r.text}`, notes: r.time ? `Daily routine · ${r.time}` : "Daily routine", created_by: me }),
+      ),
+    ).then(() => reloadTasks()).catch(() => undefined);
+  }, [me, meRows, routine, tasks, today, unitId, reloadTasks]);
   const open = tasks.filter((t) => t.status !== "Done");
   const myTasks = open.filter((t) => !t.due || String(t.due) <= today).sort((a, b) => String(a.due ?? "9").localeCompare(String(b.due ?? "9")));
   const upcoming = open.filter((t) => t.due && String(t.due) > today).sort((a, b) => String(a.due).localeCompare(String(b.due)));
@@ -131,15 +156,7 @@ export function MyDay() {
   const kras = [1, 2, 3, 4, 5].map((i) => profile[`kra_${i}`] as string | null);
   const hour = now.getHours();
 
-  const markDone = async (t: Row) => {
-    try {
-      await getStore().update("tasks", t.id, { status: "Done", completed_at: new Date().toISOString() });
-      toast(`Done: ${t.title}`);
-      await reloadTasks();
-    } catch (e) {
-      toast((e as Error).message, "error");
-    }
-  };
+  const markDone = (t: Row) => setCompleting(t);
   const addTask = async () => {
     if (!draft.title.trim()) return toast("Give the task a title", "error");
     try {
@@ -157,7 +174,7 @@ export function MyDay() {
     const overdue = t.due && String(t.due) < today;
     return (
       <li key={t.id} className="flex items-center gap-4 rounded-xl border border-line px-4 py-3.5 transition hover:border-navy/20 hover:bg-slate-50">
-        <input type="checkbox" className="h-6 w-6 shrink-0 cursor-pointer accent-navy" checked={false} onChange={() => void markDone(t)} aria-label={`Mark ${t.title} done`} />
+        <button type="button" onClick={() => markDone(t)} className="shrink-0 rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-emerald-700" aria-label={`Complete ${t.title}`}>📸 Complete</button>
         <Link href={viewHref("tasks", t.id)} className="min-w-0 flex-1">
           <span className="block font-medium text-navy">{String(t.title)}</span>
           <span className={cn("text-xs", overdue ? "font-medium text-red-600" : "text-slate-500")}>
@@ -207,6 +224,58 @@ export function MyDay() {
           Your login is not linked to a staff record yet, so your tasks and role cannot be shown. Please ask the office to link it.
         </div>
       )}
+
+      {rest && (
+        <section className="flex items-center gap-4 rounded-2xl border-2 border-emerald-300 bg-emerald-50 px-5 py-4">
+          <span className="text-4xl">🌿</span>
+          <div>
+            <div className="text-lg font-semibold text-emerald-800">You are on rest time until {pretty(String(rest.end_time))}</div>
+            <div className="text-sm text-emerald-700">{rest.note ? `${String(rest.note)} · ` : ""}given by {restBy}</div>
+          </div>
+        </section>
+      )}
+
+      {/* Daily task sheet */}
+      <section className="overflow-hidden rounded-2xl border border-line bg-white shadow-sm">
+        <header className="flex flex-wrap items-center justify-between gap-2 px-5 pt-5 sm:px-6">
+          <div>
+            <h2 className="text-base font-semibold text-navy">📋 My daily task sheet</h2>
+            <p className="text-xs text-slate-500">Your day every day — complete each job with a photo. If you are free, your leader may give you rest time.</p>
+          </div>
+          <span className="rounded-full bg-navy px-3 py-1 text-xs font-semibold text-white">
+            {phase === "before" ? `Day starts ${pretty(shifts.s1[0])}` : phase === "shift1" ? "Now: Shift 1" : phase === "break" ? "Now: Lunch & rest break" : phase === "shift2" ? "Now: Shift 2" : "Day finished"}
+          </span>
+        </header>
+        <div className="grid gap-3 p-5 sm:p-6 md:grid-cols-3">
+          {[
+            { key: "s1", title: `Shift 1 · ${pretty(shifts.s1[0])} – ${pretty(shifts.s1[1])}`, active: phase === "shift1", items: open.concat(tasks.filter((t) => t.status === "Done" && t.due === today)).filter((t) => t.due === today && (!String(t.routine_key ?? "").split("|")[0] || String(t.routine_key).split("|")[0] < shifts.s1[1])) },
+            { key: "br", title: `Break · ${pretty(shifts.s1[1])} – ${pretty(shifts.s2[0])}`, active: phase === "break", items: [] as Row[] },
+            { key: "s2", title: `Shift 2 · ${pretty(shifts.s2[0])} – ${pretty(shifts.s2[1])}`, active: phase === "shift2", items: open.concat(tasks.filter((t) => t.status === "Done" && t.due === today)).filter((t) => t.due === today && String(t.routine_key ?? "").split("|")[0] >= shifts.s1[1]) },
+          ].map((b) => (
+            <div key={b.key} className={cn("rounded-2xl border-2 p-4", b.active ? "border-gold bg-gold/5" : "border-line", b.key === "br" && "bg-emerald-50/60")}>
+              <div className="mb-3 flex items-center justify-between text-sm font-semibold text-navy">{b.title}{b.active && <span className="rounded-full bg-gold px-2 py-0.5 text-[10px] font-bold text-navy">NOW</span>}</div>
+              {b.key === "br" ? (
+                <div className="space-y-2 text-sm text-emerald-800">
+                  <p>🍽️ Lunch and rest — recharge for the evening.</p>
+                  {rests.map((r) => <p key={r.id} className="rounded-lg bg-white px-3 py-2 text-xs">🌿 Extra rest {pretty(String(r.start_time))}–{pretty(String(r.end_time))}{r.note ? ` · ${r.note}` : ""}</p>)}
+                </div>
+              ) : b.items.length === 0 ? (
+                <p className="text-xs text-slate-400">{routine.length ? "No jobs in this shift" : "Your daily routine will be added by your leader"}</p>
+              ) : (
+                <ul className="space-y-2">
+                  {b.items.map((t) => (
+                    <li key={t.id} className="flex items-center gap-2 rounded-xl bg-slate-50 px-3 py-2">
+                      <span className="w-12 shrink-0 text-[11px] font-semibold tabular-nums text-slate-500">{String(t.routine_key ?? "").split("|")[0] ? pretty(String(t.routine_key).split("|")[0]) : "today"}</span>
+                      <span className={cn("min-w-0 flex-1 text-sm", t.status === "Done" ? "text-slate-400 line-through" : "text-navy")}>{String(t.title)}</span>
+                      {t.status === "Done" ? <span className="text-emerald-600">✅</span> : <button type="button" onClick={() => markDone(t)} className="rounded-lg bg-emerald-600 px-2 py-1 text-[11px] font-semibold text-white">📸 Done</button>}
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          ))}
+        </div>
+      </section>
 
       {/* At a glance */}
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
@@ -344,6 +413,7 @@ export function MyDay() {
       </div>
 
       <PropertyStrip />
+      <CompleteTaskDialog task={completing} personName={String(profile.name ?? user.name)} onClose={() => setCompleting(null)} onDone={() => { setCompleting(null); void reloadTasks(); }} />
     </div>
   );
 }

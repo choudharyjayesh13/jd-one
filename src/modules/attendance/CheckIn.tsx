@@ -5,13 +5,15 @@
  * business unit has coordinates, records the distance from the property.
  */
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Camera, LogIn, LogOut, MapPin, RefreshCw, X } from "lucide-react";
+import { Camera, MapPin, RefreshCw, X, Coffee, Send, CheckCircle2, Sun, Moon } from "lucide-react";
 import { getStore } from "@/core/data";
 import { useUser } from "@/core/auth/AuthProvider";
 import { todayISO, formatDateTime } from "@/core/format";
 import { Button } from "@/core/ui/Button";
-import { Card, CardBody } from "@/core/ui/Card";
-import { PageHeader } from "@/core/ui/misc";
+import { cn } from "@/core/ui/cn";
+import { photoOfDay } from "@/core/ui/property";
+import { isAdmin } from "@/core/auth/access";
+import { activeRest, nextPunch, phaseAt, pretty, shiftsOf } from "./shifts";
 import { useToast } from "@/core/ui/Toast";
 import type { Row } from "@/core/schema/types";
 
@@ -54,6 +56,9 @@ export function CheckIn() {
   const video = useRef<HTMLVideoElement>(null);
   const [stream, setStream] = useState<MediaStream | null>(null);
   const [camError, setCamError] = useState<string | null>(null);
+  const [rests, setRests] = useState<Row[]>([]);
+  const [restForm, setRestForm] = useState({ staff_id: "", start_time: "", end_time: "", note: "" });
+  const leader = isAdmin(user.role) || user.role === "hr";
 
   const stopCamera = useCallback(() => {
     setStream((s) => {
@@ -125,6 +130,10 @@ export function CheckIn() {
     const q = staffId ? store.list("attendance", { filter: { date: todayISO(), staff_id: staffId } }) : Promise.resolve([] as Row[]);
     void q.then((rows) => setToday(rows[0] ?? null));
   }, [store, staffId, saving]);
+  const loadRests = useCallback(() => store.list("rest-periods", { filter: { date: todayISO() } }).then(setRests).catch(() => undefined), [store]);
+  useEffect(() => {
+    void loadRests();
+  }, [loadRests]);
 
   const me = staff.find((s) => s.id === staffId) ?? null;
   const unit = useMemo(() => units.find((u) => u.id === me?.business_unit_id) ?? null, [units, me]);
@@ -155,8 +164,10 @@ export function CheckIn() {
      
   }, []);
 
-  const save = async (kind: "in" | "out") => {
+  const punch = nextPunch(today);
+  const save = async () => {
     if (!staffId) return toast("Choose your name first", "error");
+    if (!punch) return toast("All four punches done for today 👏", "info");
     if (!photo) return toast("Take a selfie first", "error");
     if (!pos) return toast("Location not captured yet — press Retry location", "error");
     setSaving(true);
@@ -164,137 +175,165 @@ export function CheckIn() {
       const at = new Date().toISOString();
       const device = typeof navigator !== "undefined" ? navigator.userAgent.slice(0, 120) : null;
       const common = { latitude: pos.lat, longitude: pos.lng, accuracy_m: pos.accuracy, distance_m: distance, location_ok: locationOk, device };
-      if (kind === "in") {
-        const values = { date: todayISO(), staff_id: staffId, status: "P", checked_in_at: at, selfie: photo, ...common };
-        if (today) await store.update("attendance", today.id, values);
-        else await store.create("attendance", values);
-        toast(`Checked in at ${formatDateTime(at)}${distance != null ? ` · ${distance} m from ${unit?.name}` : ""}`, "success");
-      } else {
-        if (!today) return toast("No check-in today yet", "error");
-        await store.update("attendance", today.id, { checked_out_at: at, selfie_out: photo, ...common });
-        toast(`Checked out at ${formatDateTime(at)}`, "success");
-      }
+      const values = { [punch.field]: at, [punch.selfie]: photo, ...common };
+      if (today) await store.update("attendance", today.id, values);
+      else await store.create("attendance", { date: todayISO(), staff_id: staffId, status: "P", ...values });
+      toast(`${punch.label} · ${formatDateTime(at).slice(-8)}${distance != null ? ` · ${distance} m from ${unit?.name}` : ""}`, "success");
       setPhoto(null);
+    } catch (e) {
+      toast((e as Error).message, "error");
     } finally {
       setSaving(false);
     }
   };
+  const giveRest = async () => {
+    const f = restForm;
+    if (!f.staff_id || !f.start_time || !f.end_time) return toast("Choose the person and the rest time", "error");
+    try {
+      await store.create("rest-periods", { staff_id: f.staff_id, date: todayISO(), start_time: f.start_time, end_time: f.end_time, note: f.note || null, assigned_by: user.staff?.id ?? null });
+      toast(`Rest time given to ${String(staff.find((x) => x.id === f.staff_id)?.name ?? "")} — they see it in the app`);
+      setRestForm({ staff_id: "", start_time: "", end_time: "", note: "" });
+      await loadRests();
+    } catch (e) {
+      toast((e as Error).message, "error");
+    }
+  };
+  const sh = shiftsOf(me);
+  const phase = phaseAt(me, now);
+  const myRest = activeRest(rests.filter((r) => r.staff_id === staffId), now);
+  const steps = [
+    { label: `Shift 1 in`, at: today?.checked_in_at, plan: sh.s1[0], icon: Sun },
+    { label: `Shift 1 out`, at: today?.checked_out_at, plan: sh.s1[1], icon: Coffee },
+    { label: `Shift 2 in`, at: today?.shift2_in_at, plan: sh.s2[0], icon: Sun },
+    { label: `Shift 2 out`, at: today?.shift2_out_at, plan: sh.s2[1], icon: Moon },
+  ];
 
   return (
-    <div className="mx-auto max-w-lg space-y-4">
-      <PageHeader title="Mark attendance" subtitle="Selfie + time + location. Works best on your phone." />
-      <Card>
-        <CardBody className="space-y-4">
-          <div className="text-center">
-            <div className="text-3xl font-semibold tabular-nums text-navy">{now.toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit", second: "2-digit" })}</div>
-            <div className="text-sm text-slate-500">{now.toLocaleDateString("en-IN", { weekday: "long", day: "numeric", month: "long", year: "numeric" })}</div>
-          </div>
-          <label className="block text-sm font-medium text-slate-700">
-            Who are you?
-            <select className="mt-1 w-full rounded-lg border border-line bg-white px-3 py-2 text-base" value={staffId} onChange={(e) => setStaffId(e.target.value)}>
-              <option value="">Select your name…</option>
-              {staff.map((s) => (
-                <option key={s.id} value={s.id}>
-                  {String(s.name)}
-                  {s.designation ? ` · ${s.designation}` : ""}
-                </option>
-              ))}
-            </select>
-          </label>
-          {today?.checked_in_at ? (
-            <p className="rounded-lg bg-emerald-50 px-3 py-2 text-sm text-emerald-800">
-              Checked in today at {formatDateTime(today.checked_in_at)}
-              {today.checked_out_at ? ` · out at ${formatDateTime(today.checked_out_at)}` : ""}
-            </p>
-          ) : null}
+    <div className="mx-auto max-w-2xl space-y-5 pb-10">
+      <section className="relative overflow-hidden rounded-3xl text-white shadow-lg">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src={photoOfDay(4).url} alt="" className="absolute inset-0 h-full w-full object-cover" />
+        <div className="absolute inset-0 bg-gradient-to-b from-navy/70 via-navy/80 to-navy/95" />
+        <div className="relative p-6 text-center sm:p-8">
+          <p className="text-sm text-white/70">{now.toLocaleDateString("en-IN", { weekday: "long", day: "numeric", month: "long", year: "numeric" })}</p>
+          <div className="mt-1 text-5xl font-bold tabular-nums sm:text-6xl">{now.toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit", second: "2-digit" })}</div>
+          <p className="mt-2 inline-block rounded-full bg-white/10 px-4 py-1 text-sm">
+            {phase === "before" ? `Shift 1 starts at ${pretty(sh.s1[0])}` : phase === "shift1" ? `Shift 1 · until ${pretty(sh.s1[1])}` : phase === "break" ? `Lunch & rest break · Shift 2 at ${pretty(sh.s2[0])}` : phase === "shift2" ? `Shift 2 · until ${pretty(sh.s2[1])}` : "Day finished · see you tomorrow"}
+          </p>
+        </div>
+      </section>
 
-          <div className="flex items-center gap-4">
-            {photo ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src={photo} alt="Selfie" className="h-28 w-28 rounded-xl border border-line object-cover" />
-            ) : (
-              <div className="flex h-28 w-28 items-center justify-center rounded-xl border border-dashed border-line text-slate-300">
-                <Camera className="h-8 w-8" />
-              </div>
-            )}
-            <div className="space-y-2">
-              <Button variant="secondary" icon={Camera} onClick={() => void openCamera()}>
-                {photo ? "Retake selfie" : "Take selfie"}
-              </Button>
-              <button type="button" className="block text-xs text-slate-500 underline" onClick={() => input.current?.click()}>
-                or choose a photo
-              </button>
-              {camError && <p className="text-xs text-red-700">{camError}</p>}
-              <input
-                ref={input}
-                type="file"
-                accept="image/*"
-                capture="user"
-                className="hidden"
-                onChange={async (e) => {
-                  const f = e.target.files?.[0];
-                  if (f) setPhoto(await toSelfieDataUrl(f));
-                  e.target.value = "";
-                }}
-              />
-            </div>
+      {myRest && (
+        <section className="flex items-center gap-4 rounded-2xl border-2 border-emerald-300 bg-emerald-50 px-5 py-4">
+          <span className="text-4xl">🌿</span>
+          <div>
+            <div className="text-lg font-semibold text-emerald-800">You are on rest time until {pretty(String(myRest.end_time))}</div>
+            <div className="text-sm text-emerald-700">{myRest.note ? String(myRest.note) : "Relax — your leader will call you if needed."}</div>
           </div>
+        </section>
+      )}
 
-          {stream && (
-            <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-black/90 p-4">
-              <video ref={video} playsInline muted autoPlay className="max-h-[70vh] w-full max-w-md rounded-xl" style={{ transform: "scaleX(-1)" }} />
-              <div className="mt-4 flex gap-3">
-                <Button icon={Camera} onClick={capture}>
-                  Capture
-                </Button>
-                <Button variant="secondary" icon={X} onClick={stopCamera}>
-                  Cancel
-                </Button>
-              </div>
-              <p className="mt-2 text-xs text-slate-300">Look at the camera, then tap Capture.</p>
-            </div>
+      <section className="space-y-5 rounded-2xl border border-line bg-white p-5 shadow-sm sm:p-6">
+        <label className="block text-sm font-medium text-slate-700">
+          Who are you?
+          <select className="mt-1 w-full rounded-xl border border-line bg-white px-4 py-3 text-base" value={staffId} onChange={(e) => setStaffId(e.target.value)}>
+            <option value="">Select your name…</option>
+            {staff.map((x) => (
+              <option key={x.id} value={x.id}>{String(x.name)}{x.designation ? ` · ${x.designation}` : ""}</option>
+            ))}
+          </select>
+        </label>
+
+        {/* Shift timeline */}
+        <ol className="grid grid-cols-4 gap-2">
+          {steps.map((st, i) => {
+            const done = !!st.at;
+            const isNext = !done && steps.slice(0, i).every((x) => x.at);
+            return (
+              <li key={st.label} className={cn("rounded-2xl border-2 px-2 py-3 text-center", done ? "border-emerald-300 bg-emerald-50" : isNext ? "border-gold bg-gold/10" : "border-line")}>
+                <st.icon className={cn("mx-auto h-5 w-5", done ? "text-emerald-600" : isNext ? "text-amber-700" : "text-slate-300")} />
+                <div className="mt-1 text-[11px] font-semibold text-navy">{st.label}</div>
+                <div className={cn("text-xs tabular-nums", done ? "font-semibold text-emerald-700" : "text-slate-400")}>{done ? formatDateTime(st.at).slice(-8) : `plan ${pretty(st.plan)}`}</div>
+              </li>
+            );
+          })}
+        </ol>
+
+        {/* Selfie */}
+        <div className="flex items-center gap-4 rounded-2xl bg-slate-50 p-4">
+          {photo ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={photo} alt="Selfie" className="h-28 w-28 rounded-2xl object-cover shadow" />
+          ) : (
+            <div className="flex h-28 w-28 items-center justify-center rounded-2xl border-2 border-dashed border-slate-300 text-slate-300"><Camera className="h-9 w-9" /></div>
           )}
-
-          <div className="rounded-lg border border-line p-3 text-sm">
-            <div className="flex items-center justify-between">
-              <span className="flex items-center gap-1 font-medium text-slate-700">
-                <MapPin className="h-4 w-4" /> Location
-              </span>
-              <Button variant="ghost" size="sm" icon={RefreshCw} loading={locating} onClick={locate}>
-                Retry location
-              </Button>
+          <div className="space-y-2">
+            <Button variant="secondary" icon={Camera} onClick={() => void openCamera()}>{photo ? "Retake selfie" : "Take selfie"}</Button>
+            <button type="button" className="block text-xs text-slate-500 underline" onClick={() => input.current?.click()}>or choose a photo</button>
+            {camError && <p className="text-xs text-red-700">{camError}</p>}
+            <input ref={input} type="file" accept="image/*" capture="user" className="hidden" onChange={async (e) => { const f = e.target.files?.[0]; if (f) setPhoto(await toSelfieDataUrl(f)); e.target.value = ""; }} />
+          </div>
+        </div>
+        {stream && (
+          <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-black/90 p-4">
+            <video ref={video} playsInline muted autoPlay className="max-h-[70vh] w-full max-w-md rounded-2xl" style={{ transform: "scaleX(-1)" }} />
+            <div className="mt-4 flex gap-3">
+              <Button icon={Camera} onClick={capture}>Capture</Button>
+              <Button variant="secondary" icon={X} onClick={stopCamera}>Cancel</Button>
             </div>
-            {pos ? (
-              <div className="mt-1 space-y-1 text-slate-600">
-                <div>
-                  {pos.lat.toFixed(6)}, {pos.lng.toFixed(6)} <span className="text-slate-400">(±{pos.accuracy} m)</span>{" "}
-                  <a className="text-navy underline" href={`https://maps.google.com/?q=${pos.lat},${pos.lng}`} target="_blank" rel="noreferrer">
-                    map
-                  </a>
-                </div>
-                {unitPos ? (
-                  <div className={locationOk ? "text-emerald-700" : "text-red-700"}>
-                    {distance} m from {String(unit?.name)} {locationOk ? "✓ on site" : `— outside the ${fence} m limit`}
-                  </div>
-                ) : (
-                  <div className="text-slate-400">Set the property&apos;s latitude/longitude under Settings → Business units to check distance.</div>
-                )}
-              </div>
-            ) : (
-              <div className="mt-1 text-slate-500">{locating ? "Getting your position…" : (posError ?? "Location not captured.")}</div>
-            )}
+            <p className="mt-2 text-xs text-slate-300">Look at the camera, then tap Capture.</p>
           </div>
+        )}
 
-          <div className="grid grid-cols-2 gap-3">
-            <Button icon={LogIn} loading={saving} disabled={!!today?.checked_in_at} onClick={() => void save("in")}>
-              Check in
-            </Button>
-            <Button variant="secondary" icon={LogOut} loading={saving} disabled={!today?.checked_in_at || !!today?.checked_out_at} onClick={() => void save("out")}>
-              Check out
-            </Button>
+        {/* Location */}
+        <div className="rounded-2xl border border-line p-4 text-sm">
+          <div className="flex items-center justify-between">
+            <span className="flex items-center gap-1.5 font-medium text-slate-700"><MapPin className="h-4 w-4" /> Location</span>
+            <Button variant="ghost" size="sm" icon={RefreshCw} loading={locating} onClick={locate}>Retry</Button>
           </div>
-        </CardBody>
-      </Card>
+          {pos ? (
+            <div className="mt-1 space-y-1 text-slate-600">
+              {unitPos ? (
+                <div className={locationOk ? "font-medium text-emerald-700" : "font-medium text-red-700"}>{locationOk ? "✓ You are at" : "⚠ Outside"} {String(unit?.name)} · {distance} m</div>
+              ) : (
+                <div>📍 {pos.lat.toFixed(5)}, {pos.lng.toFixed(5)} <span className="text-slate-400">(±{pos.accuracy} m)</span></div>
+              )}
+            </div>
+          ) : (
+            <div className="mt-1 text-slate-500">{locating ? "Getting your position…" : (posError ?? "Location not captured.")}</div>
+          )}
+        </div>
+
+        {punch ? (
+          <Button icon={CheckCircle2} loading={saving} onClick={() => void save()} className="w-full py-4 text-base">{punch.label}</Button>
+        ) : (
+          <p className="rounded-2xl bg-emerald-50 px-4 py-4 text-center font-semibold text-emerald-700">✅ All four punches done today — thank you!</p>
+        )}
+      </section>
+
+      {leader && (
+        <section className="space-y-4 rounded-2xl border border-emerald-200 bg-white p-5 shadow-sm sm:p-6">
+          <h2 className="flex items-center gap-2 text-base font-semibold text-navy"><Coffee className="h-5 w-5 text-emerald-600" /> Give rest time</h2>
+          <p className="-mt-2 text-xs text-slate-500">When someone is free, give them rest. They see “You are on rest time” in their app.</p>
+          <div className="grid gap-2 sm:grid-cols-[1.5fr_1fr_1fr]">
+            <select className="rounded-xl border border-line bg-white px-3 py-2.5" value={restForm.staff_id} onChange={(e) => setRestForm((f) => ({ ...f, staff_id: e.target.value }))}>
+              <option value="">Choose person…</option>
+              {staff.map((x) => <option key={x.id} value={x.id}>{String(x.name)}</option>)}
+            </select>
+            <input type="time" className="rounded-xl border border-line px-3 py-2.5" value={restForm.start_time} onChange={(e) => setRestForm((f) => ({ ...f, start_time: e.target.value }))} />
+            <input type="time" className="rounded-xl border border-line px-3 py-2.5" value={restForm.end_time} onChange={(e) => setRestForm((f) => ({ ...f, end_time: e.target.value }))} />
+          </div>
+          <input className="w-full rounded-xl border border-line px-3 py-2.5" placeholder="Message (optional) — e.g. Rooms done, take rest" value={restForm.note} onChange={(e) => setRestForm((f) => ({ ...f, note: e.target.value }))} />
+          <Button icon={Send} onClick={() => void giveRest()}>Give rest time</Button>
+          {rests.length > 0 && (
+            <ul className="space-y-1.5 border-t border-line pt-3 text-sm">
+              {rests.map((r) => (
+                <li key={r.id} className="flex items-center justify-between rounded-lg bg-emerald-50 px-3 py-2"><span>🌿 {String(staff.find((x) => x.id === r.staff_id)?.name ?? "")}</span><span className="text-emerald-700">{pretty(String(r.start_time))} – {pretty(String(r.end_time))}</span></li>
+              ))}
+            </ul>
+          )}
+        </section>
+      )}
     </div>
   );
 }

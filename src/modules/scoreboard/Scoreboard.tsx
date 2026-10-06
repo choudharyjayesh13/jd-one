@@ -212,7 +212,7 @@ export function Scoreboard() {
               </tbody>
             </Table>
           )}
-          <p className="text-xs text-slate-500">Score = task points + 2 × tickets resolved + 5 × leads won + 1 per day present − overdue tasks. On time = checked in by 10:00 IST.</p>
+          <p className="text-xs text-slate-500">Score = task points + 2 × tickets resolved + 5 × leads won + 1 per day present − overdue tasks. On time = shift 1 started within 15 minutes of the planned time.</p>
         </>
       )}
     </div>

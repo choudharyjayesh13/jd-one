@@ -81,7 +81,14 @@ function istTime(ts: unknown): string {
   const get = (t: string) => parts.find((p) => p.type === t)?.value ?? "";
   return `${get("hour") === "24" ? "00" : get("hour")}:${get("minute")}`;
 }
-export const ON_TIME_LIMIT = "10:00";
+export const ON_TIME_LIMIT = "10:00"; // fallback when a staff member has no shift time
+/** On time = checked in within 15 minutes of the staff member's shift-1 start (default 07:00). */
+export function onTimeLimit(s: Row): string {
+  const m = String(s.shift1_start ?? "07:00").match(/^(\d{1,2}):(\d{2})$/);
+  if (!m) return ON_TIME_LIMIT;
+  const mins = Number(m[1]) * 60 + Number(m[2]) + 15;
+  return `${String(Math.floor(mins / 60)).padStart(2, "0")}:${String(mins % 60).padStart(2, "0")}`;
+}
 
 const hoursBetween = (from: unknown, to: unknown) => {
   const a = new Date(String(from)).getTime();
@@ -94,7 +101,7 @@ export function computeScoreboard(input: ScoreboardInput): ScoreboardResult {
   const { start, end, today } = input;
   const rows: ScoreRow[] = input.staff.map((s) => {
     const att = input.attendance.filter((a) => a.staff_id === s.id && a.status === "P" && within(a.date, start, end));
-    const onTime = att.filter((a) => a.checked_in_at && istTime(a.checked_in_at) <= ON_TIME_LIMIT);
+    const onTime = att.filter((a) => a.checked_in_at && istTime(a.checked_in_at) <= onTimeLimit(s));
     const mine = input.tasks.filter((t) => t.assigned_to === s.id);
     const done = mine.filter((t) => t.status === "Done" && within(t.completed_at ?? t.updated_at, start, end));
     const overdue = mine.filter((t) => t.status !== "Done" && t.due && String(t.due) < today);

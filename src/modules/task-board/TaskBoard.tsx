@@ -13,6 +13,7 @@ import { useList } from "@/core/ui/hooks";
 import { useToast } from "@/core/ui/Toast";
 import { cn } from "@/core/ui/cn";
 import { photoOfDay } from "@/core/ui/property";
+import { CompleteTaskDialog } from "@/core/ui/CompleteTask";
 
 const PRIORITY = {
   High: { bar: "bg-red-500", chip: "bg-red-50 text-red-700" },
@@ -26,6 +27,7 @@ export function TaskBoard() {
   const me = (user.staff?.id as string | undefined) ?? null;
   const manager = isAdmin(user.role);
   const [scope, setScope] = useState<"mine" | "team">("mine");
+  const [completing, setCompleting] = useState<Row | null>(null);
   const today = todayISO();
   const { rows: all, reload } = useList("tasks", scope === "mine" && me ? { filter: { assigned_to: me } } : {});
   const { rows: staff } = useList("staff");
@@ -57,6 +59,10 @@ export function TaskBoard() {
         <span className={cn("absolute inset-y-0 left-0 w-1.5", col === "done" ? "bg-emerald-400" : p.bar)} />
         <div className="space-y-3 py-4 pl-5 pr-4">
           <Link href={viewHref("tasks", t.id)} className={cn("block text-[15px] font-semibold leading-snug", col === "done" ? "text-slate-400 line-through" : "text-navy")}>{String(t.title)}</Link>
+          {col === "done" && t.completion_photo ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <a href={String(t.completion_photo)} target="_blank" rel="noopener"><img src={String(t.completion_photo)} alt="Proof" className="h-24 w-full rounded-lg object-cover" /></a>
+          ) : null}
           <div className="flex flex-wrap gap-1.5 text-[11px] font-medium">
             <span className={cn("rounded-full px-2 py-0.5", p.chip)}>{String(t.priority ?? "Medium")}</span>
             <span className="rounded-full bg-slate-100 px-2 py-0.5 text-slate-600">{String(t.type ?? "Task")}</span>
@@ -71,7 +77,7 @@ export function TaskBoard() {
             ) : (
               <>
                 {t.status !== "In progress" && <button type="button" onClick={() => void setStatus(t, "In progress")} className="inline-flex items-center gap-1 rounded-lg bg-navy/5 px-3 py-1.5 text-xs font-semibold text-navy hover:bg-navy/10"><Play className="h-3.5 w-3.5" /> Start</button>}
-                <button type="button" onClick={() => void setStatus(t, "Done")} className="inline-flex items-center gap-1 rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-emerald-700"><CheckCircle2 className="h-3.5 w-3.5" /> Done</button>
+                <button type="button" onClick={() => setCompleting(t)} className="inline-flex items-center gap-1 rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-emerald-700"><CheckCircle2 className="h-3.5 w-3.5" /> 📸 Complete</button>
               </>
             )}
           </div>
@@ -120,6 +126,7 @@ export function TaskBoard() {
           </section>
         ))}
       </div>
+      <CompleteTaskDialog task={completing} personName={String(completing ? nameOf(completing.assigned_to) : user.name)} onClose={() => setCompleting(null)} onDone={() => { setCompleting(null); void reload(); }} />
     </div>
   );
 }
