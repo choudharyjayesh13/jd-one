@@ -12,7 +12,8 @@
     "sync:wa": "bun run scripts/sync-whatsapp.ts",
     "deploy:pages": "NEXT_PUBLIC_BASE_PATH=/jd-one next build && bun run scripts/publish-gh-pages.ts",
     "sync:reports": "bun run scripts/sync-daily-reports.ts",
-    "bundle:jd": "bun run scripts/build-jd-bundle.ts"
+    "bundle:jd": "bun run scripts/build-jd-bundle.ts",
+    "deploy:app": "NEXT_PUBLIC_BASE_PATH= next build && echo app.myjdgroup.com > out/CNAME && bun run scripts/publish-gh-pages.ts"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.117.2",
