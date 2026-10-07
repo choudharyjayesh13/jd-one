@@ -4,7 +4,7 @@
  * The base path is derived from the registration scope, so the same file
  * works at / and at /jd-one/.
  */
-const VERSION = "jd-one-muyic2b3";
+const VERSION = "jd-one-muyid8ej";
 const SHELL = `${VERSION}-shell`;
 const DATA = `${VERSION}-data`;
 const scopePath = new URL(self.registration.scope).pathname; // e.g. "/jd-one/"
@@ -34,6 +34,8 @@ self.addEventListener("fetch", (event) => {
   if (req.method !== "GET") return;
   const url = new URL(req.url);
   const sameOrigin = url.origin === self.location.origin;
+  // Guest app and customer portal are separate static pages: never serve them from the staff app cache.
+  if (sameOrigin && /\/(guest|portal)\//.test(url.pathname)) return;
 
   // Cross-origin (Supabase, fonts): network first, short-lived fallback cache.
   if (!sameOrigin) {
