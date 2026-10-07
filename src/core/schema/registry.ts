@@ -17,6 +17,7 @@ import { attendance } from "@/modules/attendance/entity";
 import { expenses } from "@/modules/expenses/entity";
 import { stock } from "@/modules/stock/entity";
 import { stockMovements } from "@/modules/stock-movements/entity";
+import { guestInfo } from "@/modules/guest-info/entity";
 import { propertyAssets } from "@/modules/property-assets/entity";
 import { kots } from "@/modules/kot/entity";
 import { purchases } from "@/modules/purchases/entity";
@@ -55,6 +56,7 @@ export const entities: EntityDef[] = [
   stock,
   stockMovements,
   propertyAssets,
+  guestInfo,
   tasks,
   targets,
   importRuns,
