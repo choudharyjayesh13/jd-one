@@ -41,7 +41,7 @@ export const bookings = defineEntity({
     { name: "units", label: "Units", type: "number", min: 1, default: 1 },
     { name: "adults", label: "Adults", type: "number", min: 0, default: 2 },
     { name: "children", label: "Children", type: "number", min: 0, default: 0 },
-    { name: "meal_plan", label: "Meal plan", type: "select", options: ["EP", "CP", "MAP", "AP"], default: "CP" },
+    { name: "meal_plan", label: "Meal plan", type: "select", options: ["CP", "MAP", "AP", "EP"], default: "CP", help: "EP (room only) is no longer sold — kept only for old bookings" },
     { name: "rate", label: "Rate / unit / night", type: "money", min: 0 },
     { name: "total", label: "Total", type: "money", min: 0, help: "Leave blank to use rate × units × nights" },
     { name: "advance", label: "Advance agreed", type: "money", min: 0, help: "Record the actual receipt under Payments" },

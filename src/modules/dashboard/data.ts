@@ -86,7 +86,7 @@ export function ratesTonight(d: DashboardData): { type: string; rate: number | n
   return types.map((type) => {
     let best: Row | null = null;
     for (const r of d.rates) {
-      if (r.unit_type !== type || r.meal_plan !== "EP" || String(r.date_from) > d.today || String(r.date_to) < d.today) continue;
+      if (r.unit_type !== type || r.meal_plan !== "CP" || String(r.date_from) > d.today || String(r.date_to) < d.today) continue;
       if (!best || String(r.created_at) > String(best.created_at)) best = r;
     }
     return { type, rate: best ? Number(best.rate) : null, note: best?.closed ? "Closed" : ((best?.note as string | null) ?? null) };

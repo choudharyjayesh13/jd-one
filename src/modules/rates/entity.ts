@@ -3,7 +3,8 @@ import { defineEntity, type Row } from "@/core/schema/types";
 import { todayISO } from "@/core/format";
 import { UNIT_TYPES } from "@/modules/bookings/entity";
 
-export const MEAL_PLANS = ["EP", "CP", "MAP", "AP"] as const;
+/** Room-only (EP) is not sold (Jayesh, 7–8 Oct 2026): breakfast, half board or all meals only. */
+export const MEAL_PLANS = ["CP", "MAP", "AP"] as const;
 export const MEAL_PLAN_LABELS: Record<string, string> = { EP: "Room only", CP: "With breakfast", MAP: "Breakfast + dinner", AP: "All meals" };
 export const RATE_CHANNELS = ["All channels", "Direct / website", "OTAs (AsiaTech)", "Airbnb"] as const;
 
@@ -29,7 +30,7 @@ export const rates = defineEntity({
   fields: [
     { name: "business_unit_id", label: "Property", type: "relation", entity: "business-units", required: true },
     { name: "unit_type", label: "Room type", type: "select", options: UNIT_TYPES, required: true },
-    { name: "meal_plan", label: "Meal plan", type: "select", options: MEAL_PLANS, required: true, default: "EP" },
+    { name: "meal_plan", label: "Meal plan", type: "select", options: MEAL_PLANS, required: true, default: "CP" },
     { name: "date_from", label: "From", type: "date", required: true, default: todayISO },
     { name: "date_to", label: "To", type: "date", required: true, help: "Inclusive" },
     { name: "rate", label: "Rate / night (excl. GST)", type: "money", required: true, min: 0 },

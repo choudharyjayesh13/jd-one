@@ -30,7 +30,7 @@ export function RatesCalendar() {
   const user = useUser();
   const { toast } = useToast();
   const [month, setMonth] = useState(currentMonth());
-  const [plan, setPlan] = useState<string>("EP");
+  const [plan, setPlan] = useState<string>("CP");
   const [unit, setUnit] = useState(user.unitId ?? "");
   const [open, setOpen] = useState(false);
   const { start, days } = monthRange(month);
