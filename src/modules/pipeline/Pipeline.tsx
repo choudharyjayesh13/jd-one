@@ -2,7 +2,7 @@
 /** /pipeline: Sales & Marketing pipeline — leads by stage, follow-ups due, one tap to call / WhatsApp / move stage. */
 import { useState } from "react";
 import Link from "next/link";
-import { Phone, MessageCircle, AlarmClock, Flame, Search } from "lucide-react";
+import { Phone, MessageCircle, AlarmClock, Flame, Search, CalendarClock, Minus, Plus } from "lucide-react";
 import { getStore } from "@/core/data";
 import { useUser } from "@/core/auth/AuthProvider";
 import { useList } from "@/core/ui/hooks";
@@ -12,7 +12,7 @@ import { cn } from "@/core/ui/cn";
 import { formatDate, formatMoney, todayISO } from "@/core/format";
 import { viewHref } from "@/core/routes";
 import type { Row } from "@/core/schema/types";
-import { LEAD_STAGES } from "@/modules/leads/options";
+import { LEAD_QUALIFICATIONS, LEAD_STAGES } from "@/modules/leads/options";
 import { followUpStatus } from "@/modules/leads/entity";
 
 const COLS = ["New", "Contacted", "Qualified", "Proposal", "Negotiation", "On Hold", "Won", "Lost"] as const;
@@ -27,6 +27,8 @@ export function Pipeline() {
   const [who, setWho] = useState<string>(user.role === "marketing" && me ? me : "");
   const [q, setQ] = useState("");
   const [showClosed, setShowClosed] = useState(false);
+  const [openFu, setOpenFu] = useState<string | null>(null);
+  const [fuForm, setFuForm] = useState<{ date: string; calls: number; looking: string; note: string }>({ date: "", calls: 0, looking: "", note: "" });
 
   if (loading) return <Loading />;
   const name = (id: unknown) => String(staff.find((s) => s.id === id)?.name ?? "Unassigned");
@@ -46,6 +48,30 @@ export function Pipeline() {
       toast((e as Error).message, "error");
     }
   };
+  const patch = async (l: Row, values: Record<string, unknown>, msg: string) => {
+    try {
+      await getStore().update("leads", l.id, values);
+      toast(msg);
+    } catch (e) {
+      toast((e as Error).message, "error");
+    }
+  };
+  const startFu = (l: Row) => {
+    setOpenFu(l.id);
+    setFuForm({ date: String(l.next_follow_up ?? "").slice(0, 10), calls: Number(l.call_attempts ?? 0), looking: String(l.requirement ?? ""), note: "" });
+  };
+  const saveFu = async (l: Row) => {
+    const stamp = `${todayISO()} (${String(user.name ?? "").split(" ")[0]}): ${fuForm.note.trim()}`;
+    await patch(l, {
+      next_follow_up: fuForm.date || null,
+      call_attempts: fuForm.calls,
+      requirement: fuForm.looking.trim() || null,
+      last_contact: todayISO(),
+      stage: l.stage === "New" && fuForm.calls > 0 ? "Contacted" : l.stage,
+      ...(fuForm.note.trim() ? { notes: [stamp, String(l.notes ?? "")].filter(Boolean).join("\n") } : {}),
+    }, `Follow-up saved for ${l.name}`);
+    setOpenFu(null);
+  };
   const phone = (p: unknown) => String(p ?? "").replace(/\D/g, "").slice(-10);
   const Card = ({ l }: { l: Row }) => {
     const st = followUpStatus(l);
@@ -63,13 +89,49 @@ export function Pipeline() {
           {Number(l.call_attempts ?? 0) > 0 ? <span>📞 {String(l.call_attempts)}</span> : null}
           <span>👤 {name(l.assigned_to)}</span>
         </div>
-        <div className="flex items-center gap-1.5">
+        <div className="flex flex-wrap items-center gap-1.5">
           {p.length === 10 && <a href={`tel:+91${p}`} className="flex items-center gap-1 rounded-lg bg-navy px-2 py-1 text-[11px] font-semibold text-white"><Phone className="h-3 w-3" />Call</a>}
           {p.length === 10 && <a href={`https://wa.me/91${p}`} target="_blank" rel="noreferrer" className="flex items-center gap-1 rounded-lg bg-emerald-600 px-2 py-1 text-[11px] font-semibold text-white"><MessageCircle className="h-3 w-3" />WhatsApp</a>}
-          <select value={String(l.stage)} onChange={(e) => void move(l, e.target.value)} className="ml-auto rounded-lg border border-line bg-white px-1.5 py-1 text-[11px]">
-            {LEAD_STAGES.map((s) => <option key={s} value={s}>{s}</option>)}
-          </select>
+          <button type="button" onClick={() => (openFu === l.id ? setOpenFu(null) : startFu(l))} className="flex items-center gap-1 rounded-lg bg-amber-500 px-2 py-1 text-[11px] font-semibold text-white"><CalendarClock className="h-3 w-3" />Follow-up</button>
         </div>
+        <div className="grid grid-cols-2 gap-1.5">
+          <label className="text-[10px] text-slate-500">Stage
+            <select value={String(l.stage)} onChange={(e) => void move(l, e.target.value)} className="mt-0.5 w-full rounded-lg border border-line bg-white px-1.5 py-1 text-[11px] text-navy">
+              {LEAD_STAGES.map((st2) => <option key={st2} value={st2}>{st2}</option>)}
+            </select>
+          </label>
+          <label className="text-[10px] text-slate-500">Hot / Warm / Cold
+            <select value={String(l.qualification ?? "")} onChange={(e) => void patch(l, { qualification: e.target.value || null }, `${l.name}: ${e.target.value || "not set"}`)} className="mt-0.5 w-full rounded-lg border border-line bg-white px-1.5 py-1 text-[11px] text-navy">
+              <option value="">— not set —</option>
+              {LEAD_QUALIFICATIONS.map((qv) => <option key={qv} value={qv}>{qv}</option>)}
+            </select>
+          </label>
+        </div>
+        {openFu === l.id && (
+          <div className="space-y-1.5 rounded-lg border border-amber-200 bg-amber-50 p-2 text-[11px]">
+            <label className="block text-slate-600">Next follow-up
+              <input type="date" value={fuForm.date} onChange={(e) => setFuForm({ ...fuForm, date: e.target.value })} className="mt-0.5 w-full rounded border border-line bg-white px-1.5 py-1" />
+            </label>
+            <div className="flex items-center justify-between text-slate-600">
+              <span>Calls made</span>
+              <span className="flex items-center gap-1">
+                <button type="button" onClick={() => setFuForm({ ...fuForm, calls: Math.max(0, fuForm.calls - 1) })} className="rounded border border-line bg-white p-0.5"><Minus className="h-3 w-3" /></button>
+                <b className="w-6 text-center text-sm text-navy">{fuForm.calls}</b>
+                <button type="button" onClick={() => setFuForm({ ...fuForm, calls: fuForm.calls + 1 })} className="rounded border border-line bg-white p-0.5"><Plus className="h-3 w-3" /></button>
+              </span>
+            </div>
+            <label className="block text-slate-600">Looking for
+              <input value={fuForm.looking} onChange={(e) => setFuForm({ ...fuForm, looking: e.target.value })} placeholder="2 cottages, 12–13 Oct, couple, all meals…" className="mt-0.5 w-full rounded border border-line bg-white px-1.5 py-1" />
+            </label>
+            <label className="block text-slate-600">Call note
+              <textarea value={fuForm.note} onChange={(e) => setFuForm({ ...fuForm, note: e.target.value })} rows={2} placeholder="What did they say?" className="mt-0.5 w-full rounded border border-line bg-white px-1.5 py-1" />
+            </label>
+            <div className="flex gap-1.5">
+              <button type="button" onClick={() => void saveFu(l)} className="flex-1 rounded-lg bg-navy px-2 py-1.5 font-semibold text-white">Save follow-up</button>
+              <button type="button" onClick={() => setOpenFu(null)} className="rounded-lg border border-line bg-white px-2 py-1.5">Cancel</button>
+            </div>
+          </div>
+        )}
       </div>
     );
   };
