@@ -1,4 +1,5 @@
-import { ChefHat, Flame, BellRing, Utensils, ReceiptIndianRupee, QrCode } from "lucide-react";
+import { ChefHat, Flame, BellRing, Utensils, ReceiptIndianRupee, QrCode, PackageMinus } from "lucide-react";
+import { newHref } from "@/core/routes";
 import { defineEntity } from "@/core/schema/types";
 
 export const KOT_TYPES = ["Table", "Room", "Camping", "Event", "Takeaway", "Staff meal"] as const;
@@ -56,6 +57,8 @@ export const kots = defineEntity({
         const base = process.env.NEXT_PUBLIC_BASE_PATH ?? "";
         window.location.href = `${base}/pay-qr/?kot=${encodeURIComponent(String(record.kot_no ?? ""))}${record.amount ? `&amount=${record.amount}` : ""}`;
       } },
+    { id: "ingredients", label: "Log ingredients used", icon: PackageMinus, visible: (r) => r.status !== "Cancelled",
+      run: ({ record, navigate }) => navigate(newHref("stock-movements", { kot_id: record.id, direction: "Out", source: "KOT", business_unit_id: record.business_unit_id })) },
     { id: "bill", label: "Bill", icon: ReceiptIndianRupee, visible: (r) => r.status === "Served",
       form: { title: "Bill this KOT", fields: ["amount"], patch: { status: "Billed" }, submitLabel: "Save bill" } },
   ],
