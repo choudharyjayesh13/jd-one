@@ -15,7 +15,7 @@ export type Team = "hr" | "accounts" | "finance" | "marketing" | "operations";
 
 export const TEAMS: { id: Team; label: string }[] = [
   { id: "operations", label: "Operations" },
-  { id: "marketing", label: "Marketing" },
+  { id: "marketing", label: "Sales & Marketing" },
   { id: "accounts", label: "Accounts" },
   { id: "finance", label: "Finance" },
   { id: "hr", label: "HR" },
@@ -34,7 +34,8 @@ export function teamsForRole(role: Role): Team[] {
     case "finance":
       return ["finance"];
     case "marketing":
-      return ["marketing"];
+      // Sales & Marketing (one department): leads + pipeline, plus bookings/customers to convert them.
+      return ["marketing", "operations"];
     default:
       return ["operations"];
   }
@@ -95,6 +96,8 @@ export interface FieldDef {
   step?: number;
   /** Derived from other values of the same record; rendered read-only. */
   computed?: (values: FieldValues) => unknown;
+  /** Display-only: computed when shown, never saved (no database column). */
+  virtual?: boolean;
   /** Field is stored but not editable in the form (e.g. balance kept by hooks). */
   readOnly?: boolean;
   /** Hide from detail view (e.g. internal ids). */

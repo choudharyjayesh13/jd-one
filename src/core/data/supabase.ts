@@ -25,6 +25,19 @@ export class SupabaseStore implements DataStore {
   }
 
   async list(entity: string, query?: ListQuery): Promise<Row[]> {
+    // Supabase returns at most 1,000 rows per request: page through until everything is loaded.
+    if (query?.limit) return this.listPage(entity, query, 0, query.limit);
+    const PAGE = 1000;
+    const all: Row[] = [];
+    for (let from = 0; ; from += PAGE) {
+      const rows = await this.listPage(entity, query, from, PAGE);
+      all.push(...rows);
+      if (rows.length < PAGE || from > 50000) break;
+    }
+    return all;
+  }
+
+  private async listPage(entity: string, query: ListQuery | undefined, from: number, size: number): Promise<Row[]> {
     const def = getEntity(entity);
     let q = this.client.from(def.table).select("*");
     if (query?.filter) {
@@ -47,8 +60,8 @@ export class SupabaseStore implements DataStore {
     q = q.order(sort.field, { ascending: sort.dir === "asc", nullsFirst: false });
     const thenBy = query?.thenBy ?? (query?.sort ? undefined : def.secondarySort);
     if (thenBy) q = q.order(thenBy.field, { ascending: thenBy.dir === "asc", nullsFirst: false });
-    if (query?.limit) q = q.limit(query.limit);
-    const { data, error } = await q;
+    q = q.order("id", { ascending: true });
+    const { data, error } = await q.range(from, from + size - 1);
     if (error) throw new Error(error.message);
     return (data ?? []) as Row[];
   }
@@ -164,7 +177,7 @@ export class SupabaseStore implements DataStore {
 /** Keep only columns the table knows about (ignores helper keys from older exports). */
 function stripUnknownColumns(entity: string, row: Row): Row {
   const def = getEntity(entity);
-  const allowed = new Set(["id", "created_at", "updated_at", "created_by", ...def.fields.map((f) => f.name)]);
+  const allowed = new Set(["id", "created_at", "updated_at", "created_by", ...def.fields.filter((f) => !f.virtual).map((f) => f.name)]);
   const out: Row = { id: row.id, created_at: row.created_at, updated_at: row.updated_at };
   for (const [k, v] of Object.entries(row)) if (allowed.has(k)) out[k] = v;
   return out;

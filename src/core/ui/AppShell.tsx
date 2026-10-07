@@ -3,7 +3,7 @@
 import { useState, type ReactNode } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, Settings, LogOut, Menu, X, CalendarDays, Camera, Sun, Trophy, KeyRound, QrCode, KanbanSquare, Hammer, TrendingUp, IdCard } from "lucide-react";
+import { LayoutDashboard, Settings, LogOut, Menu, X, CalendarDays, Camera, Sun, Trophy, KeyRound, QrCode, KanbanSquare, Hammer, TrendingUp, IdCard, Filter } from "lucide-react";
 import { TEAMS } from "@/core/schema/types";
 import { getEntity } from "@/core/schema/registry";
 import { useAuth, useUser } from "@/core/auth/AuthProvider";
@@ -75,6 +75,7 @@ export function AppShell({ children }: { children: ReactNode }) {
               <NavLink key={e.name} href={listHref(e.name)} label={e.label} icon={e.icon} active={active(listHref(e.name))} onClick={close} badge={badgeFor(e.name)} />
             ))}
             {g.team === "operations" && scoreboard}
+            {g.team === "marketing" && <NavLink href="/pipeline/" label="Sales pipeline" icon={Filter} active={active("/pipeline/")} onClick={close} />}
           </div>
         </div>
       ))}
