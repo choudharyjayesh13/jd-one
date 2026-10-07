@@ -5,6 +5,7 @@
  * Photos go to the PRIVATE `staff-docs` bucket and are shown with short-lived signed links.
  */
 import { useCallback, useEffect, useState } from "react";
+import Link from "next/link";
 import { IdCard, Upload, ShieldCheck, Users, CheckCircle2, AlertCircle } from "lucide-react";
 import { getSupabaseClient } from "@/core/data";
 import { useUser } from "@/core/auth/AuthProvider";
@@ -213,9 +214,9 @@ export function DocsNudge() {
   }, [sb, user.staff?.id]);
   if (!missing) return null;
   return (
-    <a href="/my-documents/" className="flex items-center gap-3 rounded-2xl border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900 hover:bg-amber-100">
+    <Link href="/my-documents/" className="flex items-center gap-3 rounded-2xl border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900 hover:bg-amber-100">
       <IdCard className="h-6 w-6 shrink-0 text-amber-600" />
       <span><b>Add your Aadhaar card and parents&apos; details.</b> Upload the Aadhaar photo and your father, mother and guardian mobile number — tap here.</span>
-    </a>
+    </Link>
   );
 }
