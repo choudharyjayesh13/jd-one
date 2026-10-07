@@ -259,5 +259,5 @@ update jdone.business_units set
 where name = 'The Udaisarovar';
 
 -- Grants for objects created above.
-grant all on all tables in schema jdone to anon, authenticated, service_role;
-grant all on all sequences in schema jdone to anon, authenticated, service_role;
+grant all on all tables in schema jdone to authenticated, service_role;
+grant all on all sequences in schema jdone to authenticated, service_role;

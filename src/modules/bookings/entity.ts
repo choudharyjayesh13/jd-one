@@ -1,4 +1,4 @@
-import { BedDouble, LogIn, LogOut, IndianRupee } from "lucide-react";
+import { BedDouble, LogIn, LogOut, IndianRupee, ShieldCheck } from "lucide-react";
 import { defineEntity } from "@/core/schema/types";
 import { normalizePhone } from "@/core/phone";
 import { newHref } from "@/core/routes";
@@ -7,7 +7,7 @@ import { nightsBetween } from "@/modules/customers/stats";
 import { paidForBooking } from "./balance";
 
 export const UNIT_TYPES = ["Lake View Cottage", "Pool View Cottage", "Family Suite", "Camping", "Glass House", "Other"] as const;
-export const BOOKING_SOURCES = ["Direct", "MMT/Goibibo", "Booking.com", "Airbnb", "Agoda", "Expedia", "EaseMyTrip", "Cleartrip", "Google Hotels", "Travel agent", "Walk-in", "Corporate"] as const;
+export const BOOKING_SOURCES = ["Website", "Direct", "MMT/Goibibo", "Booking.com", "Airbnb", "Agoda", "Expedia", "EaseMyTrip", "Cleartrip", "Google Hotels", "Travel agent", "Walk-in", "Corporate"] as const;
 /** "On hold" = tentative block (AsiaTech Hold Booking): holds inventory until confirmed or released. */
 export const BOOKING_STATUSES = ["Enquiry", "On hold", "Confirmed", "Checked-in", "Checked-out", "Cancelled", "No-show"] as const;
 export const OTA_SOURCES: readonly string[] = ["MMT/Goibibo", "Booking.com", "Airbnb", "Agoda", "Expedia"];
@@ -54,8 +54,18 @@ export const bookings = defineEntity({
     { name: "special_requests", label: "Special requests", type: "textarea" },
     { name: "booked_by", label: "Booked by", type: "text", help: "Staff member or channel that created the booking" },
     { name: "external_ref", label: "Channel booking ID", type: "text", readOnly: true, help: "AsiaTech / OTA reference" },
+    { name: "booking_ref", label: "Booking no. (website)", type: "text", readOnly: true },
+    { name: "rooms_count", label: "Rooms", type: "number", min: 1 },
+    { name: "room_amount", label: "Room & meals (before GST)", type: "money", min: 0 },
+    { name: "tax_amount", label: "GST", type: "money", min: 0 },
+    { name: "gst_company", label: "GST invoice – company", type: "text" },
+    { name: "gstin", label: "GSTIN", type: "text", placeholder: "08ABCDE1234F1Z5" },
+    { name: "gst_address", label: "GST billing address", type: "textarea" },
+    { name: "billing_email", label: "Billing email", type: "email" },
+    { name: "payment_ref", label: "Online payment ID", type: "text", readOnly: true, help: "Razorpay payment id from the website" },
+    { name: "payment_verified", label: "Payment verified in Razorpay", type: "boolean", default: false },
   ],
-  listColumns: ["guest_name", "status", "check_in", "check_out", "unit_type", "business_unit_id", "total", "balance"],
+  listColumns: ["guest_name", "status", "source", "check_in", "check_out", "unit_type", "total", "balance", "booking_ref"],
   reverse: [
     { entity: "payments", field: "booking_id", label: "Payments" },
     { entity: "checkins", field: "booking_id", label: "Check-ins" },
@@ -67,7 +77,9 @@ export const bookings = defineEntity({
       const customer_id = await matchOrCreateCustomer(ctx.store, { ...values, phone }, "guest_name", { source: "Direct", staffId: ctx.staffId });
       const nights = nightsBetween(values.check_in, values.check_out);
       const total = values.total !== null && values.total !== undefined ? Number(values.total) : Number(values.rate ?? 0) * Number(values.units ?? 1) * nights;
-      const paid = id ? await paidForBooking(ctx.store, id) : 0;
+      // Paid = sum of Payments; bookings imported with a paid amount but no Payments rows keep that amount.
+      const fromPayments = id ? await paidForBooking(ctx.store, id) : 0;
+      const paid = fromPayments > 0 ? fromPayments : Number(values.paid ?? 0);
       return { ...values, phone, customer_id, total, paid, balance: total - paid };
     },
     async afterCreate(record, ctx) {
@@ -79,6 +91,18 @@ export const bookings = defineEntity({
     },
   },
   actions: [
+    {
+      id: "verify-payment",
+      label: "Payment verified (Razorpay)",
+      icon: ShieldCheck,
+      variant: "primary",
+      visible: (r) => !!r.payment_ref && !r.payment_verified,
+      async run({ record, store, toast, refresh }) {
+        await store.update("bookings", record.id, { payment_verified: true });
+        toast("Marked as verified");
+        await refresh();
+      },
+    },
     {
       id: "check-in",
       label: "Check in now",

@@ -36,7 +36,7 @@ export function teamsForRole(role: Role): Team[] {
       return ["finance"];
     case "marketing":
       // Sales & Marketing (one department): leads + pipeline, plus bookings/customers to convert them.
-      return ["marketing", "operations"];
+      return ["marketing", "property", "operations"];
     default:
       return ["property", "operations"];
   }

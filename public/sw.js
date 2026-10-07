@@ -35,7 +35,7 @@ self.addEventListener("fetch", (event) => {
   const url = new URL(req.url);
   const sameOrigin = url.origin === self.location.origin;
   // Guest app and customer portal are separate static pages: never serve them from the staff app cache.
-  if (sameOrigin && /\/(guest|portal)\//.test(url.pathname)) return;
+  if (sameOrigin && /\/(guest|portal|book)\//.test(url.pathname)) return;
 
   // Cross-origin (Supabase, fonts): network first, short-lived fallback cache.
   if (!sameOrigin) {

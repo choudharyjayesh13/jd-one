@@ -1,0 +1,170 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Book The Udaisarovar · Best price direct</title>
+<meta name="description" content="Book The Udaisarovar – Lakeside Paradise, Udaipur directly. Best direct rate, instant confirmation, GST invoice.">
+<link rel="icon" href="/portal/jd-logo.svg">
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#f7f4ee;--ink:#0b1f3a;--mut:#5b6b7f;--line:#e7e1d6;--jd:#ff7a1a;--ok:#0f9d58;--bad:#c62828}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font-family:Manrope,system-ui,sans-serif}
+.wrap{max-width:860px;margin:0 auto;padding:0 16px 60px}
+.hero{background:#0b1f3a url(/property/pool-lake.jpg) center/cover;color:#fff;position:relative}
+.hero:after{content:"";position:absolute;inset:0;background:linear-gradient(90deg,rgba(11,31,58,.92),rgba(11,31,58,.5))}
+.hero .in{position:relative;max-width:860px;margin:0 auto;padding:28px 16px 90px}
+.hero h1{margin:6px 0 4px;font-size:1.8rem}.hero p{margin:0;opacity:.85}
+.card{background:#fff;border:1px solid var(--line);border-radius:18px;padding:18px;margin-top:14px;box-shadow:0 1px 3px rgba(0,0,0,.04)}
+.search{margin-top:-70px;position:relative}
+.grid{display:grid;gap:10px;grid-template-columns:repeat(2,1fr)}@media(min-width:720px){.grid{grid-template-columns:1.2fr 1.2fr .8fr .8fr .8fr auto}}
+label{display:block;font-size:.78rem;color:var(--mut);margin-bottom:4px;font-weight:600}
+input,select,textarea{width:100%;padding:12px;border:1px solid var(--line);border-radius:12px;font:inherit;background:#fff}
+.btn{border:0;border-radius:12px;background:var(--jd);color:#1a0d02;font-weight:800;padding:13px 18px;cursor:pointer;font-size:1rem;width:100%}
+.btn.dark{background:var(--ink);color:#fff}.btn:disabled{opacity:.5}
+.room{display:grid;gap:14px;grid-template-columns:1fr}@media(min-width:720px){.room{grid-template-columns:220px 1fr}}
+.room img{width:100%;height:170px;object-fit:cover;border-radius:14px}
+.plan{display:flex;align-items:center;justify-content:space-between;gap:10px;border:1px solid var(--line);border-radius:12px;padding:10px 12px;margin-top:8px}
+.plan b{font-size:1.1rem}.muted{color:var(--mut);font-size:.86rem}.tag{display:inline-block;background:#fff3e8;color:#a34b00;border-radius:999px;padding:2px 10px;font-size:.75rem;font-weight:700}
+.soldout{color:var(--bad);font-weight:700}.hidden{display:none!important}
+.sum{display:flex;justify-content:space-between;padding:4px 0}.sum.total{border-top:1px solid var(--line);margin-top:6px;padding-top:8px;font-weight:800;font-size:1.1rem}
+.err{background:#fdecec;color:#9b1c1c;border-radius:10px;padding:10px 12px;margin-top:10px}
+.ok{background:#e8f6ee;color:#0b6b3a;border-radius:14px;padding:16px}
+.perks{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}.perks span{background:rgba(255,255,255,.15);border-radius:999px;padding:5px 12px;font-size:.8rem}
+footer{text-align:center;color:var(--mut);font-size:.78rem;margin-top:30px}
+</style>
+</head>
+<body>
+<div class="hero"><div class="in">
+  <div style="display:flex;align-items:center;gap:10px;font-weight:800"><img src="/portal/jd-logo.svg" width="34" height="34" alt="">The Udaisarovar · Lakeside Paradise</div>
+  <h1>Book direct — best price, instant confirmation</h1>
+  <p>Lakeside cottages on Udai Sagar lake, Udaipur · infinity pool · meals included</p>
+  <div class="perks"><span>✅ Best direct rate</span><span>🧾 GST invoice</span><span>🔒 Secure payment (Razorpay)</span><span>💬 WhatsApp support</span></div>
+</div></div>
+<div class="wrap">
+  <section class="card search">
+    <div class="grid">
+      <div><label>Check-in</label><input id="in" type="date"></div>
+      <div><label>Check-out</label><input id="out" type="date"></div>
+      <div><label>Adults</label><select id="ad"></select></div>
+      <div><label>Children (7–17)</label><select id="ch"></select></div>
+      <div><label>Rooms</label><select id="rm"></select></div>
+      <div style="display:flex;align-items:flex-end"><button class="btn dark" id="go">Check availability</button></div>
+    </div>
+    <div id="qerr" class="err hidden"></div>
+  </section>
+
+  <section id="results"></section>
+
+  <section id="guest" class="card hidden">
+    <h2 style="margin:0 0 6px">Your details</h2>
+    <div id="pick" class="muted"></div>
+    <div class="grid" style="grid-template-columns:1fr 1fr;margin-top:12px">
+      <div><label>Full name *</label><input id="g-name" autocomplete="name"></div>
+      <div><label>Mobile (WhatsApp) *</label><input id="g-phone" inputmode="tel" autocomplete="tel" placeholder="10-digit mobile"></div>
+      <div><label>Email</label><input id="g-email" type="email" autocomplete="email"></div>
+      <div><label>Special requests</label><input id="g-req" placeholder="Early check-in, birthday setup…"></div>
+    </div>
+    <label style="margin-top:14px;display:flex;gap:8px;align-items:center;color:var(--ink);font-size:.95rem"><input type="checkbox" id="g-gst" style="width:auto"> I need a GST invoice (business travel)</label>
+    <div id="gstbox" class="grid hidden" style="grid-template-columns:1fr 1fr;margin-top:8px">
+      <div><label>Company name</label><input id="g-co"></div>
+      <div><label>GSTIN</label><input id="g-gstin" maxlength="15" placeholder="08ABCDE1234F1Z5" style="text-transform:uppercase"></div>
+      <div style="grid-column:1/-1"><label>Billing address</label><input id="g-addr"></div>
+    </div>
+    <div class="card" style="background:#fbfaf7">
+      <div id="summary"></div>
+      <label style="margin-top:12px">Payment</label>
+      <select id="g-pay"><option value="full">Pay full amount now</option><option value="advance">Pay 50% now, rest at check-in</option></select>
+    </div>
+    <button class="btn" id="book" style="margin-top:14px">Confirm &amp; pay securely</button>
+    <p class="muted" style="text-align:center">Rooms are held for 20 minutes while you pay. Prices include all taxes shown above.</p>
+    <div id="berr" class="err hidden"></div>
+  </section>
+
+  <section id="done" class="card hidden"></section>
+  <footer>The Udaisarovar · Near Udaisagar Lake, Lakadwas, Udaipur 313003 · <a href="https://wa.me/918829809555">WhatsApp +91 88298 09555</a> · a JD Group property</footer>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+<script>
+const SUPABASE_URL = "https://cyimbgjzxxxszjadxpgv.supabase.co";
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN5aW1iZ2p6eHh4c3pqYWR4cGd2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQyMTg2MDgsImV4cCI6MjA5OTc5NDYwOH0.R-8de9Ccqui113tBsAvdhHE04LZ6Hlz09bY1vymAcv4";
+const RAZORPAY_KEY_ID = "rzp_live_UL1NZ0kImMrFIQ";
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, { db: { schema: "jdone" }, auth: { persistSession: false } });
+const $ = (id) => document.getElementById(id);
+const inr = (n) => "₹" + Math.round(Number(n || 0)).toLocaleString("en-IN");
+const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const iso = (d) => new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 10);
+const PLAN = { CP: "With breakfast", MAP: "Breakfast + lunch or dinner", AP: "All meals" };
+const PHOTO = { "Lake View Cottage": "/property/cottages-lawn.jpg", "Pool View Cottage": "/property/pool-garden.jpg", "Family Suite": "/property/cottage-room.jpg", "Camping": "/property/cottage-dusk.jpg" };
+const ABOUT = { "Lake View Cottage": "Private cottage with garden and lake view · AC · up to 3 adults", "Pool View Cottage": "Cottage facing the infinity pool and garden · AC · up to 3 adults", "Family Suite": "Spacious suite for families · priced for 3 adults · up to 4", "Camping": "Lakeside tent with bonfire evening · price per tent (2 guests) · breakfast included" };
+for (let i = 1; i <= 12; i++) $("ad").add(new Option(i, i)); $("ad").value = 2;
+for (let i = 0; i <= 6; i++) $("ch").add(new Option(i, i));
+for (let i = 1; i <= 5; i++) $("rm").add(new Option(i, i));
+const qs = new URLSearchParams(location.search);
+const t0 = new Date(); const t1 = new Date(Date.now() + 864e5);
+$("in").min = iso(t0); $("in").value = qs.get("in") || iso(t0); $("out").value = qs.get("out") || iso(t1);
+if (qs.get("adults")) $("ad").value = qs.get("adults");
+$("in").onchange = () => { if ($("out").value <= $("in").value) { const d = new Date($("in").value); d.setDate(d.getDate() + 1); $("out").value = iso(d); } $("out").min = $("in").value; };
+$("g-gst").onchange = () => $("gstbox").classList.toggle("hidden", !$("g-gst").checked);
+let PICK = null, QUOTE = null;
+
+$("go").onclick = async () => {
+  $("qerr").classList.add("hidden"); $("guest").classList.add("hidden"); $("done").classList.add("hidden");
+  $("results").innerHTML = '<div class="card muted">Checking live availability…</div>';
+  const { data, error } = await sb.rpc("be_quote", { p_unit_code: "UDS", p_in: $("in").value, p_out: $("out").value, p_adults: +$("ad").value, p_children: +$("ch").value, p_rooms: +$("rm").value });
+  if (error || data?.error) { $("results").innerHTML = ""; $("qerr").textContent = error?.message || data.error; $("qerr").classList.remove("hidden"); return; }
+  QUOTE = data;
+  $("results").innerHTML = data.types.map((t, i) => `<div class="card room"><img src="${PHOTO[t.unit_type] || "/property/pool-lake.jpg"}" alt=""><div>
+    <h3 style="margin:0">${esc(t.unit_type)}</h3><div class="muted">${esc(ABOUT[t.unit_type] || "")}</div>
+    ${t.bookable ? `<div class="tag" style="margin-top:6px">${t.free_rooms <= 2 ? "Only " + t.free_rooms + " left" : "Available"}</div>` + t.plans.map((p, j) => `<div class="plan"><div><div style="font-weight:700">${PLAN[p.meal_plan]}</div><div class="muted">${data.nights} night${data.nights > 1 ? "s" : ""} · ${data.rooms} room${data.rooms > 1 ? "s" : ""} · incl. GST ${inr(p.tax)}</div></div><div style="text-align:right"><b>${inr(p.total)}</b><br><button class="btn" style="padding:8px 14px;width:auto;margin-top:4px" data-t="${i}" data-p="${j}">Select</button></div></div>`).join("")
+      : `<p class="soldout">${esc(t.note || "Not available")}</p>`}
+  </div></div>`).join("") || '<div class="card">No rooms found.</div>';
+  $("results").querySelectorAll("button[data-t]").forEach((b) => b.onclick = () => choose(+b.dataset.t, +b.dataset.p));
+};
+function choose(ti, pi) {
+  const t = QUOTE.types[ti], p = t.plans[pi]; PICK = { t, p };
+  $("pick").textContent = `${t.unit_type} · ${PLAN[p.meal_plan]} · ${$("in").value} → ${$("out").value} · ${$("ad").value} adults${+$("ch").value ? ", " + $("ch").value + " children" : ""} · ${QUOTE.rooms} room(s)`;
+  drawSum(); $("guest").classList.remove("hidden"); $("guest").scrollIntoView({ behavior: "smooth" });
+}
+function drawSum() {
+  const p = PICK.p, adv = $("g-pay").value === "advance";
+  $("summary").innerHTML = `<div class="sum"><span>Room & meals</span><span>${inr(p.room_amount)}</span></div><div class="sum"><span>GST</span><span>${inr(p.tax)}</span></div><div class="sum total"><span>Total</span><span>${inr(p.total)}</span></div>${adv ? `<div class="sum"><span>Pay now (50%)</span><b>${inr(Math.ceil(p.total * 0.5))}</b></div>` : ""}`;
+}
+$("g-pay").onchange = drawSum;
+
+$("book").onclick = async () => {
+  $("berr").classList.add("hidden");
+  const body = { unit: "UDS", unit_type: PICK.t.unit_type, meal_plan: PICK.p.meal_plan, check_in: $("in").value, check_out: $("out").value, adults: +$("ad").value, children: +$("ch").value, rooms: QUOTE.rooms,
+    name: $("g-name").value, phone: $("g-phone").value, email: $("g-email").value, requests: $("g-req").value, pay: $("g-pay").value,
+    gst_company: $("g-gst").checked ? $("g-co").value : "", gstin: $("g-gst").checked ? $("g-gstin").value.trim() : "", gst_address: $("g-gst").checked ? $("g-addr").value : "" };
+  $("book").disabled = true; $("book").textContent = "Holding your room…";
+  const { data, error } = await sb.rpc("be_book", { p: body });
+  $("book").disabled = false; $("book").textContent = "Confirm & pay securely";
+  if (error || !data?.ok) { $("berr").textContent = error?.message || data.reason; $("berr").classList.remove("hidden"); return; }
+  const rzp = new Razorpay({
+    key: RAZORPAY_KEY_ID, amount: Math.round(data.pay_now * 100), currency: "INR", name: "The Udaisarovar", description: `Booking ${data.booking_ref}`,
+    image: "/portal/jd-logo.svg", prefill: { name: body.name, email: body.email, contact: "+91" + body.phone.replace(/\D/g, "").slice(-10) },
+    notes: { booking_ref: data.booking_ref, property: "The Udaisarovar" }, theme: { color: "#ff7a1a" },
+    handler: async (resp) => {
+      const r = await sb.rpc("be_paid", { p_ref: data.booking_ref, p_payment_id: resp.razorpay_payment_id, p_amount: data.pay_now });
+      showDone(data, r.data);
+    },
+    modal: { ondismiss: () => { $("berr").textContent = `Payment not completed. Your room is held for 20 minutes — tap "Confirm & pay" again, or WhatsApp us with booking ${data.booking_ref}.`; $("berr").classList.remove("hidden"); } },
+  });
+  rzp.open();
+};
+function showDone(b, r) {
+  $("guest").classList.add("hidden"); $("results").innerHTML = "";
+  const ok = r && r.ok;
+  $("done").innerHTML = `<div class="ok"><h2 style="margin:0 0 6px">${ok ? "🎉 Booking confirmed!" : "Payment received"}</h2>
+    <p>Booking number <b>${esc(b.booking_ref)}</b> · ${esc(PICK.t.unit_type)} · ${PLAN[PICK.p.meal_plan]}<br>${$("in").value} → ${$("out").value}</p>
+    <p>Paid ${inr(b.pay_now)} of ${inr(b.total)}${b.pay_now < b.total ? " · balance " + inr(b.total - b.pay_now) + " at check-in" : ""}</p>
+    <p class="muted">Our team will WhatsApp you shortly. Show this booking number at check-in. In-house guests get our Guest App (scan the QR at reception).</p>
+    <a class="btn" style="display:inline-block;text-decoration:none;width:auto" href="https://wa.me/918829809555?text=${encodeURIComponent("Hi, I just booked " + b.booking_ref + " on your website.")}">Message us on WhatsApp</a></div>`;
+  $("done").classList.remove("hidden"); $("done").scrollIntoView({ behavior: "smooth" });
+}
+</script>
+</body>
+</html>
