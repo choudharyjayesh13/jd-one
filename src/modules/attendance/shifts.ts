@@ -48,3 +48,19 @@ export function nextPunch(att: Row | null): { field: string; selfie: string; lab
   if (!att.shift2_out_at) return { field: "shift2_out_at", selfie: "selfie_shift2_out", label: "End shift 2 · finish the day" };
   return null;
 }
+
+/**
+ * Jayesh 8 Oct 2026: rest time is only for people who did Shift 1 well —
+ * marked IN on time (≤ start + 15 min), marked OUT of Shift 1, and finished every Shift 1 task.
+ */
+export function shift1Review(staff: Row, att: Row | null, tasks: Row[], today: string, istTime: (ts: unknown) => string, onTimeLimit: (s: Row) => string): { ok: boolean; reasons: string[] } {
+  const reasons: string[] = [];
+  const s1End = String(staff.shift1_end ?? DEFAULT_SHIFTS.s1[1]);
+  if (!att?.checked_in_at) reasons.push("Shift 1 not marked");
+  else if (istTime(att.checked_in_at) > onTimeLimit(staff)) reasons.push(`came late (${istTime(att.checked_in_at)})`);
+  if (att?.checked_in_at && !att.checked_out_at) reasons.push("Shift 1 OUT not marked");
+  const s1Tasks = tasks.filter((t) => t.assigned_to === staff.id && t.due === today && t.status !== "Cancelled" && (!String(t.routine_key ?? "").split("|")[0] || String(t.routine_key).split("|")[0] < s1End));
+  const pending = s1Tasks.filter((t) => t.status !== "Done");
+  if (pending.length) reasons.push(`${pending.length} Shift 1 task${pending.length > 1 ? "s" : ""} not done`);
+  return { ok: reasons.length === 0, reasons };
+}

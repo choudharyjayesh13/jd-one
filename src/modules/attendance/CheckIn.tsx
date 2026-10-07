@@ -13,7 +13,8 @@ import { Button } from "@/core/ui/Button";
 import { cn } from "@/core/ui/cn";
 import { photoOfDay } from "@/core/ui/property";
 import { isAdmin } from "@/core/auth/access";
-import { activeRest, nextPunch, phaseAt, pretty, shiftsOf } from "./shifts";
+import { activeRest, nextPunch, phaseAt, pretty, shiftsOf, shift1Review } from "./shifts";
+import { istTime, onTimeLimit } from "@/modules/scoreboard/compute";
 import { useToast } from "@/core/ui/Toast";
 import type { Row } from "@/core/schema/types";
 
@@ -131,6 +132,15 @@ export function CheckIn() {
     void q.then((rows) => setToday(rows[0] ?? null));
   }, [store, staffId, saving]);
   const loadRests = useCallback(() => store.list("rest-periods", { filter: { date: todayISO() } }).then(setRests).catch(() => undefined), [store]);
+  const [teamAtt, setTeamAtt] = useState<Row[]>([]);
+  const [teamTasks, setTeamTasks] = useState<Row[]>([]);
+  useEffect(() => {
+    if (!leader) return;
+    void Promise.all([store.list("attendance", { filter: { date: todayISO() } }), store.list("tasks", { filter: { due: todayISO() } })])
+      .then(([a, t]) => { setTeamAtt(a); setTeamTasks(t); })
+      .catch(() => undefined);
+  }, [store, leader, rests]);
+  const review = (s: Row) => shift1Review(s, teamAtt.find((a) => a.staff_id === s.id) ?? null, teamTasks, todayISO(), istTime, onTimeLimit);
   useEffect(() => {
     void loadRests();
   }, [loadRests]);
@@ -189,6 +199,9 @@ export function CheckIn() {
   const giveRest = async () => {
     const f = restForm;
     if (!f.staff_id || !f.start_time || !f.end_time) return toast("Choose the person and the rest time", "error");
+    const who = staff.find((x) => x.id === f.staff_id);
+    const r = who ? review(who) : null;
+    if (r && !r.ok) return toast(`No rest — Shift 1 not done well: ${r.reasons.join(", ")}`, "error");
     try {
       await store.create("rest-periods", { staff_id: f.staff_id, date: todayISO(), start_time: f.start_time, end_time: f.end_time, note: f.note || null, assigned_by: user.staff?.id ?? null });
       toast(`Rest time given to ${String(staff.find((x) => x.id === f.staff_id)?.name ?? "")} — they see it in the app`);
@@ -314,11 +327,11 @@ export function CheckIn() {
       {leader && (
         <section className="space-y-4 rounded-2xl border border-emerald-200 bg-white p-5 shadow-sm sm:p-6">
           <h2 className="flex items-center gap-2 text-base font-semibold text-navy"><Coffee className="h-5 w-5 text-emerald-600" /> Give rest time</h2>
-          <p className="-mt-2 text-xs text-slate-500">When someone is free, give them rest. They see “You are on rest time” in their app.</p>
+          <p className="-mt-2 text-xs text-slate-500">Rest is only for people who did Shift 1 well: on time, Shift 1 IN and OUT marked, and every Shift 1 task done. They see “You are on rest time” in their app.</p>
           <div className="grid gap-2 sm:grid-cols-[1.5fr_1fr_1fr]">
             <select className="rounded-xl border border-line bg-white px-3 py-2.5" value={restForm.staff_id} onChange={(e) => setRestForm((f) => ({ ...f, staff_id: e.target.value }))}>
               <option value="">Choose person…</option>
-              {staff.map((x) => <option key={x.id} value={x.id}>{String(x.name)}</option>)}
+              {staff.map((x) => { const r = review(x); return <option key={x.id} value={x.id} disabled={!r.ok}>{r.ok ? "✅ " : "❌ "}{String(x.name)}{r.ok ? "" : ` — ${r.reasons.join(", ")}`}</option>; })}
             </select>
             <input type="time" className="rounded-xl border border-line px-3 py-2.5" value={restForm.start_time} onChange={(e) => setRestForm((f) => ({ ...f, start_time: e.target.value }))} />
             <input type="time" className="rounded-xl border border-line px-3 py-2.5" value={restForm.end_time} onChange={(e) => setRestForm((f) => ({ ...f, end_time: e.target.value }))} />

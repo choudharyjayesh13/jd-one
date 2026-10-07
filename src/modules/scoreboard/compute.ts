@@ -74,7 +74,7 @@ const within = (value: unknown, start: string, end: string) => {
 };
 
 /** "HH:MM" in IST for a timestamp. */
-function istTime(ts: unknown): string {
+export function istTime(ts: unknown): string {
   const d = new Date(String(ts));
   if (Number.isNaN(d.getTime())) return "";
   const parts = new Intl.DateTimeFormat("en-GB", { timeZone: TIMEZONE, hour: "2-digit", minute: "2-digit", hour12: false }).formatToParts(d);

@@ -251,7 +251,7 @@ export function MyDay() {
         <header className="flex flex-wrap items-center justify-between gap-2 px-5 pt-5 sm:px-6">
           <div>
             <h2 className="text-base font-semibold text-navy">📋 My daily task sheet</h2>
-            <p className="text-xs text-slate-500">Your day every day — complete each job with a photo. If you are free, your leader may give you rest time.</p>
+            <p className="text-xs text-slate-500">Your day every day — complete each job with a photo. Rest time is only for those who did Shift 1 well: on time, IN &amp; OUT marked, every Shift 1 job done.</p>
           </div>
           <span className="rounded-full bg-navy px-3 py-1 text-xs font-semibold text-white">
             {phase === "before" ? `Day starts ${pretty(shifts.s1[0])}` : phase === "shift1" ? "Now: Shift 1" : phase === "break" ? "Now: 1-hour break (bath & personal work)" : phase === "shift2" ? "Now: Shift 2" : "Day finished"}
@@ -267,7 +267,7 @@ export function MyDay() {
               <div className="mb-3 flex items-center justify-between text-sm font-semibold text-navy">{b.title}{b.active && <span className="rounded-full bg-gold px-2 py-0.5 text-[10px] font-bold text-navy">NOW</span>}</div>
               {b.key === "br" ? (
                 <div className="space-y-2 text-sm text-emerald-800">
-                  <p>🛁 1 hour for bathing, lunch and personal work. If there is no work, your leader may give you extra rest.</p>
+                  <p>🛁 1 hour for bathing, lunch and personal work. Extra rest only if Shift 1 was done well (on time, IN &amp; OUT marked, all jobs done).</p>
                   {rests.map((r) => <p key={r.id} className="rounded-lg bg-white px-3 py-2 text-xs">🌿 Extra rest {pretty(String(r.start_time))}–{pretty(String(r.end_time))}{r.note ? ` · ${r.note}` : ""}</p>)}
                 </div>
               ) : b.items.length === 0 ? (
