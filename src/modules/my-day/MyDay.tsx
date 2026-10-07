@@ -254,7 +254,7 @@ export function MyDay() {
             <p className="text-xs text-slate-500">Your day every day — complete each job with a photo. If you are free, your leader may give you rest time.</p>
           </div>
           <span className="rounded-full bg-navy px-3 py-1 text-xs font-semibold text-white">
-            {phase === "before" ? `Day starts ${pretty(shifts.s1[0])}` : phase === "shift1" ? "Now: Shift 1" : phase === "break" ? "Now: Lunch & rest break" : phase === "shift2" ? "Now: Shift 2" : "Day finished"}
+            {phase === "before" ? `Day starts ${pretty(shifts.s1[0])}` : phase === "shift1" ? "Now: Shift 1" : phase === "break" ? "Now: 1-hour break (bath & personal work)" : phase === "shift2" ? "Now: Shift 2" : "Day finished"}
           </span>
         </header>
         <div className="grid gap-3 p-5 sm:p-6 md:grid-cols-3">
@@ -267,7 +267,7 @@ export function MyDay() {
               <div className="mb-3 flex items-center justify-between text-sm font-semibold text-navy">{b.title}{b.active && <span className="rounded-full bg-gold px-2 py-0.5 text-[10px] font-bold text-navy">NOW</span>}</div>
               {b.key === "br" ? (
                 <div className="space-y-2 text-sm text-emerald-800">
-                  <p>🍽️ Lunch and rest — recharge for the evening.</p>
+                  <p>🛁 1 hour for bathing, lunch and personal work. If there is no work, your leader may give you extra rest.</p>
                   {rests.map((r) => <p key={r.id} className="rounded-lg bg-white px-3 py-2 text-xs">🌿 Extra rest {pretty(String(r.start_time))}–{pretty(String(r.end_time))}{r.note ? ` · ${r.note}` : ""}</p>)}
                 </div>
               ) : b.items.length === 0 ? (

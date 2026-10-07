@@ -31,7 +31,7 @@ export const staff = defineEntity({
     { name: "notes", label: "Notes", type: "textarea" },
     { name: "shift1_start", label: "Shift 1 starts", type: "text", default: "07:00", placeholder: "07:00" },
     { name: "shift1_end", label: "Shift 1 ends", type: "text", default: "13:00", placeholder: "13:00" },
-    { name: "shift2_start", label: "Shift 2 starts", type: "text", default: "15:00", placeholder: "15:00" },
+    { name: "shift2_start", label: "Shift 2 starts", type: "text", default: "14:00", placeholder: "14:00" },
     { name: "shift2_end", label: "Shift 2 ends", type: "text", default: "22:00", placeholder: "22:00" },
     { name: "daily_routine", label: "Daily routine (task sheet)", type: "textarea", help: "One line per job, start with the time — shown every day on their task sheet", placeholder: "07:00 Pool and lawn check\n08:00 Breakfast service\n11:00 Rooms ready for check-in\n15:00 Evening setup\n19:00 Dinner service" },
     { name: "job_description", label: "Job description", type: "textarea", help: "Shown to the staff member on My Day → My role", placeholder: "What this person is responsible for, day to day" },

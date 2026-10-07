@@ -218,7 +218,7 @@ export function CheckIn() {
           <p className="text-sm text-white/70">{now.toLocaleDateString("en-IN", { weekday: "long", day: "numeric", month: "long", year: "numeric" })}</p>
           <div className="mt-1 text-5xl font-bold tabular-nums sm:text-6xl">{now.toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit", second: "2-digit" })}</div>
           <p className="mt-2 inline-block rounded-full bg-white/10 px-4 py-1 text-sm">
-            {phase === "before" ? `Shift 1 starts at ${pretty(sh.s1[0])}` : phase === "shift1" ? `Shift 1 · until ${pretty(sh.s1[1])}` : phase === "break" ? `Lunch & rest break · Shift 2 at ${pretty(sh.s2[0])}` : phase === "shift2" ? `Shift 2 · until ${pretty(sh.s2[1])}` : "Day finished · see you tomorrow"}
+            {phase === "before" ? `Shift 1 starts at ${pretty(sh.s1[0])}` : phase === "shift1" ? `Shift 1 · until ${pretty(sh.s1[1])}` : phase === "break" ? `1-hour break (bath & personal work) · Shift 2 at ${pretty(sh.s2[0])}` : phase === "shift2" ? `Shift 2 · until ${pretty(sh.s2[1])}` : "Day finished · see you tomorrow"}
           </p>
         </div>
       </section>

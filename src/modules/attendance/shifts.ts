@@ -1,7 +1,7 @@
-/** Two-shift day helpers: 07:00–13:00 · break · 15:00–22:00 by default (per staff on the Staff record). */
+/** Two-shift day helpers: 07:00–13:00 · 1-hour break (bath & personal work) · 14:00–22:00 by default (per staff on the Staff record). */
 import type { Row } from "@/core/schema/types";
 
-export const DEFAULT_SHIFTS = { s1: ["07:00", "13:00"], s2: ["15:00", "22:00"] } as const;
+export const DEFAULT_SHIFTS = { s1: ["07:00", "13:00"], s2: ["14:00", "22:00"] } as const;
 const norm = (v: unknown, d: string) => (/^\d{1,2}:\d{2}$/.test(String(v ?? "").trim()) ? String(v).trim().padStart(5, "0") : d);
 export function shiftsOf(s: Row | null | undefined) {
   return {

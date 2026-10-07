@@ -18,7 +18,7 @@ export const restPeriods = defineEntity({
     { name: "staff_id", label: "Staff", type: "relation", entity: "staff", required: true },
     { name: "date", label: "Date", type: "date", required: true, default: todayISO },
     { name: "start_time", label: "From", type: "text", required: true, placeholder: "13:00" },
-    { name: "end_time", label: "Until", type: "text", required: true, placeholder: "15:00" },
+    { name: "end_time", label: "Until", type: "text", required: true, placeholder: "14:00" },
     { name: "note", label: "Message to staff", type: "text", placeholder: "Take rest, all rooms done" },
     { name: "assigned_by", label: "Given by", type: "relation", entity: "staff" },
   ],
