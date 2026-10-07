@@ -1,4 +1,5 @@
 "use client";
+import { DocsNudge } from "@/modules/staff-docs/MyDocuments";
 /**
  * /my-day — the staff home. Spacious, card-based: welcome + attendance, quick actions,
  * today's tasks, upcoming tasks, my role (job description, 5 KPIs, 5 KRAs), tickets,
@@ -236,6 +237,7 @@ export function MyDay() {
         </div>
       )}
 
+      <DocsNudge />
       {rest && (
         <section className="flex items-center gap-4 rounded-2xl border-2 border-emerald-300 bg-emerald-50 px-5 py-4">
           <span className="text-4xl">🌿</span>
