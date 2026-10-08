@@ -151,10 +151,21 @@ $("book").onclick = async () => {
       const r = await sb.rpc("be_paid", { p_ref: data.booking_ref, p_payment_id: resp.razorpay_payment_id, p_amount: data.pay_now });
       showDone(data, r.data);
     },
-    modal: { ondismiss: () => { $("berr").textContent = `Payment not completed. Your room is held for 20 minutes — tap "Confirm & pay" again, or WhatsApp us with booking ${data.booking_ref}.`; $("berr").classList.remove("hidden"); } },
+    modal: { ondismiss: () => showUpi(data) },
   });
+  rzp.on("payment.failed", () => { try { rzp.close(); } catch (e) {} showUpi(data); });
   rzp.open();
 };
+// If online card/UPI checkout fails or is closed: pay by scanning our UPI QR and send the screenshot on WhatsApp.
+function showUpi(b) {
+  const msg = encodeURIComponent(`Hi, I booked ${b.booking_ref} on your website (${PICK.t.unit_type}, ${$("in").value} to ${$("out").value}). I have paid ₹${Math.round(b.pay_now)} by UPI — screenshot attached.`);
+  $("berr").innerHTML = `<b>Online payment didn't go through.</b> Your room is held for 20 minutes (booking <b>${esc(b.booking_ref)}</b>).<br>
+    Pay <b>${inr(b.pay_now)}</b> by scanning our UPI QR below, then send the payment screenshot on WhatsApp — we confirm right away.
+    <img src="/pay/udaisarovar-scan-to-pay.png" alt="UPI QR" style="display:block;width:100%;max-width:300px;margin:12px auto;border-radius:12px">
+    <a class="btn" style="display:block;text-align:center;text-decoration:none" href="https://wa.me/918829809555?text=${msg}">Send payment screenshot on WhatsApp</a>
+    <p style="margin:8px 0 0">Or tap "Confirm &amp; pay securely" to try online payment again.</p>`;
+  $("berr").classList.remove("hidden"); $("berr").scrollIntoView({ behavior: "smooth" });
+}
 function showDone(b, r) {
   $("guest").classList.add("hidden"); $("results").innerHTML = "";
   const ok = r && r.ok;
