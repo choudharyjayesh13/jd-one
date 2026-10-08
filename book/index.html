@@ -123,9 +123,9 @@ $("go").onclick = async () => {
   const { data, error } = await sb.rpc("be_quote", { p_unit_code: "UDS", p_in: $("in").value, p_out: $("out").value, p_adults: +$("ad").value, p_children: +$("ch").value, p_rooms: +$("rm").value });
   if (error || data?.error) { $("results").innerHTML = ""; $("qerr").textContent = error?.message || data.error; $("qerr").classList.remove("hidden"); return; }
   QUOTE = data;
-  $("results").innerHTML = data.types.map((t, i) => `<div class="card room"><img src="${PHOTO[t.unit_type] || "/property/pool-lake.jpg"}" alt=""><div>
+  $("results").innerHTML = `<p class="muted" style="margin:4px 2px 10px">🧾 Prices are <b>excluding taxes</b>: 5% GST is added at checkout (18% when the room rate is above ₹7,500 per night, as per GST rules).</p>` + data.types.map((t, i) => `<div class="card room"><img src="${PHOTO[t.unit_type] || "/property/pool-lake.jpg"}" alt=""><div>
     <h3 style="margin:0">${esc(t.unit_type)}</h3><div class="muted">${esc(ABOUT[t.unit_type] || "")}</div>
-    ${t.bookable ? `<div class="tag" style="margin-top:6px">${t.free_rooms <= 2 ? "Only " + t.free_rooms + " left" : "Available"}</div>` + t.plans.map((p, j) => `<div class="plan"><div><div style="font-weight:700">${PLAN[p.meal_plan]}</div><div class="muted" style="font-size:.78rem">${PLAN_INFO[p.meal_plan] || ""}</div><div class="muted">${data.nights} night${data.nights > 1 ? "s" : ""} · ${data.rooms} room${data.rooms > 1 ? "s" : ""} · incl. GST ${inr(p.tax)}</div></div><div style="text-align:right"><b>${inr(p.total)}</b><br><button class="btn" style="padding:8px 14px;width:auto;margin-top:4px" data-t="${i}" data-p="${j}">Select</button></div></div>`).join("")
+    ${t.bookable ? `<div class="tag" style="margin-top:6px">${t.free_rooms <= 2 ? "Only " + t.free_rooms + " left" : "Available"}</div>` + t.plans.map((p, j) => `<div class="plan"><div><div style="font-weight:700">${PLAN[p.meal_plan]}</div><div class="muted" style="font-size:.78rem">${PLAN_INFO[p.meal_plan] || ""}</div><div class="muted">${data.nights} night${data.nights > 1 ? "s" : ""} · ${data.rooms} room${data.rooms > 1 ? "s" : ""}</div></div><div style="text-align:right"><b>${inr(p.room_amount)}</b><div class="muted" style="font-size:.75rem">+ ${Math.round(p.tax / p.room_amount * 100)}% GST (not included)</div><button class="btn" style="padding:8px 14px;width:auto;margin-top:4px" data-t="${i}" data-p="${j}">Select</button></div></div>`).join("")
       : `<p class="soldout">${esc(t.note || "Not available")}</p>`}
   </div></div>`).join("") || '<div class="card">No rooms found.</div>';
   $("results").querySelectorAll("button[data-t]").forEach((b) => b.onclick = () => choose(+b.dataset.t, +b.dataset.p));
@@ -137,7 +137,7 @@ function choose(ti, pi) {
 }
 function drawSum() {
   const p = PICK.p, adv = $("g-pay").value === "advance";
-  $("summary").innerHTML = `<div class="sum"><span>Room & meals</span><span>${inr(p.room_amount)}</span></div><div class="sum"><span>GST</span><span>${inr(p.tax)}</span></div><div class="sum total"><span>Total</span><span>${inr(p.total)}</span></div>${adv ? `<div class="sum"><span>Pay now (50%)</span><b>${inr(Math.ceil(p.total * 0.5))}</b></div>` : ""}`;
+  $("summary").innerHTML = `<div class="sum"><span>Room & meals</span><span>${inr(p.room_amount)}</span></div><div class="sum"><span>GST ${Math.round(p.tax / p.room_amount * 100)}% (added on top)</span><span>${inr(p.tax)}</span></div><div class="sum total"><span>Total</span><span>${inr(p.total)}</span></div>${adv ? `<div class="sum"><span>Pay now (50%)</span><b>${inr(Math.ceil(p.total * 0.5))}</b></div>` : ""}`;
 }
 $("g-pay").onchange = drawSum;
 
