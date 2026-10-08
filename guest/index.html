@@ -141,7 +141,7 @@ const TABS = [
   ["Rule", "📜 House rules"], ["How-to", "⛺ How to"], ["Property", "🏨 Our properties"], ["pay", "💳 Pay"],
 ];
 let INFO = [];
-const PHOTOS = [["hero","Lakeside lawns at sunrise"],["pool","Infinity pool"],["lawn","Garden & lake view"],["goldenhour","Golden hour by the lake"],["palms","Lakeside palms"],["bonfire","Bonfire nights"],["movienight","Movie under the stars"],["camping","Lakeside camping"],["cottages","Our cottages"]];
+const PHOTOS = [["hero","Lakeside lawns at sunrise"],["pool","Infinity pool"],["lawn","Garden & lake view"],["goldenhour","Golden hour by the lake"],["palms","Lakeside palms"],["bonfire","Bonfire nights"],["movienight","Movie under the stars"],["camping","Lakeside camping"]];
 let heroI = 0;
 setInterval(() => { const h = document.querySelector(".hero"); if (!h || $("app").classList.contains("hidden")) return; heroI = (heroI + 1) % PHOTOS.length; h.style.backgroundImage = `url(/guest/photos/${PHOTOS[heroI][0]}.jpg)`; }, 6000);
 const gallery = () => `<div class="gallery">${PHOTOS.map(([f, c]) => `<figure><img src="/guest/photos/${f}.jpg" alt="${c}" loading="lazy"><figcaption>${c}</figcaption></figure>`).join("")}</div>`;
@@ -173,6 +173,11 @@ function draw(k) {
   let html = "";
   if (k === "today") {
     html = `${gallery()}<div class="card"><h2>🔥 Today's combos</h2>${list("Combo", "combo", true)}</div>
+      <div class="card"><h2>☀️ Today at the property — free for in-house guests</h2>
+        <div class="item"><img src="/guest/photos/pool.jpg" alt=""><div><b>Swimming pool</b><div class="muted">Morning 8:00 – 11:00 AM · Evening 4:30 – 7:30 PM<br>Swimwear required · children with an adult · no glass or food in the pool area</div></div></div>
+        <div class="item"><img src="/guest/photos/lawn.jpg" alt=""><div><b>Games: chess, ludo & badminton</b><div class="muted">5:00 – 7:00 PM · ask reception for the equipment (football too) and please return it after play</div></div></div>
+        <div class="item"><img src="/guest/photos/movienight.jpg" alt=""><div><b>Movie under the stars</b><div class="muted">9:00 – 11:45 PM · open-air projector by the lake</div></div></div>
+      </div>
       <div class="card"><h2>🕑 Your day at a glance</h2><div class="glance">${GLANCE.map(([t, w]) => `<b>${t}</b><span>${w}</span>`).join("")}</div></div>
       <div class="offer">🎁 Welcome back offer: stay with us again and get <b>10% off food & beverages</b> — show your earlier booking at check-in.</div>
       <div class="card"><h2>🎯 Popular experiences</h2>${INFO.filter((r) => r.section === "Experience" && live(r)).slice(0, 3).map((r) => itemHtml(r)).join("") || '<p class="muted">Ask reception.</p>'}</div>`;
