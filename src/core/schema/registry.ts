@@ -38,6 +38,8 @@ import { owners } from "@/modules/owners/entity";
 import { orders } from "@/modules/orders/entity";
 import { vendors } from "@/modules/vendors/entity";
 import { feedback } from "@/modules/feedback/entity";
+import { assets } from "@/modules/assets/entity";
+import { vehicleLogs, fuelLogs, vehicleServices } from "@/modules/assets/logs";
 
 export const entities: EntityDef[] = [
   owners,
@@ -58,6 +60,10 @@ export const entities: EntityDef[] = [
   orders,
   vendors,
   feedback,
+  assets,
+  vehicleLogs,
+  fuelLogs,
+  vehicleServices,
   payments,
   checkins,
   dailyReports,
