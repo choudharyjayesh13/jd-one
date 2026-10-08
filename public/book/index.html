@@ -74,10 +74,10 @@ footer{text-align:center;color:var(--mut);font-size:.78rem;margin-top:30px}
     <div class="card" style="background:#fbfaf7">
       <div id="summary"></div>
       <label style="margin-top:12px">Payment</label>
-      <select id="g-pay"><option value="full">Pay full amount now</option><option value="advance">Pay 50% now, rest at check-in</option></select>
+      <div id="g-pay" style="padding:10px 12px;border:1px solid var(--line);border-radius:12px;background:#fff7ef;font-weight:600">50% advance now · balance on arrival (cash or UPI)</div>
     </div>
     <button class="btn" id="book" style="margin-top:14px">Confirm &amp; pay</button>
-    <p class="muted" style="text-align:center">Rooms are held for 20 minutes while you pay by UPI. Prices include all taxes shown above.</p>
+    <p class="muted" style="text-align:center">Rooms are held for 20 minutes while you pay the 50% advance by UPI. GST is added on top of the room price; the balance is paid on arrival.</p>
     <div id="berr" class="err hidden"></div>
   </section>
 
@@ -136,15 +136,14 @@ function choose(ti, pi) {
   drawSum(); $("guest").classList.remove("hidden"); $("guest").scrollIntoView({ behavior: "smooth" });
 }
 function drawSum() {
-  const p = PICK.p, adv = $("g-pay").value === "advance";
-  $("summary").innerHTML = `<div class="sum"><span>Room & meals</span><span>${inr(p.room_amount)}</span></div><div class="sum"><span>GST ${Math.round(p.tax / p.room_amount * 100)}% (added on top)</span><span>${inr(p.tax)}</span></div><div class="sum total"><span>Total</span><span>${inr(p.total)}</span></div>${adv ? `<div class="sum"><span>Pay now (50%)</span><b>${inr(Math.ceil(p.total * 0.5))}</b></div>` : ""}`;
+  const p = PICK.p, adv = true;
+  $("summary").innerHTML = `<div class="sum"><span>Room & meals</span><span>${inr(p.room_amount)}</span></div><div class="sum"><span>GST ${Math.round(p.tax / p.room_amount * 100)}% (added on top)</span><span>${inr(p.tax)}</span></div><div class="sum total"><span>Total</span><span>${inr(p.total)}</span></div>${adv ? `<div class="sum"><span>Pay now (50%)</span><b>${inr(Math.ceil(p.total * 0.5))}</b></div><div class="sum"><span>Balance on arrival (cash or UPI)</span><span>${inr(p.total - Math.ceil(p.total * 0.5))}</span></div>` : ""}`;
 }
-$("g-pay").onchange = drawSum;
 
 $("book").onclick = async () => {
   $("berr").classList.add("hidden");
   const body = { unit: "UDS", unit_type: PICK.t.unit_type, meal_plan: PICK.p.meal_plan, check_in: $("in").value, check_out: $("out").value, adults: +$("ad").value, children: +$("ch").value, rooms: QUOTE.rooms,
-    name: $("g-name").value, phone: $("g-phone").value, email: $("g-email").value, requests: $("g-req").value, pay: $("g-pay").value,
+    name: $("g-name").value, phone: $("g-phone").value, email: $("g-email").value, requests: $("g-req").value, pay: "advance",
     gst_company: $("g-gst").checked ? $("g-co").value : "", gstin: $("g-gst").checked ? $("g-gstin").value.trim() : "", gst_address: $("g-gst").checked ? $("g-addr").value : "" };
   $("book").disabled = true; $("book").textContent = "Holding your room…";
   const { data, error } = await sb.rpc("be_book", { p: body });
