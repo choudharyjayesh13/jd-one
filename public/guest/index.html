@@ -27,6 +27,7 @@ input{width:100%;padding:13px 14px;border-radius:12px;border:1px solid var(--lin
 .tabs{display:flex;gap:8px;overflow-x:auto;padding:12px 0 2px;scrollbar-width:none}.tabs button{flex:0 0 auto;border:1px solid var(--line);background:#fff;border-radius:999px;padding:9px 14px;font-weight:700;color:var(--mut);cursor:pointer}.tabs button.on{background:var(--ink);color:#fff;border-color:var(--ink)}
 .item{display:flex;gap:12px;padding:12px 0;border-bottom:1px solid var(--line)}.item:last-child{border:0}
 .item img{width:84px;height:84px;object-fit:cover;border-radius:12px;flex:0 0 auto}
+.item.multi{flex-direction:column;gap:8px}.strip{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;scroll-snap-type:x mandatory}.strip img{width:auto!important;height:170px!important;max-width:85%;flex:0 0 auto;scroll-snap-align:start}.credit{color:var(--mut);font-size:.7rem;margin-top:-4px}
 .item b{display:block}.price{display:inline-block;margin-top:6px;background:#fff3e8;color:#a34b00;border-radius:999px;padding:3px 10px;font-weight:700;font-size:.82rem}
 .combo{border:2px solid var(--jd);background:#fff8f1}
 .gallery{display:flex;gap:10px;overflow-x:auto;scroll-snap-type:x mandatory;padding:4px 0 6px;scrollbar-width:none}
@@ -229,7 +230,14 @@ async function loadApp(session) {
   $("tabs").querySelectorAll("button").forEach((b) => b.onclick = () => { $("tabs").querySelectorAll("button").forEach((x) => x.classList.toggle("on", x === b)); draw(b.dataset.k); });
   draw("today");
 }
-const itemHtml = (r, cls = "") => `<div class="item ${cls}">${r.photo ? `<img src="${esc(r.photo)}" alt="">` : ""}<div><b>${esc(r.title)}</b>${r.body ? `<div class="muted">${esc(r.body).replace(/\n/g, "<br>")}</div>` : ""}${r.price ? `<span class="price">${esc(r.price)}</span>` : ""}</div></div>`;
+// Photo credits for pictures that are not our own (Wikimedia Commons, licence requires attribution).
+const CREDITS = { "x-horse1": "Photo: Vikas Rana, CC BY 2.0", "x-horse2": "Photo: Benoit Brummer, CC BY 4.0" };
+// guest_info.photo may hold several comma-separated pictures: the card then shows a swipeable strip.
+const pics = (r) => (r.photo || "").split(",").map((x) => x.trim()).filter(Boolean);
+const stripHtml = (r) => { const ps = pics(r); const cr = ps.map((x) => CREDITS[x.replace(/^.*\/|\.jpg$/g, "")]).filter(Boolean); return `<div class="strip">${ps.map((x) => `<img src="${esc(x)}" alt="${esc(r.title)}" loading="lazy">`).join("")}</div>${cr.length ? `<small class="credit">${esc(cr.join(" · "))}</small>` : ""}`; };
+const itemHtml = (r, cls = "") => pics(r).length > 1
+  ? `<div class="item multi ${cls}">${stripHtml(r)}<div><b>${esc(r.title)}</b>${r.body ? `<div class="muted">${esc(r.body).replace(/\n/g, "<br>")}</div>` : ""}${r.price ? `<span class="price">${esc(r.price)}</span>` : ""}</div></div>`
+  : `<div class="item ${cls}">${r.photo ? `<img src="${esc(r.photo)}" alt="">` : ""}<div><b>${esc(r.title)}</b>${r.body ? `<div class="muted">${esc(r.body).replace(/\n/g, "<br>")}</div>` : ""}${r.price ? `<span class="price">${esc(r.price)}</span>` : ""}</div></div>`;
 const ask = (what) => `<a class="wa" href="https://wa.me/918829809555?text=${encodeURIComponent("Hi, I am a guest (" + ($("g-no").textContent || "") + "). I would like to book: " + what)}">Book on WhatsApp</a>`;
 // Short headline + icon for each rule (matched on the rule text), so the House rules tab reads at a glance.
 const RULE_ICONS = [
@@ -261,14 +269,14 @@ function draw(k) {
   if (k === "today") {
     html = `${gallery()}<div class="card"><h2>🔥 Value Added Combo</h2>${list("Combo", "combo", true)}</div>
       <div class="card"><h2>☀️ Today's activities & timings</h2><p class="muted" style="margin-top:-4px">Free for in-house guests · morning to late night</p>${timelineHtml()}
-        <div class="note">🍲 <b>Food is cooked fresh for you — it takes 45–60 minutes.</b> Please place every food order at least <b>60 minutes</b> before you want to eat. Dinner orders by 7:30 PM.</div></div>
+        <div class="note">🍲 <b>Food is cooked fresh for you — it takes 45–60 minutes.</b> Please place every food order at least <b>60 minutes</b> before you want to eat. Dinner orders by 7:30 PM.<br>🧾 Food prices are <b>excluding 5% GST</b> — the tax is added to your bill.</div></div>
       <div class="offer">🎁 <b>Welcome back offer — 10% off</b><br>Your guest number is <b style="font-size:1.15rem;letter-spacing:.06em">${esc($("g-no").textContent)}</b>. Save it! Next time you stay, mention this number (or sign in to this app with the same mobile) and get <b>10% off</b>.</div>
       <div class="card"><h2>🎯 Popular experiences</h2>${INFO.filter((r) => r.section === "Experience" && live(r)).slice(0, 3).map((r) => itemHtml(r)).join("") || '<p class="muted">Ask reception.</p>'}</div>`;
   } else if (k === "menu") {
     const cats = [...new Set(MENU.map((m) => m.category))];
     html = `<div class="evcard"><div class="pics"><img src="/guest/photos/paneer-bowl.jpg" alt="Signature paneer rice bowl"><img src="/guest/photos/bbq.jpg" alt="Live BBQ"><img src="/guest/photos/dining.jpg" alt="Home-style food"><img src="/guest/photos/ev-dining.jpg" alt="Candle-lit lakeside dinner"></div>
       <div class="txt"><h3>🍽️ Lake City Cafe — today's menu</h3><p class="muted" style="margin:0">Fresh, home-style vegetarian food · 8:30 AM – 10:30 PM. This menu is updated by our chef — only dishes available today are shown.</p>
-      <div class="note">🍲 Every dish is cooked fresh and takes <b>45–60 minutes</b>. Please order at least <b>60 minutes</b> ahead (dinner orders by 7:30 PM).</div>
+      <div class="note">🍲 Every dish is cooked fresh and takes <b>45–60 minutes</b>. Please order at least <b>60 minutes</b> ahead (dinner orders by 7:30 PM).<br>🧾 All prices are <b>excluding 5% GST</b>, which is added to your bill.</div>
       <p><a class="wa" href="https://wa.me/918829809555?text=${encodeURIComponent("Hi, I am a guest (" + ($("g-no").textContent || "") + "). I would like to order: ")}">Order on WhatsApp</a></p></div></div>
       ${cats.length ? cats.map((c) => `<div class="card mcat"><h3>${esc(c)}</h3>${MENU.filter((m) => m.category === c).map((m) => `<div class="mrow"><div>${m.veg !== false ? '<span class="veg"></span>' : ""}${esc(m.name)}${m.description ? `<small>${esc(m.description)}</small>` : ""}</div><b>₹${Number(m.price).toLocaleString("en-IN")}</b></div>`).join("")}</div>`).join("") : '<div class="card"><p class="muted">The menu is being updated — please call reception.</p></div>'}`;
   } else if (k === "events") {
