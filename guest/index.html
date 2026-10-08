@@ -166,7 +166,8 @@ function draw(k) {
     html = `<div class="card pay"><h2>💳 Scan to pay</h2><p class="muted">Pay for food, add-ons or your stay balance. Show the payment screenshot to reception.</p><img src="/pay/udaisarovar-scan-to-pay.png" alt="Scan to pay QR"></div>`;
   } else {
     const title = Object.fromEntries(TABS)[k];
-    html = `<div class="card"><h2>${title}</h2>${list(k, "", k === "Experience")}</div>`;
+    const pdf = k === "Rule" ? '<p><a class="wa" style="background:#0b1f3a" href="/guest/house-rules.pdf" target="_blank" rel="noreferrer">📄 Download house rules & guest card (PDF)</a></p>' : "";
+    html = `<div class="card"><h2>${title}</h2>${pdf}${list(k, "", k === "Experience")}</div>`;
   }
   $("panel").innerHTML = html;
 }
