@@ -48,6 +48,17 @@ input{width:100%;padding:13px 14px;border-radius:12px;border:1px solid var(--lin
 #lb{position:fixed;inset:0;background:rgba(0,0,0,.92);display:none;align-items:center;justify-content:center;z-index:50;padding:14px}
 #lb img{max-width:100%;max-height:88vh;border-radius:12px}#lb span{position:absolute;top:14px;right:18px;color:#fff;font-size:2rem;cursor:pointer}
 img.zoom,.item img,.gallery img{cursor:zoom-in}
+.rsec{border-radius:18px;overflow:hidden;margin-top:14px;background:#fff;border:1px solid var(--line)}
+.rsec .rhead{position:relative;height:120px;background:#0b1f3a center/cover;display:flex;align-items:flex-end}
+.rsec .rhead:after{content:"";position:absolute;inset:0;background:linear-gradient(0deg,rgba(11,31,58,.9),rgba(11,31,58,.15))}
+.rsec .rhead h3{position:relative;z-index:1;color:#fff;margin:0;padding:14px 16px;font-size:1.15rem}
+.rsec .rhead.plain{height:auto;background:linear-gradient(135deg,#0b1f3a,#1f3d66)}
+.rgrid{display:grid;grid-template-columns:1fr;gap:10px;padding:14px}@media(min-width:560px){.rgrid{grid-template-columns:1fr 1fr}}
+.rcard{display:flex;gap:12px;align-items:flex-start;background:#faf7f1;border-radius:14px;padding:12px}
+.rcard .ri{flex:0 0 44px;height:44px;border-radius:12px;background:#fff;display:flex;align-items:center;justify-content:center;font-size:1.45rem;box-shadow:0 1px 3px rgba(0,0,0,.08)}
+.rcard b{display:block;font-size:.95rem;margin-bottom:2px}.rcard span{font-size:.86rem;color:var(--mut)}
+.price-tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;padding:14px}
+.ptile{background:#fff3e8;border-radius:14px;padding:12px;text-align:center}.ptile .big{font-size:1.35rem;font-weight:800;color:#a34b00}.ptile small{display:block;color:var(--mut);font-size:.8rem}
 .offer{background:linear-gradient(135deg,#ff7a1a,#c9a24b);color:#1a0d02;border-radius:18px;padding:16px;margin-top:14px;font-weight:600}
 .pay img{width:100%;max-width:340px;display:block;margin:8px auto;border-radius:14px}
 .wa{display:inline-block;margin-top:8px;background:#25d366;color:#fff;text-decoration:none;font-weight:700;border-radius:10px;padding:8px 12px;font-size:.88rem}
@@ -205,6 +216,28 @@ async function loadApp(session) {
 }
 const itemHtml = (r, cls = "") => `<div class="item ${cls}">${r.photo ? `<img src="${esc(r.photo)}" alt="">` : ""}<div><b>${esc(r.title)}</b>${r.body ? `<div class="muted">${esc(r.body).replace(/\n/g, "<br>")}</div>` : ""}${r.price ? `<span class="price">${esc(r.price)}</span>` : ""}</div></div>`;
 const ask = (what) => `<a class="wa" href="https://wa.me/918829809555?text=${encodeURIComponent("Hi, I am a guest (" + ($("g-no").textContent || "") + "). I would like to book: " + what)}">Book on WhatsApp</a>`;
+// Short headline + icon for each rule (matched on the rule text), so the House rules tab reads at a glance.
+const RULE_ICONS = [
+  [/photo ID/i, "🪪", "Photo ID for every adult"], [/overnight|visitors are welcome/i, "👥", "Visitors till 9 PM"], [/smoking/i, "🚭", "No smoking in rooms"],
+  [/drugs|weapons/i, "🚫", "Zero tolerance"], [/alcohol/i, "🍷", "Drink responsibly"], [/parties|pets/i, "🎉", "Parties & pets need approval"],
+  [/quiet hours/i, "🌙", "Quiet hours 12 – 7 AM"], [/switch off lights/i, "💡", "Save power & water"], [/early check-in/i, "🕐", "Early / late check-in"],
+  [/respect our staff/i, "🤝", "Respect for all"], [/swimming is at your own risk/i, "🏊", "Swim at your own risk"], [/children and non-swimmers/i, "👨‍👧", "Kids with an adult"],
+  [/diving or running/i, "⚠️", "No diving · no glass"], [/swimwear/i, "🩱", "Swimwear & shower"], [/Udaisagar Lake/i, "🚧", "Stay inside the property"],
+  [/sports and games/i, "🏸", "Games at own risk"],
+];
+const ruleCard = (r) => { const m = RULE_ICONS.find(([re]) => re.test(r.body || "")); return `<div class="rcard"><div class="ri">${m ? m[1] : "✅"}</div><div><b>${esc(m ? m[2] : r.title.replace(/^Terms: /, ""))}</b><span>${esc(r.body)}</span></div></div>`; };
+const TERM_ICONS = { "Personal risk": "🛡️", "Children": "👶", "Damage": "🔨", "Visitors": "👥", "Changes to services": "🌦️", "Payments": "💳", "Right of admission reserved": "🚪", "Jurisdiction": "⚖️" };
+function rulesHtml() {
+  const R = INFO.filter((r) => r.section === "Rule");
+  const house = R.filter((r) => /^House rule/.test(r.title)), safety = R.filter((r) => /^Pool, lake/.test(r.title)), terms = R.filter((r) => /^Terms: /.test(r.title));
+  const other = R.filter((r) => !house.includes(r) && !safety.includes(r) && !terms.includes(r) && r.title !== "Charges");
+  const sec = (title, photo, inner) => `<div class="rsec"><div class="rhead${photo ? "" : " plain"}" ${photo ? `style="background-image:url(/guest/photos/${photo}.jpg)"` : ""}><h3>${title}</h3></div>${inner}</div>`;
+  return sec("🏡 At the property", "lawn", `<div class="rgrid">${house.map(ruleCard).join("")}</div>`)
+    + sec("🏊 Pool, lake & activity safety", "pool", `<div class="rgrid">${safety.map(ruleCard).join("")}</div>`)
+    + sec("💰 Good to know — charges", "goldenhour", `<div class="price-tiles"><div class="ptile"><div class="big">₹300</div><small>Day-guest pool use<br>per person / hour</small></div><div class="ptile"><div class="big">₹500</div><small>Breakage — small item</small></div><div class="ptile"><div class="big">₹1,000</div><small>Breakage — large item<br>(major damage at actual cost)</small></div><div class="ptile"><div class="big">60 min</div><small>Fresh food — order ahead<br>(dinner orders by 7 PM)</small></div></div>`)
+    + sec("🔒 Your belongings", null, `<div class="rgrid">${other.map((r) => `<div class="rcard"><div class="ri">🔒</div><div><b>${esc(r.title)}</b><span>${esc(r.body)}</span></div></div>`).join("")}</div>`)
+    + sec("📋 Terms & conditions", null, `<div class="rgrid">${terms.map((r) => { const t = r.title.replace(/^Terms: /, ""); return `<div class="rcard"><div class="ri">${TERM_ICONS[t] || "📋"}</div><div><b>${esc(t)}</b><span>${esc(r.body)}</span></div></div>`; }).join("")}</div>`);
+}
 function draw(k) {
   const today = new Date(Date.now() + 5.5 * 3600e3).toISOString().slice(0, 10); // India date
   const live = (r) => (!r.valid_from || r.valid_from <= today) && (!r.valid_to || r.valid_to >= today);
@@ -216,6 +249,8 @@ function draw(k) {
         <div class="note">🍲 <b>Food is cooked fresh for you — it takes 45–60 minutes.</b> Please place every food order at least <b>60 minutes</b> before you want to eat. Dinner orders by 7:00 PM.</div></div>
       <div class="offer">🎁 <b>Welcome back offer — 10% off</b><br>Your guest number is <b style="font-size:1.15rem;letter-spacing:.06em">${esc($("g-no").textContent)}</b>. Save it! Next time you stay, mention this number (or sign in to this app with the same mobile) and get <b>10% off</b>.</div>
       <div class="card"><h2>🎯 Popular experiences</h2>${INFO.filter((r) => r.section === "Experience" && live(r)).slice(0, 3).map((r) => itemHtml(r)).join("") || '<p class="muted">Ask reception.</p>'}</div>`;
+  } else if (k === "Rule") {
+    html = `<div class="card" style="padding-bottom:10px"><h2>📜 House rules</h2><p class="muted" style="margin:0">To keep every stay safe and peaceful, please follow these simple rules. Thank you! 🙏</p><p><a class="wa" style="background:#0b1f3a" href="/guest/house-rules.pdf" target="_blank" rel="noreferrer">📄 Download the full guest card (PDF)</a></p></div>${rulesHtml()}`;
   } else if (k === "pay") {
     html = `<div class="card pay"><h2>💳 Scan to pay</h2><p class="muted">Pay for food, add-ons or your stay balance. Show the payment screenshot to reception.</p><img src="/pay/udaisarovar-scan-to-pay.png" alt="Scan to pay QR"></div>`;
   } else {
