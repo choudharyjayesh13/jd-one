@@ -34,6 +34,20 @@ input{width:100%;padding:13px 14px;border-radius:12px;border:1px solid var(--lin
 .gallery img{width:100%;height:210px;object-fit:cover;border-radius:16px;display:block}
 .gallery figcaption{position:absolute;left:10px;bottom:10px;background:rgba(11,31,58,.75);color:#fff;font-size:.8rem;font-weight:700;padding:4px 10px;border-radius:999px}
 .glance{display:grid;grid-template-columns:auto 1fr;gap:6px 14px;font-size:.92rem}.glance b{white-space:nowrap;color:var(--ink)}
+.tl{position:relative;margin-left:8px;padding-left:22px;border-left:3px solid #f0e3cf}
+.tl .ev{position:relative;display:flex;gap:12px;align-items:center;padding:10px 12px;margin:10px 0;background:#fff;border:1px solid var(--line);border-radius:14px}
+.tl .ev:before{content:"";position:absolute;left:-31px;top:50%;width:14px;height:14px;margin-top:-7px;border-radius:50%;background:#f0e3cf;border:3px solid #fff;box-shadow:0 0 0 1px #e7d6bb}
+.tl .ev.now{border-color:var(--jd);background:#fff8f1}.tl .ev.now:before{background:var(--jd)}
+.tl .ev.done{opacity:.55}
+.tl .tm{min-width:92px;font-weight:800;color:var(--ink);font-size:.86rem;line-height:1.25}
+.tl .tm small{display:block;font-weight:600;color:var(--mut)}
+.tl .ev img{width:54px;height:54px;border-radius:10px;object-fit:cover;flex:0 0 auto;cursor:zoom-in}
+.tl .badge{display:inline-block;background:var(--jd);color:#fff;border-radius:999px;font-size:.7rem;font-weight:800;padding:2px 8px;margin-left:6px}
+.tl .ic{font-size:1.3rem;width:30px;text-align:center;flex:0 0 auto}
+.note{background:#fff3e8;border:1px dashed #f3b37a;border-radius:12px;padding:10px 12px;font-size:.9rem;margin-top:10px}
+#lb{position:fixed;inset:0;background:rgba(0,0,0,.92);display:none;align-items:center;justify-content:center;z-index:50;padding:14px}
+#lb img{max-width:100%;max-height:88vh;border-radius:12px}#lb span{position:absolute;top:14px;right:18px;color:#fff;font-size:2rem;cursor:pointer}
+img.zoom,.item img,.gallery img{cursor:zoom-in}
 .offer{background:linear-gradient(135deg,#ff7a1a,#c9a24b);color:#1a0d02;border-radius:18px;padding:16px;margin-top:14px;font-weight:600}
 .pay img{width:100%;max-width:340px;display:block;margin:8px auto;border-radius:14px}
 .wa{display:inline-block;margin-top:8px;background:#25d366;color:#fff;text-decoration:none;font-weight:700;border-radius:10px;padding:8px 12px;font-size:.88rem}
@@ -84,6 +98,7 @@ footer{text-align:center;color:var(--mut);font-size:.75rem;margin-top:30px}
     <div class="tabs" id="tabs"></div>
     <div id="panel"></div>
   </section>
+  <div id="lb" onclick="this.style.display='none'"><span>×</span><img alt=""></div>
   <footer>JD Group of Companies · Udaipur · <a href="https://www.myjdgroup.com/">myjdgroup.com</a></footer>
 </div>
 
@@ -145,6 +160,30 @@ const PHOTOS = [["hero","Lakeside lawns at sunrise"],["pool","Infinity pool"],["
 let heroI = 0;
 setInterval(() => { const h = document.querySelector(".hero"); if (!h || $("app").classList.contains("hidden")) return; heroI = (heroI + 1) % PHOTOS.length; h.style.backgroundImage = `url(/guest/photos/${PHOTOS[heroI][0]}.jpg)`; }, 6000);
 const gallery = () => `<div class="gallery">${PHOTOS.map(([f, c]) => `<figure><img src="/guest/photos/${f}.jpg" alt="${c}" loading="lazy"><figcaption>${c}</figcaption></figure>`).join("")}</div>`;
+const TIMELINE = [
+  ["08:00","11:00","🏊","Morning swim","Swimming pool — morning session","pool"],
+  ["09:00","10:00","🍳","Breakfast","Any 2 dishes + tea or coffee","dining"],
+  ["10:00",null,"🧳","Check-out","Please check out by 10:00 AM",null],
+  ["12:00",null,"🔑","Check-in","Rooms ready from 12 noon",null],
+  ["16:30","19:30","🏊","Evening swim","Swimming pool — evening session","pool"],
+  ["17:00","19:00","🏸","Games: chess, ludo & badminton","Ask reception for the equipment (football too)","lawn"],
+  ["19:00",null,"🛎️","Last call for dinner orders","Fresh food takes 45–60 min — order 60 min ahead",null],
+  ["20:00","22:00","🍽️","Dinner","Lakeside dinner","goldenhour"],
+  ["21:00","23:45","🎬","Movie under the stars","Open-air projector by the lake","movienight"],
+  ["24:00","07:00","🌙","Quiet hours","Midnight to 7:00 AM — keep voices & music low",null],
+];
+const fmt = (t) => { if (!t) return ""; let [h, m] = t.split(":").map(Number); if (h === 24) return "12:00 AM"; const ap = h >= 12 ? "PM" : "AM"; h = h % 12 || 12; return `${h}:${String(m).padStart(2, "0")} ${ap}`; };
+function timelineHtml() {
+  const n = new Date(Date.now() + 5.5 * 3600e3); const cur = n.getUTCHours() * 60 + n.getUTCMinutes();
+  const mins = (t) => { const [h, m] = t.split(":").map(Number); return h * 60 + m; };
+  let nextMarked = false;
+  return `<div class="tl">${TIMELINE.map(([a, b, ic, t, d, ph]) => {
+    const s0 = mins(a), e0 = b ? (mins(b) < s0 ? mins(b) + 1440 : mins(b)) : s0 + 30;
+    const now = cur >= s0 && cur < e0, done = cur >= e0 && s0 < 1440;
+    let tag = ""; if (now) tag = '<span class="badge">NOW</span>'; else if (!done && !nextMarked && cur < s0) { tag = '<span class="badge" style="background:#0b1f3a">NEXT</span>'; nextMarked = true; }
+    return `<div class="ev${now ? " now" : done ? " done" : ""}"><div class="tm">${fmt(a)}${b ? `<small>to ${fmt(b)}</small>` : ""}</div>${ph ? `<img src="/guest/photos/${ph}.jpg" alt="">` : `<div class="ic">${ic}</div>`}<div><b>${ph ? ic + " " : ""}${t}</b>${tag}<div class="muted">${d}</div></div></div>`;
+  }).join("")}</div>`;
+}
 const GLANCE = [["12:00 noon","Check-in"],["10:00 AM","Check-out"],["9 – 10 AM","Breakfast"],["8 – 11 AM · 4:30 – 7:30 PM","Swimming pool"],["5 – 7 PM","Sports & games (badminton, chess, ludo, football)"],["by 7 PM","Order dinner (food is cooked fresh — ~1 hour)"],["8 – 10 PM","Dinner"],["9 – 11:45 PM","Movie under the stars"],["12 – 7 AM","Quiet hours"]];
 async function loadApp(session) {
   const md = session.user.user_metadata || {};
@@ -172,14 +211,10 @@ function draw(k) {
   const list = (sec, cls, withAsk) => INFO.filter((r) => r.section === sec && live(r)).map((r) => itemHtml(r, cls).replace(/<\/div><\/div>$/, (withAsk ? ask(r.title) : "") + "</div></div>")).join("") || '<p class="muted">Ask reception for details.</p>';
   let html = "";
   if (k === "today") {
-    html = `${gallery()}<div class="card"><h2>🔥 Today's combos</h2>${list("Combo", "combo", true)}</div>
-      <div class="card"><h2>☀️ Today at the property — free for in-house guests</h2>
-        <div class="item"><img src="/guest/photos/pool.jpg" alt=""><div><b>Swimming pool</b><div class="muted">Morning 8:00 – 11:00 AM · Evening 4:30 – 7:30 PM<br>Swimwear required · children with an adult · no glass or food in the pool area</div></div></div>
-        <div class="item"><img src="/guest/photos/lawn.jpg" alt=""><div><b>Games: chess, ludo & badminton</b><div class="muted">5:00 – 7:00 PM · ask reception for the equipment (football too) and please return it after play</div></div></div>
-        <div class="item"><img src="/guest/photos/movienight.jpg" alt=""><div><b>Movie under the stars</b><div class="muted">9:00 – 11:45 PM · open-air projector by the lake</div></div></div>
-      </div>
-      <div class="card"><h2>🕑 Your day at a glance</h2><div class="glance">${GLANCE.map(([t, w]) => `<b>${t}</b><span>${w}</span>`).join("")}</div></div>
-      <div class="offer">🎁 Welcome back offer: stay with us again and get <b>10% off food & beverages</b> — show your earlier booking at check-in.</div>
+    html = `${gallery()}<div class="card"><h2>🔥 Value Added Combo</h2>${list("Combo", "combo", true)}</div>
+      <div class="card"><h2>☀️ Today's activities & timings</h2><p class="muted" style="margin-top:-4px">Free for in-house guests · morning to late night</p>${timelineHtml()}
+        <div class="note">🍲 <b>Food is cooked fresh for you — it takes 45–60 minutes.</b> Please place every food order at least <b>60 minutes</b> before you want to eat. Dinner orders by 7:00 PM.</div></div>
+      <div class="offer">🎁 <b>Welcome back offer — 10% off</b><br>Your guest number is <b style="font-size:1.15rem;letter-spacing:.06em">${esc($("g-no").textContent)}</b>. Save it! Next time you stay, mention this number (or sign in to this app with the same mobile) and get <b>10% off</b>.</div>
       <div class="card"><h2>🎯 Popular experiences</h2>${INFO.filter((r) => r.section === "Experience" && live(r)).slice(0, 3).map((r) => itemHtml(r)).join("") || '<p class="muted">Ask reception.</p>'}</div>`;
   } else if (k === "pay") {
     html = `<div class="card pay"><h2>💳 Scan to pay</h2><p class="muted">Pay for food, add-ons or your stay balance. Show the payment screenshot to reception.</p><img src="/pay/udaisarovar-scan-to-pay.png" alt="Scan to pay QR"></div>`;
@@ -190,6 +225,11 @@ function draw(k) {
   }
   $("panel").innerHTML = html;
 }
+document.addEventListener("click", (e) => {
+  const img = e.target.closest && e.target.closest(".gallery img, .item img, .tl img, img.zoom");
+  if (!img) return;
+  const lb = $("lb"); lb.querySelector("img").src = img.src; lb.style.display = "flex";
+});
 route();
 </script>
 </body>
