@@ -99,6 +99,11 @@ const inr = (n) => "₹" + Math.round(Number(n || 0)).toLocaleString("en-IN");
 const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 const iso = (d) => new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 10);
 const PLAN = { CP: "With breakfast", MAP: "Breakfast + lunch or dinner", AP: "All meals" };
+const PLAN_INFO = {
+  CP: "Breakfast: any 2 of toast, paratha, poha/upma, sandwich/omelette + tea or coffee",
+  MAP: "Breakfast + lunch or dinner (veg thali: sabzi / paneer, dal, chapati, rice, papad, salad)",
+  AP: "Breakfast, lunch (sabzi, dal, chapati, rice, buttermilk, papad, salad) and dinner (paneer, dal, chapati, rice/pulao, papad, salad, ice cream)",
+};
 const PHOTO = { "Lake View Cottage": "/property/cottages-lawn.jpg", "Pool View Cottage": "/property/pool-garden.jpg", "Family Suite": "/property/cottage-room.jpg", "Camping": "/property/cottage-dusk.jpg" };
 const ABOUT = { "Lake View Cottage": "Private cottage with garden and lake view · AC · up to 3 adults", "Pool View Cottage": "Cottage facing the infinity pool and garden · AC · up to 3 adults", "Family Suite": "Spacious suite for families · priced for 3 adults · up to 4", "Camping": "Lakeside tent with bonfire evening · price per tent (2 guests) · breakfast included" };
 for (let i = 1; i <= 12; i++) $("ad").add(new Option(i, i)); $("ad").value = 2;
@@ -120,7 +125,7 @@ $("go").onclick = async () => {
   QUOTE = data;
   $("results").innerHTML = data.types.map((t, i) => `<div class="card room"><img src="${PHOTO[t.unit_type] || "/property/pool-lake.jpg"}" alt=""><div>
     <h3 style="margin:0">${esc(t.unit_type)}</h3><div class="muted">${esc(ABOUT[t.unit_type] || "")}</div>
-    ${t.bookable ? `<div class="tag" style="margin-top:6px">${t.free_rooms <= 2 ? "Only " + t.free_rooms + " left" : "Available"}</div>` + t.plans.map((p, j) => `<div class="plan"><div><div style="font-weight:700">${PLAN[p.meal_plan]}</div><div class="muted">${data.nights} night${data.nights > 1 ? "s" : ""} · ${data.rooms} room${data.rooms > 1 ? "s" : ""} · incl. GST ${inr(p.tax)}</div></div><div style="text-align:right"><b>${inr(p.total)}</b><br><button class="btn" style="padding:8px 14px;width:auto;margin-top:4px" data-t="${i}" data-p="${j}">Select</button></div></div>`).join("")
+    ${t.bookable ? `<div class="tag" style="margin-top:6px">${t.free_rooms <= 2 ? "Only " + t.free_rooms + " left" : "Available"}</div>` + t.plans.map((p, j) => `<div class="plan"><div><div style="font-weight:700">${PLAN[p.meal_plan]}</div><div class="muted" style="font-size:.78rem">${PLAN_INFO[p.meal_plan] || ""}</div><div class="muted">${data.nights} night${data.nights > 1 ? "s" : ""} · ${data.rooms} room${data.rooms > 1 ? "s" : ""} · incl. GST ${inr(p.tax)}</div></div><div style="text-align:right"><b>${inr(p.total)}</b><br><button class="btn" style="padding:8px 14px;width:auto;margin-top:4px" data-t="${i}" data-p="${j}">Select</button></div></div>`).join("")
       : `<p class="soldout">${esc(t.note || "Not available")}</p>`}
   </div></div>`).join("") || '<div class="card">No rooms found.</div>';
   $("results").querySelectorAll("button[data-t]").forEach((b) => b.onclick = () => choose(+b.dataset.t, +b.dataset.p));
