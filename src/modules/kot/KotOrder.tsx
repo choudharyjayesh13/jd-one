@@ -75,8 +75,8 @@ export function KotOrder() {
 
   const input = "w-full rounded-xl border border-line bg-white px-3 py-2 text-sm";
   return (
-    <div className="mx-auto grid max-w-6xl gap-5 pb-24 lg:grid-cols-[1fr_360px]">
-      <section className="space-y-3">
+    <div className="mx-auto grid max-w-6xl gap-5 pb-24 lg:grid-cols-[minmax(0,1fr)_340px]">
+      <section className="min-w-0 space-y-3">
         <h1 className="flex items-center gap-2 text-2xl font-bold text-navy"><ChefHat className="h-6 w-6 text-gold" /> New KOT order</h1>
         <div className="relative"><Search className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" /><input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search dish…" className={cn(input, "pl-9")} /></div>
         {!q && (
