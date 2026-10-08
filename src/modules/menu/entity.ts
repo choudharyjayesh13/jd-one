@@ -1,7 +1,7 @@
 import { BookOpen } from "lucide-react";
 import { defineEntity } from "@/core/schema/types";
 
-export const MENU_CATEGORIES = ["Breakfast", "Soup & Chakna", "Starters", "Main Course", "Dal & Rice", "Breads", "Pizza, Pasta & Sandwich", "Fixed Meal", "Dessert", "Hot Beverages", "Cold Beverages", "Bar", "Other"] as const;
+export const MENU_CATEGORIES = ["Combos", "Breakfast", "Soup & Chakna", "Starters", "Main Course", "Dal & Rice", "Breads", "Pizza, Pasta & Sandwich", "Fixed Meal", "Dessert", "Hot Beverages", "Cold Beverages", "Bar", "Other"] as const;
 
 /** Restaurant menu (Lake City Cafe). KOT orders pick dishes and rates from here; office staff update rates. */
 export const menuItems = defineEntity({
