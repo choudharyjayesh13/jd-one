@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Minus, Plus, Search, Send, Trash2, ChefHat } from "lucide-react";
+import { Minus, Plus, Search, Send, Trash2, ChefHat, Printer } from "lucide-react";
 import { getStore } from "@/core/data";
 import { useUser } from "@/core/auth/AuthProvider";
 import { useList } from "@/core/ui/hooks";
@@ -148,8 +148,13 @@ export function KotOrder() {
 /** Shown above the KOT list. */
 export function KotListBanner() {
   return (
-    <Link href="/kot-order/" className="mb-4 flex items-center justify-between gap-3 rounded-2xl bg-orange-500 px-5 py-4 font-semibold text-white shadow-sm hover:bg-orange-600">
-      <span className="flex items-center gap-2"><ChefHat className="h-5 w-5" /> New order from menu</span><Plus className="h-5 w-5" />
-    </Link>
+    <div className="mb-4 grid gap-3 sm:grid-cols-[1fr_auto]">
+      <Link href="/kot-order/" className="flex items-center justify-between gap-3 rounded-2xl bg-orange-500 px-5 py-4 font-semibold text-white shadow-sm hover:bg-orange-600">
+        <span className="flex items-center gap-2"><ChefHat className="h-5 w-5" /> New order from menu</span><Plus className="h-5 w-5" />
+      </Link>
+      <Link href="/kot-print/" className="flex items-center justify-center gap-2 rounded-2xl border border-line bg-white px-5 py-4 font-semibold text-navy shadow-sm hover:bg-slate-50">
+        <Printer className="h-5 w-5" /> Kitchen printer
+      </Link>
+    </div>
   );
 }
