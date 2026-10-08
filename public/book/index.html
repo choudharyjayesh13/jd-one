@@ -39,7 +39,7 @@ footer{text-align:center;color:var(--mut);font-size:.78rem;margin-top:30px}
   <div style="display:flex;align-items:center;gap:10px;font-weight:800"><img src="/portal/jd-logo.svg" width="34" height="34" alt="">The Udaisarovar · Lakeside Paradise</div>
   <h1>Book direct — best price, instant confirmation</h1>
   <p>Lakeside cottages on Udai Sagar lake, Udaipur · infinity pool · meals included</p>
-  <div class="perks"><span>✅ Best direct rate</span><span>🧾 GST invoice</span><span>🔒 Secure payment (Razorpay)</span><span>💬 WhatsApp support</span></div>
+  <div class="perks"><span>✅ Best direct rate</span><span>🧾 GST invoice</span><span>🔒 Pay by UPI</span><span>💬 WhatsApp support</span></div>
 </div></div>
 <div class="wrap">
   <section class="card search">
@@ -76,8 +76,8 @@ footer{text-align:center;color:var(--mut);font-size:.78rem;margin-top:30px}
       <label style="margin-top:12px">Payment</label>
       <select id="g-pay"><option value="full">Pay full amount now</option><option value="advance">Pay 50% now, rest at check-in</option></select>
     </div>
-    <button class="btn" id="book" style="margin-top:14px">Confirm &amp; pay securely</button>
-    <p class="muted" style="text-align:center">Rooms are held for 20 minutes while you pay. Prices include all taxes shown above.</p>
+    <button class="btn" id="book" style="margin-top:14px">Confirm &amp; pay</button>
+    <p class="muted" style="text-align:center">Rooms are held for 20 minutes while you pay by UPI. Prices include all taxes shown above.</p>
     <div id="berr" class="err hidden"></div>
   </section>
 
@@ -90,7 +90,9 @@ footer{text-align:center;color:var(--mut);font-size:.78rem;margin-top:30px}
 <script>
 const SUPABASE_URL = "https://cyimbgjzxxxszjadxpgv.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN5aW1iZ2p6eHh4c3pqYWR4cGd2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQyMTg2MDgsImV4cCI6MjA5OTc5NDYwOH0.R-8de9Ccqui113tBsAvdhHE04LZ6Hlz09bY1vymAcv4";
-const RAZORPAY_KEY_ID = "rzp_live_UL1NZ0kImMrFIQ";
+// The live key above belongs to the PRONITE Razorpay account (pronite.in only) — Razorpay blocks it here.
+// Until The Udaisarovar has its own Razorpay account, guests pay by UPI QR. Put the hotel account's Key ID here to switch online payment back on.
+const RAZORPAY_KEY_ID = "";
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, { db: { schema: "jdone" }, auth: { persistSession: false } });
 const $ = (id) => document.getElementById(id);
 const inr = (n) => "₹" + Math.round(Number(n || 0)).toLocaleString("en-IN");
@@ -141,8 +143,9 @@ $("book").onclick = async () => {
     gst_company: $("g-gst").checked ? $("g-co").value : "", gstin: $("g-gst").checked ? $("g-gstin").value.trim() : "", gst_address: $("g-gst").checked ? $("g-addr").value : "" };
   $("book").disabled = true; $("book").textContent = "Holding your room…";
   const { data, error } = await sb.rpc("be_book", { p: body });
-  $("book").disabled = false; $("book").textContent = "Confirm & pay securely";
+  $("book").disabled = false; $("book").textContent = "Confirm & pay";
   if (error || !data?.ok) { $("berr").textContent = error?.message || data.reason; $("berr").classList.remove("hidden"); return; }
+  if (!RAZORPAY_KEY_ID) { showUpi(data, true); return; }
   const rzp = new Razorpay({
     key: RAZORPAY_KEY_ID, amount: Math.round(data.pay_now * 100), currency: "INR", name: "The Udaisarovar", description: `Booking ${data.booking_ref}`,
     image: "/portal/jd-logo.svg", prefill: { name: body.name, email: body.email, contact: "+91" + body.phone.replace(/\D/g, "").slice(-10) },
@@ -157,13 +160,13 @@ $("book").onclick = async () => {
   rzp.open();
 };
 // If online card/UPI checkout fails or is closed: pay by scanning our UPI QR and send the screenshot on WhatsApp.
-function showUpi(b) {
+function showUpi(b, direct) {
   const msg = encodeURIComponent(`Hi, I booked ${b.booking_ref} on your website (${PICK.t.unit_type}, ${$("in").value} to ${$("out").value}). I have paid ₹${Math.round(b.pay_now)} by UPI — screenshot attached.`);
-  $("berr").innerHTML = `<b>Online payment didn't go through.</b> Your room is held for 20 minutes (booking <b>${esc(b.booking_ref)}</b>).<br>
+  $("berr").innerHTML = `${direct ? "<b>Your room is held for 20 minutes</b>" : "<b>Online payment didn't go through.</b> Your room is held for 20 minutes"} (booking <b>${esc(b.booking_ref)}</b>).<br>
     Pay <b>${inr(b.pay_now)}</b> by scanning our UPI QR below, then send the payment screenshot on WhatsApp — we confirm right away.
     <img src="/pay/udaisarovar-scan-to-pay.png" alt="UPI QR" style="display:block;width:100%;max-width:300px;margin:12px auto;border-radius:12px">
     <a class="btn" style="display:block;text-align:center;text-decoration:none" href="https://wa.me/918829809555?text=${msg}">Send payment screenshot on WhatsApp</a>
-    <p style="margin:8px 0 0">Or tap "Confirm &amp; pay securely" to try online payment again.</p>`;
+    ${direct ? "" : '<p style="margin:8px 0 0">Or tap "Confirm &amp; pay securely" to try online payment again.</p>'}`;
   $("berr").classList.remove("hidden"); $("berr").scrollIntoView({ behavior: "smooth" });
 }
 function showDone(b, r) {
