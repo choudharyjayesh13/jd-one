@@ -13,7 +13,7 @@
 .wrap{max-width:720px;margin:0 auto;padding:16px 16px 60px}
 header{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 0 14px}
 .brand{display:flex;align-items:center;gap:10px;font-weight:800}.brand img{width:38px;height:38px}
-.hero{position:relative;border-radius:22px;overflow:hidden;color:#fff;min-height:170px;background:#0b1f3a url(/property/pool-lake.jpg) center/cover}
+.hero{position:relative;border-radius:22px;overflow:hidden;color:#fff;min-height:190px;background:#0b1f3a url(/guest/photos/hero.jpg) center/cover;transition:background-image .8s}
 .hero:after{content:"";position:absolute;inset:0;background:linear-gradient(90deg,rgba(11,31,58,.92),rgba(11,31,58,.45))}
 .hero>div{position:relative;padding:22px}.hero h1{margin:4px 0;font-size:1.6rem}.hero .no{font-size:1.5rem;font-weight:800;letter-spacing:.08em;color:#ffcf99}
 .card{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:18px;margin-top:14px;box-shadow:0 1px 2px rgba(0,0,0,.03)}
@@ -29,6 +29,12 @@ input{width:100%;padding:13px 14px;border-radius:12px;border:1px solid var(--lin
 .item img{width:84px;height:84px;object-fit:cover;border-radius:12px;flex:0 0 auto}
 .item b{display:block}.price{display:inline-block;margin-top:6px;background:#fff3e8;color:#a34b00;border-radius:999px;padding:3px 10px;font-weight:700;font-size:.82rem}
 .combo{border:2px solid var(--jd);background:#fff8f1}
+.gallery{display:flex;gap:10px;overflow-x:auto;scroll-snap-type:x mandatory;padding:4px 0 6px;scrollbar-width:none}
+.gallery figure{margin:0;flex:0 0 78%;max-width:420px;scroll-snap-align:start;position:relative}
+.gallery img{width:100%;height:210px;object-fit:cover;border-radius:16px;display:block}
+.gallery figcaption{position:absolute;left:10px;bottom:10px;background:rgba(11,31,58,.75);color:#fff;font-size:.8rem;font-weight:700;padding:4px 10px;border-radius:999px}
+.glance{display:grid;grid-template-columns:auto 1fr;gap:6px 14px;font-size:.92rem}.glance b{white-space:nowrap;color:var(--ink)}
+.offer{background:linear-gradient(135deg,#ff7a1a,#c9a24b);color:#1a0d02;border-radius:18px;padding:16px;margin-top:14px;font-weight:600}
 .pay img{width:100%;max-width:340px;display:block;margin:8px auto;border-radius:14px}
 .wa{display:inline-block;margin-top:8px;background:#25d366;color:#fff;text-decoration:none;font-weight:700;border-radius:10px;padding:8px 12px;font-size:.88rem}
 footer{text-align:center;color:var(--mut);font-size:.75rem;margin-top:30px}
@@ -135,6 +141,11 @@ const TABS = [
   ["Rule", "📜 House rules"], ["How-to", "⛺ How to"], ["Property", "🏨 Our properties"], ["pay", "💳 Pay"],
 ];
 let INFO = [];
+const PHOTOS = [["hero","Lakeside lawns at sunrise"],["pool","Infinity pool"],["lawn","Garden & lake view"],["goldenhour","Golden hour by the lake"],["palms","Lakeside palms"],["bonfire","Bonfire nights"],["movienight","Movie under the stars"],["camping","Lakeside camping"],["cottages","Our cottages"]];
+let heroI = 0;
+setInterval(() => { const h = document.querySelector(".hero"); if (!h || $("app").classList.contains("hidden")) return; heroI = (heroI + 1) % PHOTOS.length; h.style.backgroundImage = `url(/guest/photos/${PHOTOS[heroI][0]}.jpg)`; }, 6000);
+const gallery = () => `<div class="gallery">${PHOTOS.map(([f, c]) => `<figure><img src="/guest/photos/${f}.jpg" alt="${c}" loading="lazy"><figcaption>${c}</figcaption></figure>`).join("")}</div>`;
+const GLANCE = [["12:00 noon","Check-in"],["10:00 AM","Check-out"],["9 – 10 AM","Breakfast"],["8 – 11 AM · 4:30 – 7:30 PM","Swimming pool"],["5 – 7 PM","Sports & games (badminton, chess, ludo, football)"],["by 7 PM","Order dinner (food is cooked fresh — ~1 hour)"],["8 – 10 PM","Dinner"],["9 – 11:45 PM","Movie under the stars"],["12 – 7 AM","Quiet hours"]];
 async function loadApp(session) {
   const md = session.user.user_metadata || {};
   $("g-name").textContent = md.name || "Guest";
@@ -161,7 +172,10 @@ function draw(k) {
   const list = (sec, cls, withAsk) => INFO.filter((r) => r.section === sec && live(r)).map((r) => itemHtml(r, cls).replace(/<\/div><\/div>$/, (withAsk ? ask(r.title) : "") + "</div></div>")).join("") || '<p class="muted">Ask reception for details.</p>';
   let html = "";
   if (k === "today") {
-    html = `<div class="card"><h2>🔥 Today's combos</h2>${list("Combo", "combo", true)}</div><div class="card"><h2>🎯 Popular experiences</h2>${INFO.filter((r) => r.section === "Experience" && live(r)).slice(0, 3).map((r) => itemHtml(r)).join("") || '<p class="muted">Ask reception.</p>'}</div>`;
+    html = `${gallery()}<div class="card"><h2>🔥 Today's combos</h2>${list("Combo", "combo", true)}</div>
+      <div class="card"><h2>🕑 Your day at a glance</h2><div class="glance">${GLANCE.map(([t, w]) => `<b>${t}</b><span>${w}</span>`).join("")}</div></div>
+      <div class="offer">🎁 Welcome back offer: stay with us again and get <b>10% off food & beverages</b> — show your earlier booking at check-in.</div>
+      <div class="card"><h2>🎯 Popular experiences</h2>${INFO.filter((r) => r.section === "Experience" && live(r)).slice(0, 3).map((r) => itemHtml(r)).join("") || '<p class="muted">Ask reception.</p>'}</div>`;
   } else if (k === "pay") {
     html = `<div class="card pay"><h2>💳 Scan to pay</h2><p class="muted">Pay for food, add-ons or your stay balance. Show the payment screenshot to reception.</p><img src="/pay/udaisarovar-scan-to-pay.png" alt="Scan to pay QR"></div>`;
   } else {
