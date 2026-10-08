@@ -13,7 +13,7 @@
 .wrap{max-width:720px;margin:0 auto;padding:16px 16px 60px}
 header{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 0 14px}
 .brand{display:flex;align-items:center;gap:10px;font-weight:800}.brand img{width:38px;height:38px}
-.hero{position:relative;border-radius:22px;overflow:hidden;color:#fff;min-height:190px;background:#0b1f3a url(/guest/photos/hero.jpg) center/cover;transition:background-image .8s}
+.hero{position:relative;border-radius:22px;overflow:hidden;color:#fff;min-height:190px;background:#0b1f3a url(/guest/photos/sunset.jpg) center/cover;transition:background-image .8s}
 .hero:after{content:"";position:absolute;inset:0;background:linear-gradient(90deg,rgba(11,31,58,.95),rgba(11,31,58,.6))}
 .hero>div{position:relative;z-index:1;padding:22px}.hero h1{margin:4px 0;font-size:1.6rem}.hero .no{font-size:1.5rem;font-weight:800;letter-spacing:.08em;color:#ffcf99}
 .card{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:18px;margin-top:14px;box-shadow:0 1px 2px rgba(0,0,0,.03)}
@@ -59,6 +59,18 @@ img.zoom,.item img,.gallery img{cursor:zoom-in}
 .rcard b{display:block;font-size:.95rem;margin-bottom:2px}.rcard span{font-size:.86rem;color:var(--mut)}
 .price-tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;padding:14px}
 .ptile{background:#fff3e8;border-radius:14px;padding:12px;text-align:center}.ptile .big{font-size:1.35rem;font-weight:800;color:#a34b00}.ptile small{display:block;color:var(--mut);font-size:.8rem}
+.ehero{position:relative;border-radius:18px;overflow:hidden;min-height:200px;background:#0b1f3a center/cover;color:#fff;display:flex;align-items:flex-end;margin-top:14px}
+.ehero:after{content:"";position:absolute;inset:0;background:linear-gradient(0deg,rgba(11,31,58,.92),rgba(11,31,58,.2))}
+.ehero div{position:relative;z-index:1;padding:18px}.ehero h3{margin:0 0 4px;font-size:1.35rem}.ehero p{margin:0;opacity:.9;font-size:.9rem}
+.stats{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-top:12px}@media(min-width:560px){.stats{grid-template-columns:repeat(4,1fr)}}
+.stat{background:#fff;border:1px solid var(--line);border-radius:14px;padding:12px;text-align:center}.stat b{display:block;font-size:1.25rem;color:#a34b00}.stat span{font-size:.78rem;color:var(--mut)}
+.evcard{background:#fff;border:1px solid var(--line);border-radius:18px;overflow:hidden;margin-top:14px}
+.evcard .pics{display:flex;gap:4px;overflow-x:auto;scrollbar-width:none}.evcard .pics img{height:190px;flex:0 0 auto;max-width:85%;object-fit:cover}
+.evcard .txt{padding:14px 16px}.evcard h3{margin:0 0 4px;font-size:1.1rem}.evcard .tags{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}.evcard .tags span{background:#f4efe6;border-radius:999px;padding:3px 10px;font-size:.78rem;font-weight:600}
+.vids{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px}.vids video{width:100%;border-radius:14px;background:#000;max-height:360px}
+.mcat{margin-top:14px}.mcat h3{font-size:.8rem;letter-spacing:.12em;text-transform:uppercase;color:#a34b00;margin:0 0 6px}
+.mrow{display:flex;justify-content:space-between;gap:10px;padding:9px 0;border-bottom:1px dashed var(--line);font-size:.95rem}.mrow:last-child{border:0}.mrow small{display:block;color:var(--mut);font-size:.78rem}
+.veg{display:inline-block;width:10px;height:10px;border:1.5px solid #0f9d58;border-radius:2px;margin-right:6px;position:relative;top:1px}.veg:after{content:"";position:absolute;inset:2px;background:#0f9d58;border-radius:50%}
 .offer{background:linear-gradient(135deg,#ff7a1a,#c9a24b);color:#1a0d02;border-radius:18px;padding:16px;margin-top:14px;font-weight:600}
 .pay img{width:100%;max-width:340px;display:block;margin:8px auto;border-radius:14px}
 .wa{display:inline-block;margin-top:8px;background:#25d366;color:#fff;text-decoration:none;font-weight:700;border-radius:10px;padding:8px 12px;font-size:.88rem}
@@ -163,11 +175,12 @@ async function route() {
 }
 
 const TABS = [
-  ["today", "🔥 Today"], ["Experience", "🎯 Experiences"], ["Included", "✅ Included"], ["Timing", "⏰ Timings"],
+  ["today", "🔥 Today"], ["menu", "🍽️ Menu"], ["events", "🎉 Events"], ["Experience", "🎯 Experiences"], ["Included", "✅ Included"], ["Timing", "⏰ Timings"],
   ["Rule", "📜 House rules"], ["How-to", "⛺ How to"], ["Property", "🏨 Our properties"], ["pay", "💳 Pay"],
 ];
 let INFO = [];
-const PHOTOS = [["hero","Lakeside lawns at sunrise"],["pool","Infinity pool"],["lawn","Garden & lake view"],["goldenhour","Golden hour by the lake"],["palms","Lakeside palms"],["bonfire","Bonfire nights"],["movienight","Movie under the stars"],["camping","Lakeside camping"]];
+let MENU = [];
+const PHOTOS = [["sunset","Stay for the sunset — lakeside evenings"],["pool-lake2","Infinity pool facing Udai Sagar lake"],["cottage-earth","Cottage 03 · Earth, at dusk"],["pool","Poolside by the hills"],["venue","Premium lakeside venue"],["aerial","Our 21,556 sq ft event lawn from above"],["bonfire","Bonfire nights"],["movienight","Movie under the stars"],["bbq","Live BBQ nights"]];
 let heroI = 0;
 setInterval(() => { const h = document.querySelector(".hero"); if (!h || $("app").classList.contains("hidden")) return; heroI = (heroI + 1) % PHOTOS.length; h.style.backgroundImage = `url(/guest/photos/${PHOTOS[heroI][0]}.jpg)`; }, 6000);
 const gallery = () => `<div class="gallery">${PHOTOS.map(([f, c]) => `<figure><img src="/guest/photos/${f}.jpg" alt="${c}" loading="lazy"><figcaption>${c}</figcaption></figure>`).join("")}</div>`;
@@ -177,9 +190,9 @@ const TIMELINE = [
   ["10:00",null,"🧳","Check-out","Please check out by 10:00 AM",null],
   ["12:00",null,"🔑","Check-in","Rooms ready from 12 noon",null],
   ["16:30","19:30","🏊","Evening swim","Swimming pool — evening session","pool"],
-  ["17:00","19:00","🏸","Games: chess, ludo & badminton","Ask reception for the equipment (football too)","lawn"],
+  ["17:00","19:00","🏸","Games: chess, ludo & badminton","Ask reception for the equipment (football too)","venue"],
   ["19:00",null,"🛎️","Last call for dinner orders","Fresh food takes 45–60 min — order 60 min ahead",null],
-  ["20:00","22:00","🍽️","Dinner","Lakeside dinner","goldenhour"],
+  ["20:00","22:00","🍽️","Dinner","Lakeside dinner","sunset"],
   ["21:00","23:45","🎬","Movie under the stars","Open-air projector by the lake","movienight"],
   ["24:00","07:00","🌙","Quiet hours","Midnight to 7:00 AM — keep voices & music low",null],
 ];
@@ -204,6 +217,8 @@ async function loadApp(session) {
     sb.from("guest_info").select("*").eq("active", true).order("sort").order("title"),
   ]);
   INFO = info || [];
+  const { data: menu } = await sb.from("menu_items").select("name,category,price,description,veg,sort").eq("active", true).order("sort");
+  MENU = menu || [];
   if (cust) {
     $("g-no").textContent = cust.customer_no || "—"; $("g-name").textContent = cust.name || md.name || "Guest";
     const today = new Date().toISOString().slice(0, 10);
@@ -232,9 +247,9 @@ function rulesHtml() {
   const house = R.filter((r) => /^House rule/.test(r.title)), safety = R.filter((r) => /^Pool, lake/.test(r.title)), terms = R.filter((r) => /^Terms: /.test(r.title));
   const other = R.filter((r) => !house.includes(r) && !safety.includes(r) && !terms.includes(r) && r.title !== "Charges");
   const sec = (title, photo, inner) => `<div class="rsec"><div class="rhead${photo ? "" : " plain"}" ${photo ? `style="background-image:url(/guest/photos/${photo}.jpg)"` : ""}><h3>${title}</h3></div>${inner}</div>`;
-  return sec("🏡 At the property", "lawn", `<div class="rgrid">${house.map(ruleCard).join("")}</div>`)
+  return sec("🏡 At the property", "cottage-earth", `<div class="rgrid">${house.map(ruleCard).join("")}</div>`)
     + sec("🏊 Pool, lake & activity safety", "pool", `<div class="rgrid">${safety.map(ruleCard).join("")}</div>`)
-    + sec("💰 Good to know — charges", "goldenhour", `<div class="price-tiles"><div class="ptile"><div class="big">₹300</div><small>Day-guest pool use<br>per person / hour</small></div><div class="ptile"><div class="big">₹500</div><small>Breakage — small item</small></div><div class="ptile"><div class="big">₹1,000</div><small>Breakage — large item<br>(major damage at actual cost)</small></div><div class="ptile"><div class="big">60 min</div><small>Fresh food — order ahead<br>(dinner orders by 7 PM)</small></div></div>`)
+    + sec("💰 Good to know — charges", "pool-lake2", `<div class="price-tiles"><div class="ptile"><div class="big">₹300</div><small>Day-guest pool use<br>per person / hour</small></div><div class="ptile"><div class="big">₹500</div><small>Breakage — small item</small></div><div class="ptile"><div class="big">₹1,000</div><small>Breakage — large item<br>(major damage at actual cost)</small></div><div class="ptile"><div class="big">60 min</div><small>Fresh food — order ahead<br>(dinner orders by 7 PM)</small></div></div>`)
     + sec("🔒 Your belongings", null, `<div class="rgrid">${other.map((r) => `<div class="rcard"><div class="ri">🔒</div><div><b>${esc(r.title)}</b><span>${esc(r.body)}</span></div></div>`).join("")}</div>`)
     + sec("📋 Terms & conditions", null, `<div class="rgrid">${terms.map((r) => { const t = r.title.replace(/^Terms: /, ""); return `<div class="rcard"><div class="ri">${TERM_ICONS[t] || "📋"}</div><div><b>${esc(t)}</b><span>${esc(r.body)}</span></div></div>`; }).join("")}</div>`);
 }
@@ -249,6 +264,24 @@ function draw(k) {
         <div class="note">🍲 <b>Food is cooked fresh for you — it takes 45–60 minutes.</b> Please place every food order at least <b>60 minutes</b> before you want to eat. Dinner orders by 7:00 PM.</div></div>
       <div class="offer">🎁 <b>Welcome back offer — 10% off</b><br>Your guest number is <b style="font-size:1.15rem;letter-spacing:.06em">${esc($("g-no").textContent)}</b>. Save it! Next time you stay, mention this number (or sign in to this app with the same mobile) and get <b>10% off</b>.</div>
       <div class="card"><h2>🎯 Popular experiences</h2>${INFO.filter((r) => r.section === "Experience" && live(r)).slice(0, 3).map((r) => itemHtml(r)).join("") || '<p class="muted">Ask reception.</p>'}</div>`;
+  } else if (k === "menu") {
+    const cats = [...new Set(MENU.map((m) => m.category))];
+    html = `<div class="evcard"><div class="pics"><img src="/guest/photos/paneer-bowl.jpg" alt="Signature paneer rice bowl"><img src="/guest/photos/bbq.jpg" alt="Live BBQ"><img src="/guest/photos/dining.jpg" alt="Home-style food"><img src="/guest/photos/ev-dining.jpg" alt="Candle-lit lakeside dinner"></div>
+      <div class="txt"><h3>🍽️ Lake City Cafe — today's menu</h3><p class="muted" style="margin:0">Fresh, home-style vegetarian food · 8:30 AM – 10:30 PM. This menu is updated by our chef — only dishes available today are shown.</p>
+      <div class="note">🍲 Every dish is cooked fresh and takes <b>45–60 minutes</b>. Please order at least <b>60 minutes</b> ahead (dinner by 7:00 PM).</div>
+      <p><a class="wa" href="https://wa.me/918829809555?text=${encodeURIComponent("Hi, I am a guest (" + ($("g-no").textContent || "") + "). I would like to order: ")}">Order on WhatsApp</a></p></div></div>
+      ${cats.length ? cats.map((c) => `<div class="card mcat"><h3>${esc(c)}</h3>${MENU.filter((m) => m.category === c).map((m) => `<div class="mrow"><div>${m.veg !== false ? '<span class="veg"></span>' : ""}${esc(m.name)}${m.description ? `<small>${esc(m.description)}</small>` : ""}</div><b>₹${Number(m.price).toLocaleString("en-IN")}</b></div>`).join("")}</div>`).join("") : '<div class="card"><p class="muted">The menu is being updated — please call reception.</p></div>'}`;
+  } else if (k === "events") {
+    const ev = (pics, title, text, tags) => `<div class="evcard"><div class="pics">${pics.map((p) => `<img src="/guest/photos/${p}.jpg" alt="${esc(title)}" loading="lazy">`).join("")}</div><div class="txt"><h3>${title}</h3><p class="muted" style="margin:0">${text}</p><div class="tags">${tags.map((t) => `<span>${t}</span>`).join("")}</div></div></div>`;
+    html = `<div class="ehero" style="background-image:url(/guest/photos/aerial.jpg)"><div><h3>🎉 Events at The Udaisarovar</h3><p>Lakeside weddings, Holi and New Year parties — produced by JD Production & Entertainers and Pronite.</p></div></div>
+      <div class="stats"><div class="stat"><b>400 – 600</b><span>guests at every big event</span></div><div class="stat"><b>21,556 sq ft</b><span>open lakeside lawn</span></div><div class="stat"><b>3 spaces</b><span>garden lawn · lakefront shore · poolside deck</span></div><div class="stat"><b>On-site stay</b><span>cottages + family suite for your party</span></div></div>
+      ${ev(["holi-poster", "venue", "ev-holi"], "🌈 Udaipur's first lakeside Holi", "Our signature Holi by Pronite — colours, DJs, live artists, pool party and food by the lake. 400–600 guests every year.", ["Holi", "DJ & live artists", "Pool party", "400–600 guests"])}
+      ${ev(["ev-dj", "bbq", "ev-bonfire"], "🎆 New Year's Eve — 31st party", "Count down to the new year by the lake: DJ night, production-grade lights & sound, BBQ and bonfire. 400–600 guests.", ["31st December", "DJ night", "BBQ & bonfire", "400–600 guests"])}
+      ${ev(["mandap", "ev-stage", "ev-wedding", "ev-couple"], "💍 Lakeside weddings & phere", "Floral mandaps and white-floral stages with Udai Sagar lake as your backdrop; décor, sound and catering handled end to end.", ["Weddings", "Phere & haldi", "Décor & catering", "Stay for the wedding party"])}
+      ${ev(["ev-birthday", "ev-brunch", "ev-dining"], "🎂 Birthdays, brunches & private dinners", "Balloon arches, baby showers, garden brunches, candle-lit lakeside dinners and corporate offsites.", ["Birthdays", "Baby showers", "Corporate offsites", "Private dinners"])}
+      <div class="card"><h2>🎥 Event moments</h2><div class="vids"><video src="/guest/photos/event-video-1.mp4" controls preload="metadata" playsinline></video><video src="/guest/photos/event-video-2.mp4" controls preload="metadata" playsinline></video></div></div>
+      <div class="card"><h2>📐 Our event lawn</h2><img class="zoom" src="/guest/photos/lawn-map.jpg" alt="Event lawn measured on the map" style="width:100%;max-width:340px;display:block;margin:0 auto;border-radius:14px"><p class="muted" style="text-align:center">Lawn area about 21,556 sq ft (≈ 2,000 m²), perimeter 198 m — room for 400–600 guests.</p>
+      <a class="wa" style="display:block;text-align:center" href="https://wa.me/918829809555?text=${encodeURIComponent("Hi, I would like to plan an event at The Udaisarovar.")}">Plan your event on WhatsApp</a></div>`;
   } else if (k === "Rule") {
     html = `<div class="card" style="padding-bottom:10px"><h2>📜 House rules</h2><p class="muted" style="margin:0">To keep every stay safe and peaceful, please follow these simple rules. Thank you! 🙏</p><p><a class="wa" style="background:#0b1f3a" href="/guest/house-rules.pdf" target="_blank" rel="noreferrer">📄 Download the full guest card (PDF)</a></p></div>${rulesHtml()}`;
   } else if (k === "pay") {
