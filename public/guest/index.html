@@ -179,7 +179,7 @@ function timelineHtml() {
   let nextMarked = false;
   return `<div class="tl">${TIMELINE.map(([a, b, ic, t, d, ph]) => {
     const s0 = mins(a), e0 = b ? (mins(b) < s0 ? mins(b) + 1440 : mins(b)) : s0 + 30;
-    const now = cur >= s0 && cur < e0, done = cur >= e0 && s0 < 1440;
+    const now = (cur >= s0 && cur < e0) || (cur + 1440 >= s0 && cur + 1440 < e0), done = !now && cur >= e0 && s0 < 1440;
     let tag = ""; if (now) tag = '<span class="badge">NOW</span>'; else if (!done && !nextMarked && cur < s0) { tag = '<span class="badge" style="background:#0b1f3a">NEXT</span>'; nextMarked = true; }
     return `<div class="ev${now ? " now" : done ? " done" : ""}"><div class="tm">${fmt(a)}${b ? `<small>to ${fmt(b)}</small>` : ""}</div>${ph ? `<img src="/guest/photos/${ph}.jpg" alt="">` : `<div class="ic">${ic}</div>`}<div><b>${ph ? ic + " " : ""}${t}</b>${tag}<div class="muted">${d}</div></div></div>`;
   }).join("")}</div>`;
