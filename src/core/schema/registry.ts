@@ -20,6 +20,7 @@ import { stockMovements } from "@/modules/stock-movements/entity";
 import { guestInfo } from "@/modules/guest-info/entity";
 import { propertyAssets } from "@/modules/property-assets/entity";
 import { kots } from "@/modules/kot/entity";
+import { menuItems } from "@/modules/menu/entity";
 import { purchases } from "@/modules/purchases/entity";
 import { tasks } from "@/modules/tasks/entity";
 import { targets } from "@/modules/targets/entity";
@@ -68,6 +69,7 @@ export const entities: EntityDef[] = [
   salaryPayments,
   vendors,
   kots,
+  menuItems,
   purchases,
   stock,
   stockMovements,

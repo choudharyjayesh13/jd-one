@@ -303,7 +303,7 @@ export function MyDay() {
       {/* Quick actions */}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         {[
-          { href: newHref("kots"), label: "New KOT order", icon: ChefHat },
+          { href: "/kot-order/", label: "New KOT order", icon: ChefHat },
           { href: "/pay-qr/", label: "Scan to pay QR", icon: QrCode },
           { href: newHref("purchases"), label: "Add purchase", icon: ShoppingCart },
           { href: "/report-issue/", label: "Report an issue", icon: Wrench },

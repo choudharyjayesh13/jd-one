@@ -1,5 +1,6 @@
 import { ChefHat, Flame, BellRing, Utensils, ReceiptIndianRupee, QrCode, PackageMinus } from "lucide-react";
 import { newHref } from "@/core/routes";
+import { KotListBanner } from "./KotOrder";
 import { defineEntity } from "@/core/schema/types";
 
 export const KOT_TYPES = ["Table", "Room", "Camping", "Event", "Takeaway", "Staff meal"] as const;
@@ -21,6 +22,7 @@ export const kots = defineEntity({
   titleField: "kot_no",
   searchFields: ["kot_no", "table_or_room", "guest_name", "items"],
   defaultSort: { field: "created_at", dir: "desc" },
+  listExtra: KotListBanner,
   fields: [
     { name: "kot_no", label: "KOT no.", type: "text", readOnly: true, help: "Given automatically when saved" },
     { name: "order_type", label: "Order for", type: "select", options: KOT_TYPES, required: true, default: "Table" },
@@ -28,6 +30,7 @@ export const kots = defineEntity({
     { name: "guest_name", label: "Guest name", type: "text" },
     { name: "pax", label: "Guests (pax)", type: "number", min: 1 },
     { name: "items", label: "Items (one per line)", type: "textarea", required: true, placeholder: "2 x Paneer tikka\n1 x Dal makhani\n3 x Butter roti\n2 x Cold coffee" },
+    { name: "lines", label: "Order lines", type: "multiselect", options: [], hidden: true },
     { name: "special_notes", label: "Kitchen notes", type: "textarea", placeholder: "Less spicy, no onion, Jain…" },
     { name: "status", label: "Status", type: "select", options: KOT_STATUSES, required: true, default: "New" },
     { name: "amount", label: "Bill amount", type: "money", min: 0 },
