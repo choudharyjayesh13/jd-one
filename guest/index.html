@@ -71,6 +71,8 @@ img.zoom,.item img,.gallery img{cursor:zoom-in}
 .vids{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px}.vids video{width:100%;border-radius:14px;background:#000;max-height:360px}
 .mcat{margin-top:14px}.mcat h3{font-size:.8rem;letter-spacing:.12em;text-transform:uppercase;color:#a34b00;margin:0 0 6px}
 .mrow{display:flex;justify-content:space-between;gap:10px;padding:9px 0;border-bottom:1px dashed var(--line);font-size:.95rem}.mrow:last-child{border:0}.mrow small{display:block;color:var(--mut);font-size:.78rem}
+.mright{display:flex;flex-direction:column;align-items:flex-end;gap:4px}.qty{display:flex;align-items:center;gap:6px}.qty button{width:30px;height:30px;border-radius:9px;border:1px solid var(--line);background:#fff;font-weight:800;font-size:1rem;cursor:pointer}.qty button.add{background:#0b1f3a;color:#fff;border-color:#0b1f3a}.qty b{min-width:14px;text-align:center}
+.cartbar{position:sticky;bottom:10px;margin-top:14px;background:#0b1f3a;color:#fff;border-radius:16px;padding:14px;box-shadow:0 10px 30px rgba(0,0,0,.25)}.cartbar input,.cartbar textarea{width:100%;box-sizing:border-box;margin-top:8px;border-radius:10px;border:0;padding:10px;font:inherit}.cartbar .go{margin-top:10px;width:100%;border:0;border-radius:12px;padding:12px;background:#ff7a1a;color:#fff;font-weight:800;font-size:1rem;cursor:pointer}
 .veg{display:inline-block;width:10px;height:10px;border:1.5px solid #0f9d58;border-radius:2px;margin-right:6px;position:relative;top:1px}.veg:after{content:"";position:absolute;inset:2px;background:#0f9d58;border-radius:50%}
 .offer{background:linear-gradient(135deg,#ff7a1a,#c9a24b);color:#1a0d02;border-radius:18px;padding:16px;margin-top:14px;font-weight:600}
 .pay img{width:100%;max-width:340px;display:block;margin:8px auto;border-radius:14px}
@@ -181,6 +183,8 @@ const TABS = [
 ];
 let INFO = [];
 let MENU = [];
+let CART = {}; // menu item id -> qty (Guest App food order)
+let STAY_ROOM = "";
 const PHOTOS = [["sunset","Stay for the sunset — lakeside evenings"],["pool-lake2","Infinity pool facing Udai Sagar lake"],["cottage-earth","Cottage 03 · Earth, at dusk"],["pool","Poolside by the hills"],["venue","Premium lakeside venue"],["aerial","Our 21,556 sq ft event lawn from above"],["bonfire","Bonfire nights"],["movienight","Movie under the stars"],["bbq","Live BBQ nights"]];
 let heroI = 0;
 setInterval(() => { const h = document.querySelector(".hero"); if (!h || $("app").classList.contains("hidden")) return; heroI = (heroI + 1) % PHOTOS.length; h.style.backgroundImage = `url(/guest/photos/${PHOTOS[heroI][0]}.jpg)`; }, 6000);
@@ -218,18 +222,49 @@ async function loadApp(session) {
     sb.from("guest_info").select("*").eq("active", true).order("sort").order("title"),
   ]);
   INFO = info || [];
-  const { data: menu } = await sb.from("menu_items").select("name,category,price,description,veg,sort").eq("active", true).order("sort");
+  const { data: menu } = await sb.from("menu_items").select("id,name,category,price,description,veg,sort").eq("active", true).order("sort");
   MENU = menu || [];
   if (cust) {
     $("g-no").textContent = cust.customer_no || "—"; $("g-name").textContent = cust.name || md.name || "Guest";
     const today = new Date().toISOString().slice(0, 10);
     const { data: bk } = await sb.from("bookings").select("check_in,check_out,unit_type,status").eq("customer_id", cust.id).in("status", ["Confirmed", "Checked-in"]).gte("check_out", today).order("check_in").limit(1);
+    if (bk && bk[0]) STAY_ROOM = bk[0].unit_type || "";
     if (bk && bk[0]) $("g-stay").textContent = `${bk[0].unit_type || "Your stay"} · ${dt(bk[0].check_in)} → ${dt(bk[0].check_out)}`;
   }
   $("tabs").innerHTML = TABS.map(([k, l], i) => `<button data-k="${k}" class="${i ? "" : "on"}">${l}</button>`).join("");
   $("tabs").querySelectorAll("button").forEach((b) => b.onclick = () => { $("tabs").querySelectorAll("button").forEach((x) => x.classList.toggle("on", x === b)); draw(b.dataset.k); });
   draw("today");
 }
+// Guest App food order: + / − on the menu, then "Place order" → jdone.guest_order (server prices) → printed on the kitchen POS printer.
+function qtyHtml(id) { const n = CART[id] || 0; return n ? `<button data-q="${id}" data-d="-1">−</button><b>${n}</b><button class="add" data-q="${id}" data-d="1">+</button>` : `<button class="add" data-q="${id}" data-d="1">+</button>`; }
+function drawCart() {
+  const bar = $("cartbar"); if (!bar) return;
+  const ids = Object.keys(CART).filter((id) => CART[id] > 0);
+  if (!ids.length) { bar.classList.add("hidden"); return; }
+  const n = ids.reduce((t, id) => t + CART[id], 0), total = ids.reduce((t, id) => t + CART[id] * Number((MENU.find((m) => m.id === id) || {}).price || 0), 0);
+  const keep = { room: $("c-room")?.value ?? STAY_ROOM, note: $("c-note")?.value ?? "" };
+  bar.innerHTML = `<b>🛒 ${n} item${n > 1 ? "s" : ""} · ₹${total.toLocaleString("en-IN")}</b> <span style="opacity:.8;font-size:.85rem">+ 5% GST</span>
+    <div style="font-size:.85rem;opacity:.9;margin-top:4px">${ids.map((id) => `${CART[id]} × ${esc((MENU.find((m) => m.id === id) || {}).name || "")}`).join(" · ")}</div>
+    <input id="c-room" placeholder="Your cottage / room / tent (e.g. Earth cottage)" value="${esc(keep.room)}">
+    <textarea id="c-note" rows="2" placeholder="Notes for the chef: less spicy, Jain, no onion…">${esc(keep.note)}</textarea>
+    <button class="go" id="c-go">Place order · ready in 45–60 min</button><div id="c-msg" style="margin-top:8px;font-size:.9rem"></div>`;
+  bar.classList.remove("hidden");
+  $("c-go").onclick = placeOrder;
+}
+async function placeOrder() {
+  const lines = Object.keys(CART).filter((id) => CART[id] > 0).map((id) => ({ id, qty: CART[id] }));
+  $("c-go").disabled = true; $("c-go").textContent = "Sending to the kitchen…";
+  const { data, error } = await sb.rpc("guest_order", { p_lines: lines, p_room: $("c-room").value, p_notes: $("c-note").value });
+  if (error || !data?.ok) { $("c-go").disabled = false; $("c-go").textContent = "Place order · ready in 45–60 min"; $("c-msg").textContent = "⚠️ " + (error?.message || data.reason); return; }
+  CART = {}; document.querySelectorAll(".qty").forEach((q) => (q.innerHTML = qtyHtml(q.dataset.id)));
+  $("cartbar").innerHTML = `<b>✅ Order ${esc(data.kot_no)} sent to the kitchen</b><div style="margin-top:6px;font-size:.9rem">₹${Number(data.amount).toLocaleString("en-IN")} + 5% GST, added to your bill. Fresh food takes 45–60 minutes — we'll bring it to you. Need anything? Call reception.</div>`;
+}
+document.addEventListener("click", (e) => {
+  const b = e.target.closest && e.target.closest("button[data-q]"); if (!b) return;
+  const id = b.dataset.q; CART[id] = Math.max(0, Math.min(20, (CART[id] || 0) + Number(b.dataset.d)));
+  const q = document.querySelector(`.qty[data-id="${id}"]`); if (q) q.innerHTML = qtyHtml(id);
+  drawCart();
+});
 // Photo credits for pictures that are not our own (Wikimedia Commons, licence requires attribution).
 const CREDITS = { "x-horse1": "Photo: Vikas Rana, CC BY 2.0", "x-horse2": "Photo: Benoit Brummer, CC BY 4.0" };
 // guest_info.photo may hold several comma-separated pictures: the card then shows a swipeable strip.
@@ -277,8 +312,8 @@ function draw(k) {
     html = `<div class="evcard"><div class="pics"><img src="/guest/photos/paneer-bowl.jpg" alt="Signature paneer rice bowl"><img src="/guest/photos/bbq.jpg" alt="Live BBQ"><img src="/guest/photos/dining.jpg" alt="Home-style food"><img src="/guest/photos/ev-dining.jpg" alt="Candle-lit lakeside dinner"></div>
       <div class="txt"><h3>🍽️ Lake City Cafe — today's menu</h3><p class="muted" style="margin:0">Fresh, home-style vegetarian food · 8:30 AM – 10:30 PM. This menu is updated by our chef — only dishes available today are shown.</p>
       <div class="note">🍲 Every dish is cooked fresh and takes <b>45–60 minutes</b>. Please order at least <b>60 minutes</b> ahead (dinner orders by 7:30 PM).<br>🧾 All prices are <b>excluding 5% GST</b>, which is added to your bill.</div>
-      <p><a class="wa" href="https://wa.me/918829809555?text=${encodeURIComponent("Hi, I am a guest (" + ($("g-no").textContent || "") + "). I would like to order: ")}">Order on WhatsApp</a></p></div></div>
-      ${cats.length ? cats.map((c) => `<div class="card mcat"><h3>${esc(c)}</h3>${MENU.filter((m) => m.category === c).map((m) => `<div class="mrow"><div>${m.veg !== false ? '<span class="veg"></span>' : ""}${esc(m.name)}${m.description ? `<small>${esc(m.description)}</small>` : ""}</div><b>₹${Number(m.price).toLocaleString("en-IN")}</b></div>`).join("")}</div>`).join("") : '<div class="card"><p class="muted">The menu is being updated — please call reception.</p></div>'}`;
+      <p><a class="wa" href="https://wa.me/918829809555?text=${encodeURIComponent("Hi, I am a guest (" + ($("g-no").textContent || "") + "). I would like to order: ")}">Order on WhatsApp</a> <span class="muted" style="font-size:.85rem">or tap <b>+</b> on dishes below to order right here.</span></p></div></div>
+      ${cats.length ? cats.map((c) => `<div class="card mcat"><h3>${esc(c)}</h3>${MENU.filter((m) => m.category === c).map((m) => `<div class="mrow"><div>${m.veg !== false ? '<span class="veg"></span>' : ""}${esc(m.name)}${m.description ? `<small>${esc(m.description)}</small>` : ""}</div><div class="mright"><b>₹${Number(m.price).toLocaleString("en-IN")}</b><span class="qty" data-id="${m.id}">${qtyHtml(m.id)}</span></div></div>`).join("")}</div>`).join("") : '<div class="card"><p class="muted">The menu is being updated — please call reception.</p></div>'}<div id="cartbar" class="cartbar hidden"></div>`;
   } else if (k === "events") {
     const ev = (pics, title, text, tags) => `<div class="evcard"><div class="pics">${pics.map((p) => `<img src="/guest/photos/${p}.jpg" alt="${esc(title)}" loading="lazy">`).join("")}</div><div class="txt"><h3>${title}</h3><p class="muted" style="margin:0">${text}</p><div class="tags">${tags.map((t) => `<span>${t}</span>`).join("")}</div></div></div>`;
     html = `<div class="ehero" style="background-image:url(/guest/photos/aerial.jpg)"><div><h3>🎉 Events at The Udaisarovar</h3><p>Lakeside weddings, Holi and New Year parties — produced by JD Production & Entertainers and Pronite.</p></div></div>
@@ -300,6 +335,7 @@ function draw(k) {
     html = `<div class="card"><h2>${title}</h2>${pdf}${list(k, "", k === "Experience")}</div>`;
   }
   $("panel").innerHTML = html;
+  if (k === "menu") drawCart();
 }
 document.addEventListener("click", (e) => {
   const img = e.target.closest && e.target.closest(".gallery img, .item img, .tl img, img.zoom");
