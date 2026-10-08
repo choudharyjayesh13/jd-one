@@ -191,8 +191,8 @@ const TIMELINE = [
   ["12:00",null,"🔑","Check-in","Rooms ready from 12 noon",null],
   ["16:30","19:30","🏊","Evening swim","Swimming pool — evening session","pool"],
   ["17:00","19:00","🏸","Games: chess, ludo & badminton","Ask reception for the equipment (football too)","venue"],
-  ["19:00",null,"🛎️","Last call for dinner orders","Fresh food takes 45–60 min — order 60 min ahead",null],
-  ["20:00","22:00","🍽️","Dinner","Lakeside dinner","sunset"],
+  ["19:30",null,"🛎️","Last call for dinner orders","Fresh food takes 45–60 min — order 60 min ahead",null],
+  ["20:30","22:30","🍽️","Dinner","Lakeside dinner","sunset"],
   ["21:00","23:45","🎬","Movie under the stars","Open-air projector by the lake","movienight"],
   ["24:00","07:00","🌙","Quiet hours","Midnight to 7:00 AM — keep voices & music low",null],
 ];
@@ -208,7 +208,7 @@ function timelineHtml() {
     return `<div class="ev${now ? " now" : done ? " done" : ""}"><div class="tm">${fmt(a)}${b ? `<small>to ${fmt(b)}</small>` : ""}</div>${ph ? `<img src="/guest/photos/${ph}.jpg" alt="">` : `<div class="ic">${ic}</div>`}<div><b>${ph ? ic + " " : ""}${t}</b>${tag}<div class="muted">${d}</div></div></div>`;
   }).join("")}</div>`;
 }
-const GLANCE = [["12:00 noon","Check-in"],["10:00 AM","Check-out"],["9 – 10 AM","Breakfast"],["8 – 11 AM · 4:30 – 7:30 PM","Swimming pool"],["5 – 7 PM","Sports & games (badminton, chess, ludo, football)"],["by 7 PM","Order dinner (food is cooked fresh — ~1 hour)"],["8 – 10 PM","Dinner"],["9 – 11:45 PM","Movie under the stars"],["12 – 7 AM","Quiet hours"]];
+const GLANCE = [["12:00 noon","Check-in"],["10:00 AM","Check-out"],["9 – 10 AM","Breakfast"],["8 – 11 AM · 4:30 – 7:30 PM","Swimming pool"],["5 – 7 PM","Sports & games (badminton, chess, ludo, football)"],["by 7:30 PM","Order dinner (food is cooked fresh — ~1 hour)"],["8:30 – 10:30 PM","Dinner"],["9 – 11:45 PM","Movie under the stars"],["12 – 7 AM","Quiet hours"]];
 async function loadApp(session) {
   const md = session.user.user_metadata || {};
   $("g-name").textContent = md.name || "Guest";
@@ -261,14 +261,14 @@ function draw(k) {
   if (k === "today") {
     html = `${gallery()}<div class="card"><h2>🔥 Value Added Combo</h2>${list("Combo", "combo", true)}</div>
       <div class="card"><h2>☀️ Today's activities & timings</h2><p class="muted" style="margin-top:-4px">Free for in-house guests · morning to late night</p>${timelineHtml()}
-        <div class="note">🍲 <b>Food is cooked fresh for you — it takes 45–60 minutes.</b> Please place every food order at least <b>60 minutes</b> before you want to eat. Dinner orders by 7:00 PM.</div></div>
+        <div class="note">🍲 <b>Food is cooked fresh for you — it takes 45–60 minutes.</b> Please place every food order at least <b>60 minutes</b> before you want to eat. Dinner orders by 7:30 PM.</div></div>
       <div class="offer">🎁 <b>Welcome back offer — 10% off</b><br>Your guest number is <b style="font-size:1.15rem;letter-spacing:.06em">${esc($("g-no").textContent)}</b>. Save it! Next time you stay, mention this number (or sign in to this app with the same mobile) and get <b>10% off</b>.</div>
       <div class="card"><h2>🎯 Popular experiences</h2>${INFO.filter((r) => r.section === "Experience" && live(r)).slice(0, 3).map((r) => itemHtml(r)).join("") || '<p class="muted">Ask reception.</p>'}</div>`;
   } else if (k === "menu") {
     const cats = [...new Set(MENU.map((m) => m.category))];
     html = `<div class="evcard"><div class="pics"><img src="/guest/photos/paneer-bowl.jpg" alt="Signature paneer rice bowl"><img src="/guest/photos/bbq.jpg" alt="Live BBQ"><img src="/guest/photos/dining.jpg" alt="Home-style food"><img src="/guest/photos/ev-dining.jpg" alt="Candle-lit lakeside dinner"></div>
       <div class="txt"><h3>🍽️ Lake City Cafe — today's menu</h3><p class="muted" style="margin:0">Fresh, home-style vegetarian food · 8:30 AM – 10:30 PM. This menu is updated by our chef — only dishes available today are shown.</p>
-      <div class="note">🍲 Every dish is cooked fresh and takes <b>45–60 minutes</b>. Please order at least <b>60 minutes</b> ahead (dinner by 7:00 PM).</div>
+      <div class="note">🍲 Every dish is cooked fresh and takes <b>45–60 minutes</b>. Please order at least <b>60 minutes</b> ahead (dinner orders by 7:30 PM).</div>
       <p><a class="wa" href="https://wa.me/918829809555?text=${encodeURIComponent("Hi, I am a guest (" + ($("g-no").textContent || "") + "). I would like to order: ")}">Order on WhatsApp</a></p></div></div>
       ${cats.length ? cats.map((c) => `<div class="card mcat"><h3>${esc(c)}</h3>${MENU.filter((m) => m.category === c).map((m) => `<div class="mrow"><div>${m.veg !== false ? '<span class="veg"></span>' : ""}${esc(m.name)}${m.description ? `<small>${esc(m.description)}</small>` : ""}</div><b>₹${Number(m.price).toLocaleString("en-IN")}</b></div>`).join("")}</div>`).join("") : '<div class="card"><p class="muted">The menu is being updated — please call reception.</p></div>'}`;
   } else if (k === "events") {
