@@ -21,6 +21,7 @@ import type { Row } from "@/core/schema/types";
 import { CITY_MEMBER_CAP } from "./entity";
 import { networkRatings } from "@/modules/feedback/entity";
 import { RelationSelect } from "@/core/ui/RelationSelect";
+import { LeadersTab } from "@/modules/leaders/LeadersTab";
 
 const CUSTOMER_DEFAULT = 10;
 const OWNER_DEFAULT = 15;
@@ -59,7 +60,7 @@ function Stars({ rating, count, url }: { rating: unknown; count: unknown; url: u
 
 export function Network() {
   const user = useUser();
-  const [tab, setTab] = useState<"members" | "vendors">("members");
+  const [tab, setTab] = useState<"members" | "vendors" | "leaders">("members");
   const [f, setF] = useState(loadFilter);
   const [q, setQ] = useState("");
   const setFilter = (next: typeof f) => {
@@ -74,6 +75,7 @@ export function Network() {
   const { rows: owners } = useList("owners");
   const { rows: vendors, loading: vLoading } = useList("vendors", { filter: { active: true } });
   const { rows: fb } = useList("feedback");
+  const { rows: leaders } = useList("leaders");
   const [forCustomer, setForCustomer] = useState<string | null>(null);
   const { rows: custRows } = useList(forCustomer ? "customers" : null, { filter: { id: forCustomer } });
   const customer = custRows[0] ?? null;
@@ -87,7 +89,7 @@ export function Network() {
     return (interestHit ? 10 : 0) + (net ? net.avg : 0) + Number(u.google_rating ?? 0) / 2;
   };
 
-  const all = tab === "members" ? units : vendors;
+  const all = tab === "members" ? units : tab === "vendors" ? vendors : leaders;
   const states = uniq(all.map((r) => r.state));
   const districts = uniq(all.filter((r) => !f.state || r.state === f.state).map((r) => r.district));
   const cities = uniq(all.filter((r) => (!f.state || r.state === f.state) && (!f.district || r.district === f.district)).map((r) => r.city));
@@ -97,6 +99,8 @@ export function Network() {
   const memberRows = useMemo(() => units.filter(match).filter(text), [units, f, q]); // eslint-disable-line react-hooks/exhaustive-deps
   const recommended = useMemo(() => (customer ? [...memberRows].sort((a, b) => fit(b) - fit(a)).slice(0, 5) : []), [customer, memberRows, scores]); // eslint-disable-line react-hooks/exhaustive-deps
   const vendorRows = useMemo(() => vendors.filter(match).filter(text), [vendors, f, q]); // eslint-disable-line react-hooks/exhaustive-deps
+  const leaderText = (r: Row) => !q || JSON.stringify([r.name, r.role, r.body_name, r.ward_no, r.area, r.party]).toLowerCase().includes(q.toLowerCase());
+  const leaderRows = useMemo(() => leaders.filter(match).filter(leaderText), [leaders, f, q]); // eslint-disable-line react-hooks/exhaustive-deps
   const seatsInCity = f.city ? units.filter((u) => u.city === f.city && (!f.state || u.state === f.state)).length : null;
 
   const groups = useMemo(() => {
@@ -130,6 +134,12 @@ export function Network() {
                 Add vendor
               </Button>
             </Link>
+          ) : tab === "leaders" ? (
+            <Link href={newHref("leaders", { state: f.state, district: f.district, city: f.city })}>
+              <Button size="sm" icon={Plus}>
+                Add leader
+              </Button>
+            </Link>
           ) : undefined
         }
       />
@@ -139,6 +149,7 @@ export function Network() {
           [
             ["members", `Members (${memberRows.length})`],
             ["vendors", `Vendors (${vendorRows.length})`],
+            ["leaders", `Local leaders (${leaderRows.length})`],
           ] as const
         ).map(([k, label]) => (
           <button key={k} type="button" onClick={() => setTab(k)} className={cn("flex-1 rounded-lg px-3 py-1.5 text-sm font-medium", tab === k ? "bg-navy text-white" : "text-slate-600 hover:bg-slate-50")}>
@@ -172,10 +183,12 @@ export function Network() {
             </option>
           ))}
         </Select>
-        <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder={tab === "members" ? "Search service, product…" : "Search milk, plumber, gas…"} />
+        <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder={tab === "members" ? "Search service, product…" : tab === "vendors" ? "Search milk, plumber, gas…" : "Search name, ward, village, party…"} />
       </div>
 
-      {tab === "members" ? (
+      {tab === "leaders" ? (
+        <LeadersTab rows={leaderRows} />
+      ) : tab === "members" ? (
         <>
           <div className="mb-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
             <Stat label="Member businesses" value={memberRows.length} />

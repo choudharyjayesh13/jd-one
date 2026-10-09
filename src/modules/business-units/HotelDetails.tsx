@@ -33,7 +33,9 @@ export function HotelDetails() {
   const { rows: units, loading } = useList("business-units", { filter: { active: true }, sort: { field: "name", dir: "asc" } });
   const hotels = units.filter((u) => ["Hotel", "Resort"].includes(String(u.type)) || !u.type);
   const [picked, setPicked] = useState<string>("");
-  const current = user.unitId ? units.find((u) => u.id === user.unitId) : hotels.find((u) => u.id === picked) ?? hotels[0];
+  // The Udaisarovar opens first (JD One links from myjdgroup.com land here); others via the picker.
+  const flagship = hotels.find((u) => /udaisarovar/i.test(String(u.name))) ?? hotels[0];
+  const current = user.unitId ? units.find((u) => u.id === user.unitId) : hotels.find((u) => u.id === picked) ?? flagship;
   const { rows: rooms } = useList(current ? "rooms" : null, { filter: { business_unit_id: current?.id, active: true } });
   const mayEdit = canUpdate(user.role, getEntity("business-units"));
   if (loading) return <Loading />;

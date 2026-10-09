@@ -39,6 +39,7 @@ import { orders } from "@/modules/orders/entity";
 import { vendors } from "@/modules/vendors/entity";
 import { feedback } from "@/modules/feedback/entity";
 import { assets } from "@/modules/assets/entity";
+import { leaders } from "@/modules/leaders/entity";
 import { vehicleLogs, fuelLogs, vehicleServices } from "@/modules/assets/logs";
 
 export const entities: EntityDef[] = [
@@ -59,6 +60,7 @@ export const entities: EntityDef[] = [
   agents,
   orders,
   vendors,
+  leaders,
   feedback,
   assets,
   vehicleLogs,
