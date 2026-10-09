@@ -271,8 +271,8 @@ const CREDITS = { "x-horse1": "Photo: Vikas Rana, CC BY 2.0", "x-horse2": "Photo
 const pics = (r) => (r.photo || "").split(",").map((x) => x.trim()).filter(Boolean);
 const stripHtml = (r) => { const ps = pics(r); const cr = ps.map((x) => CREDITS[x.replace(/^.*\/|\.jpg$/g, "")]).filter(Boolean); return `<div class="strip">${ps.map((x) => `<img src="${esc(x)}" alt="${esc(r.title)}" loading="lazy">`).join("")}</div>${cr.length ? `<small class="credit">${esc(cr.join(" · "))}</small>` : ""}`; };
 const itemHtml = (r, cls = "") => pics(r).length > 1
-  ? `<div class="item multi ${cls}">${stripHtml(r)}<div><b>${esc(r.title)}</b>${r.body ? `<div class="muted">${esc(r.body).replace(/\n/g, "<br>")}</div>` : ""}${r.price ? `<span class="price">${esc(r.price)}</span>` : ""}</div></div>`
-  : `<div class="item ${cls}">${r.photo ? `<img src="${esc(r.photo)}" alt="">` : ""}<div><b>${esc(r.title)}</b>${r.body ? `<div class="muted">${esc(r.body).replace(/\n/g, "<br>")}</div>` : ""}${r.price ? `<span class="price">${esc(r.price)}</span>` : ""}</div></div>`;
+  ? `<div class="item multi ${cls}">${stripHtml(r)}<div><b>${esc(r.title)}</b>${r.body ? `<div class="muted">${esc(r.body).replace(/\n/g, "<br>").replace(/(youtube\.com\/[^\s<]+)/g, '<a href="https://$1" target="_blank" rel="noopener">▶ $1</a>')}</div>` : ""}${r.price ? `<span class="price">${esc(r.price)}</span>` : ""}</div></div>`
+  : `<div class="item ${cls}">${r.photo ? `<img src="${esc(r.photo)}" alt="">` : ""}<div><b>${esc(r.title)}</b>${r.body ? `<div class="muted">${esc(r.body).replace(/\n/g, "<br>").replace(/(youtube\.com\/[^\s<]+)/g, '<a href="https://$1" target="_blank" rel="noopener">▶ $1</a>')}</div>` : ""}${r.price ? `<span class="price">${esc(r.price)}</span>` : ""}</div></div>`;
 const ask = (what) => `<a class="wa" href="https://wa.me/918829809555?text=${encodeURIComponent("Hi, I am a guest (" + ($("g-no").textContent || "") + "). I would like to book: " + what)}">Book on WhatsApp</a>`;
 // Short headline + icon for each rule (matched on the rule text), so the House rules tab reads at a glance.
 const RULE_ICONS = [
