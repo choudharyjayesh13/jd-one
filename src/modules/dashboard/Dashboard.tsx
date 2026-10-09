@@ -11,9 +11,10 @@ import { Button } from "@/core/ui/Button";
 import { Loading, ErrorBox, PageHeader } from "@/core/ui/misc";
 import { cn } from "@/core/ui/cn";
 import { loadDashboard, type DashboardData } from "./data";
+import { TodaySection } from "./Today";
 import { AccountsSection, FinanceSection, HrSection, MarketingSection, OperationsSection, OverviewSection, PropertySection } from "./sections";
 
-type Tab = "all" | Team;
+type Tab = "today" | "all" | Team;
 const TAB_KEY = "jdone.dashboardTab";
 
 const sectionFor: Record<Team, (d: DashboardData) => React.ReactNode> = {
@@ -36,9 +37,9 @@ export function Dashboard() {
   const [tab, setTab] = useState<Tab>(() => {
     try {
       const saved = typeof window !== "undefined" ? (localStorage.getItem(TAB_KEY) as Tab | null) : null;
-      return saved && (saved === "all" || TEAMS.some((t) => t.id === saved)) ? saved : "all";
+      return saved && (saved === "today" || saved === "all" || TEAMS.some((t) => t.id === saved)) ? saved : "today";
     } catch {
-      return "all";
+      return "today";
     }
   });
 
@@ -78,7 +79,7 @@ export function Dashboard() {
       />
       {admin && (
         <div className="mb-4 flex gap-1 overflow-x-auto rounded-xl bg-white p-1 shadow-sm">
-          {[{ id: "all" as Tab, label: "All" }, ...TEAMS.map((t) => ({ id: t.id as Tab, label: t.label }))].map((t) => (
+          {[{ id: "today" as Tab, label: "📋 Today" }, { id: "all" as Tab, label: "Overview" }, ...TEAMS.map((t) => ({ id: t.id as Tab, label: t.label }))].map((t) => (
             <button key={t.id} type="button" onClick={() => pick(t.id)} className={cn("whitespace-nowrap rounded-lg px-3 py-1.5 text-sm font-medium", tab === t.id ? "bg-navy text-white" : "text-slate-600 hover:bg-slate-100")}>
               {t.label}
             </button>
@@ -86,10 +87,12 @@ export function Dashboard() {
         </div>
       )}
       {error && <ErrorBox message={error} />}
-      {!data ? (
+      {admin && tab === "today" ? (
+        <TodaySection />
+      ) : !data ? (
         <Loading label="Loading dashboard…" />
       ) : admin ? (
-        tab === "all" ? (
+        tab === "all" || tab === "today" ? (
           <OverviewSection d={data} />
         ) : (
           sectionFor[tab](data)
