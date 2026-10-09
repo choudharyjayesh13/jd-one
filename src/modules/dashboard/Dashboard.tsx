@@ -15,7 +15,7 @@ import { TodaySection } from "./Today";
 import { AccountsSection, FinanceSection, HrSection, MarketingSection, OperationsSection, OverviewSection, PropertySection } from "./sections";
 
 type Tab = "today" | "all" | Team;
-const TAB_KEY = "jdone.dashboardTab";
+const TAB_KEY = "jdone.dashboardTab.v2"; // v2: "Today" became the default tab
 
 const sectionFor: Record<Team, (d: DashboardData) => React.ReactNode> = {
   property: (d) => <PropertySection d={d} />,

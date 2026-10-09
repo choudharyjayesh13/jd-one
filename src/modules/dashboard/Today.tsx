@@ -63,6 +63,8 @@ const shiftDay = (day: string, d: number) => {
 };
 const timeIST = (iso: string) => new Date(iso).toLocaleTimeString("en-IN", { timeZone: "Asia/Kolkata", hour: "numeric", minute: "2-digit" });
 const join = (...parts: unknown[]) => parts.map(s).filter(Boolean).join(" · ");
+const ATT: Record<string, string> = { P: "Present", A: "Absent", H: "Half day", HD: "Half day", L: "Leave", WO: "Week off", OFF: "Week off" };
+const att = (v: unknown) => ATT[s(v).toUpperCase()] ?? s(v);
 
 async function loadDay(store: DataStore, day: string): Promise<DayData> {
   const from = `${day}T00:00:00+05:30`;
@@ -114,8 +116,8 @@ async function loadDay(store: DataStore, day: string): Promise<DayData> {
 
   for (const a of attendance) {
     const who = nm(a.staff_id) ?? "Staff";
-    if (a.checked_in_at) push({ at: s(a.checked_in_at), kind: "staff", icon: "🟢", title: `${who} checked in`, detail: s(a.status) || undefined, staff: nm(a.staff_id), entity: "attendance", id: a.id });
-    else push({ at: at(a), kind: "staff", icon: "📝", title: `${who} marked ${s(a.status) || "attendance"}`, staff: nm(a.staff_id), entity: "attendance", id: a.id });
+    if (a.checked_in_at) push({ at: s(a.checked_in_at), kind: "staff", icon: "🟢", title: `${who} checked in`, detail: att(a.status) || undefined, staff: nm(a.staff_id), entity: "attendance", id: a.id });
+    else push({ at: at(a), kind: "staff", icon: "📝", title: `${who} marked ${att(a.status) || "attendance"}`, staff: nm(a.staff_id), entity: "attendance", id: a.id });
     if (a.checked_out_at) push({ at: s(a.checked_out_at), kind: "staff", icon: "🔴", title: `${who} checked out`, staff: nm(a.staff_id), entity: "attendance", id: a.id });
   }
   for (const p of payments)
@@ -168,7 +170,7 @@ async function loadDay(store: DataStore, day: string): Promise<DayData> {
     bookingValue: sum(bookingsNew, "total"),
     arrivals: arrivals.filter((b) => b.status !== "Cancelled").length,
     departures: departures.filter((b) => b.status !== "Cancelled").length,
-    present: new Set(attendance.filter((a) => a.checked_in_at || /present|half/i.test(s(a.status))).map((a) => s(a.staff_id))).size,
+    present: new Set(attendance.filter((a) => a.checked_in_at || /^(p|h|hd)$|present|half/i.test(s(a.status))).map((a) => s(a.staff_id))).size,
     staffTotal: staff.filter((r) => r.active !== false).length,
     contacts: activities.length,
     failed,
