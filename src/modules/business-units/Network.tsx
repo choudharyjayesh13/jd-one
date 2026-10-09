@@ -22,6 +22,7 @@ import { CITY_MEMBER_CAP } from "./entity";
 import { networkRatings } from "@/modules/feedback/entity";
 import { RelationSelect } from "@/core/ui/RelationSelect";
 import { LeadersTab } from "@/modules/leaders/LeadersTab";
+import { AreaHelpTab } from "@/modules/area-services/AreaHelpTab";
 
 const CUSTOMER_DEFAULT = 10;
 const OWNER_DEFAULT = 15;
@@ -60,7 +61,7 @@ function Stars({ rating, count, url }: { rating: unknown; count: unknown; url: u
 
 export function Network() {
   const user = useUser();
-  const [tab, setTab] = useState<"members" | "vendors" | "leaders">("members");
+  const [tab, setTab] = useState<"members" | "vendors" | "leaders" | "help">("members");
   const [f, setF] = useState(loadFilter);
   const [q, setQ] = useState("");
   const setFilter = (next: typeof f) => {
@@ -76,6 +77,7 @@ export function Network() {
   const { rows: vendors, loading: vLoading } = useList("vendors", { filter: { active: true } });
   const { rows: fb } = useList("feedback");
   const { rows: leaders } = useList("leaders");
+  const { rows: services } = useList("area-services");
   const [forCustomer, setForCustomer] = useState<string | null>(null);
   const { rows: custRows } = useList(forCustomer ? "customers" : null, { filter: { id: forCustomer } });
   const customer = custRows[0] ?? null;
@@ -89,7 +91,7 @@ export function Network() {
     return (interestHit ? 10 : 0) + (net ? net.avg : 0) + Number(u.google_rating ?? 0) / 2;
   };
 
-  const all = tab === "members" ? units : tab === "vendors" ? vendors : leaders;
+  const all = tab === "members" ? units : tab === "vendors" ? vendors : tab === "leaders" ? leaders : services;
   const states = uniq(all.map((r) => r.state));
   const districts = uniq(all.filter((r) => !f.state || r.state === f.state).map((r) => r.district));
   const cities = uniq(all.filter((r) => (!f.state || r.state === f.state) && (!f.district || r.district === f.district)).map((r) => r.city));
@@ -101,6 +103,8 @@ export function Network() {
   const vendorRows = useMemo(() => vendors.filter(match).filter(text), [vendors, f, q]); // eslint-disable-line react-hooks/exhaustive-deps
   const leaderText = (r: Row) => !q || JSON.stringify([r.name, r.role, r.body_name, r.ward_no, r.area, r.party]).toLowerCase().includes(q.toLowerCase());
   const leaderRows = useMemo(() => leaders.filter(match).filter(leaderText), [leaders, f, q]); // eslint-disable-line react-hooks/exhaustive-deps
+  // Area help: a typed locality is answered by the thana covering it, so the list itself is only filtered by area
+  const helpRows = useMemo(() => services.filter(match), [services, f]); // eslint-disable-line react-hooks/exhaustive-deps
   const seatsInCity = f.city ? units.filter((u) => u.city === f.city && (!f.state || u.state === f.state)).length : null;
 
   const groups = useMemo(() => {
@@ -126,7 +130,7 @@ export function Network() {
     <div>
       <PageHeader
         title="JD One network"
-        subtitle="State → District → City. Members give business to each other; vendors keep every member supplied."
+        subtitle="State → District → City. Members give business to each other, vendors keep them supplied, and every area gets its local leaders and help numbers."
         actions={
           tab === "vendors" ? (
             <Link href={newHref("vendors", { state: f.state, district: f.district, city: f.city })}>
@@ -140,6 +144,12 @@ export function Network() {
                 Add leader
               </Button>
             </Link>
+          ) : tab === "help" ? (
+            <Link href={newHref("area-services", { state: f.state, district: f.district, city: f.city })}>
+              <Button size="sm" icon={Plus}>
+                Add service
+              </Button>
+            </Link>
           ) : undefined
         }
       />
@@ -150,6 +160,7 @@ export function Network() {
             ["members", `Members (${memberRows.length})`],
             ["vendors", `Vendors (${vendorRows.length})`],
             ["leaders", `Local leaders (${leaderRows.length})`],
+            ["help", `Area help`],
           ] as const
         ).map(([k, label]) => (
           <button key={k} type="button" onClick={() => setTab(k)} className={cn("flex-1 rounded-lg px-3 py-1.5 text-sm font-medium", tab === k ? "bg-navy text-white" : "text-slate-600 hover:bg-slate-50")}>
@@ -183,10 +194,12 @@ export function Network() {
             </option>
           ))}
         </Select>
-        <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder={tab === "members" ? "Search service, product…" : tab === "vendors" ? "Search milk, plumber, gas…" : "Search name, ward, village, party…"} />
+        <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder={tab === "members" ? "Search service, product…" : tab === "vendors" ? "Search milk, plumber, gas…" : tab === "help" ? "Type your colony / village: which thana?" : "Search name, ward, village, party…"} />
       </div>
 
-      {tab === "leaders" ? (
+      {tab === "help" ? (
+        <AreaHelpTab rows={helpRows} query={q} />
+      ) : tab === "leaders" ? (
         <LeadersTab rows={leaderRows} />
       ) : tab === "members" ? (
         <>
