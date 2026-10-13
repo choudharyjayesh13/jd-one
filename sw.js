@@ -4,7 +4,7 @@
  * The base path is derived from the registration scope, so the same file
  * works at / and at /jd-one/.
  */
-const VERSION = "jd-one-mv6d80lm";
+const VERSION = "jd-one-1a1370a8750";
 const SHELL = `${VERSION}-shell`;
 const DATA = `${VERSION}-data`;
 const scopePath = new URL(self.registration.scope).pathname; // e.g. "/jd-one/"
