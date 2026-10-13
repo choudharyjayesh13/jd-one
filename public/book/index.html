@@ -27,6 +27,7 @@ input,select,textarea{width:100%;padding:12px;border:1px solid var(--line);borde
 .plan{display:flex;align-items:center;justify-content:space-between;gap:10px;border:1px solid var(--line);border-radius:12px;padding:10px 12px;margin-top:8px}
 .plan b{font-size:1.1rem}.muted{color:var(--mut);font-size:.86rem}.tag{display:inline-block;background:#fff3e8;color:#a34b00;border-radius:999px;padding:2px 10px;font-size:.75rem;font-weight:700}
 .soldout{color:var(--bad);font-weight:700}.hidden{display:none!important}
+.ao{display:flex;gap:12px;align-items:flex-start;padding:10px 0;border-bottom:1px dashed var(--line)}.ao:last-child{border:0}.ao .t{flex:1}.ao .t b{display:block}.ao .t small{color:#667;font-size:.8rem;display:block}.ao .pr{font-weight:700;color:#c25a0b;white-space:nowrap;font-size:.9rem}.ao .q{display:flex;align-items:center;gap:6px}.ao .q button{width:30px;height:30px;border-radius:9px;border:1px solid var(--line);background:#fff;font-weight:800;cursor:pointer}.ao .q button.on{background:#0b1f3a;color:#fff}
 .sum{display:flex;justify-content:space-between;padding:4px 0}.sum.total{border-top:1px solid var(--line);margin-top:6px;padding-top:8px;font-weight:800;font-size:1.1rem}
 .err{background:#fdecec;color:#9b1c1c;border-radius:10px;padding:10px 12px;margin-top:10px}
 .ok{background:#e8f6ee;color:#0b6b3a;border-radius:14px;padding:16px}
@@ -71,6 +72,11 @@ footer{text-align:center;color:var(--mut);font-size:.78rem;margin-top:30px}
       <div><label>GSTIN</label><input id="g-gstin" maxlength="15" placeholder="08ABCDE1234F1Z5" style="text-transform:uppercase"></div>
       <div style="grid-column:1/-1"><label>Billing address</label><input id="g-addr"></div>
     </div>
+    <div id="addons" class="card hidden" style="background:#fff">
+      <h3 style="margin:0 0 4px">Add extra services <span class="muted" style="font-weight:400;font-size:.85rem">(optional)</span></h3>
+      <div class="muted" style="font-size:.85rem">Horse riding, sightseeing cabs, camping, transfers and more — added to your booking.</div>
+      <div id="addon-list"></div>
+    </div>
     <div class="card" style="background:#fbfaf7">
       <div id="summary"></div>
       <label style="margin-top:12px">Payment</label>
@@ -104,8 +110,8 @@ const PLAN_INFO = {
   MAP: "Breakfast + lunch or dinner (veg thali: sabzi / paneer, dal, chapati, rice, papad, salad)",
   AP: "Breakfast, lunch (sabzi, dal, chapati, rice, buttermilk, papad, salad) and dinner (paneer, dal, chapati, rice/pulao, papad, salad, ice cream)",
 };
-const PHOTO = { "Lake View Cottage": "/property/cottages-lawn.jpg", "Pool View Cottage": "/property/pool-garden.jpg", "Family Suite": "/property/cottage-room.jpg", "Camping": "/property/cottage-dusk.jpg" };
-const ABOUT = { "Lake View Cottage": "Private cottage with garden and lake view · AC · up to 3 adults", "Pool View Cottage": "Cottage facing the infinity pool and garden · AC · up to 3 adults", "Family Suite": "Spacious suite for families · priced for 3 adults · up to 4", "Camping": "Lakeside tent with bonfire evening · price per tent (2 guests) · breakfast included" };
+const PHOTO = { "Lake View Cottage": "/property/cottages-lawn.jpg", "Pool View Cottage": "/property/pool-garden.jpg", "Family Suite": "/property/cottage-room.jpg", "Camping": "/guest/photos/camping.jpg" };
+const ABOUT = { "Lake View Cottage": "Private cottage with garden and lake view · AC · up to 3 adults", "Pool View Cottage": "Cottage facing the infinity pool and garden · AC · up to 3 adults", "Family Suite": "Spacious suite for families · priced for 3 adults · up to 4", "Camping": "Lakeside tent for 2 · breakfast, bonfire, live music system, lakeside setting, mattress, bed &amp; blanket, campsite assistance" };
 for (let i = 1; i <= 12; i++) $("ad").add(new Option(i, i)); $("ad").value = 2;
 for (let i = 0; i <= 6; i++) $("ch").add(new Option(i, i));
 for (let i = 1; i <= 5; i++) $("rm").add(new Option(i, i));
@@ -133,17 +139,36 @@ $("go").onclick = async () => {
 function choose(ti, pi) {
   const t = QUOTE.types[ti], p = t.plans[pi]; PICK = { t, p };
   $("pick").textContent = `${t.unit_type} · ${PLAN[p.meal_plan]} · ${$("in").value} → ${$("out").value} · ${$("ad").value} adults${+$("ch").value ? ", " + $("ch").value + " children" : ""} · ${QUOTE.rooms} room(s)`;
-  drawSum(); $("guest").classList.remove("hidden"); $("guest").scrollIntoView({ behavior: "smooth" });
+  SEL = {}; drawAddons(); drawSum(); $("guest").classList.remove("hidden"); $("guest").scrollIntoView({ behavior: "smooth" });
 }
+// Add-on services from JD One (jdone.add_ons via be_addons) — priced again on the server in be_book.
+let ADDONS = [], SEL = {};
+sb.rpc("be_addons", { p_unit_code: "UDS" }).then(({ data }) => { ADDONS = Array.isArray(data) ? data : []; });
+const nightsSel = () => Math.max(1, Math.round((new Date($("out").value) - new Date($("in").value)) / 864e5));
+const perLabel = (a) => (+a.price ? inr(a.price) + ({ Person: " / person", Night: " / night", "Person per night": " / person / night" }[a.per] || " / booking") : "Price on request");
+const addonAmount = (a, q) => Math.round(+a.price * q * (a.per === "Night" || a.per === "Person per night" ? nightsSel() : 1) * (1 + (+a.tax_pct || 0) / 100));
+const addonTotal = () => ADDONS.reduce((t, a) => t + (SEL[a.id] ? addonAmount(a, SEL[a.id]) : 0), 0);
+function drawAddons() {
+  if (!ADDONS.length) return $("addons").classList.add("hidden");
+  $("addons").classList.remove("hidden");
+  $("addon-list").innerHTML = ADDONS.map((a) => { const q = SEL[a.id] || 0; return `<div class="ao"><div class="t"><b>${esc(a.name)}</b><small>${esc(a.description || "")}</small></div><div style="text-align:right"><div class="pr">${perLabel(a)}</div><div class="q" style="justify-content:flex-end;margin-top:4px">${+a.price ? `<button type="button" data-a="${a.id}" data-d="-1">−</button><b>${q}</b><button type="button" class="on" data-a="${a.id}" data-d="1">+</button>` : `<button type="button" data-a="${a.id}" data-d="t" class="${q ? "on" : ""}" style="width:auto;padding:0 10px">${q ? "✓ Added" : "Add"}</button>`}</div></div></div>`; }).join("");
+}
+$("addon-list").addEventListener("click", (e) => {
+  const b = e.target.closest("button[data-a]"); if (!b) return;
+  const id = b.dataset.a; SEL[id] = b.dataset.d === "t" ? (SEL[id] ? 0 : 1) : Math.max(0, Math.min(20, (SEL[id] || 0) + +b.dataset.d));
+  drawAddons(); drawSum();
+});
 function drawSum() {
   const p = PICK.p, adv = true;
-  $("summary").innerHTML = `<div class="sum"><span>Room & meals</span><span>${inr(p.room_amount)}</span></div><div class="sum"><span>GST ${Math.round(p.tax / p.room_amount * 100)}% (added on top)</span><span>${inr(p.tax)}</span></div><div class="sum total"><span>Total</span><span>${inr(p.total)}</span></div>${adv ? `<div class="sum"><span>Pay now (50%)</span><b>${inr(Math.ceil(p.total * 0.5))}</b></div><div class="sum"><span>Balance on arrival (cash or UPI)</span><span>${inr(p.total - Math.ceil(p.total * 0.5))}</span></div>` : ""}`;
+  const addLines = ADDONS.filter((a) => SEL[a.id]).map((a) => `<div class="sum"><span>+ ${SEL[a.id]} × ${esc(a.name)}</span><span>${+a.price ? inr(addonAmount(a, SEL[a.id])) : "on request"}</span></div>`).join("");
+  const grand = p.total + addonTotal();
+  $("summary").innerHTML = `<div class="sum"><span>Room & meals</span><span>${inr(p.room_amount)}</span></div><div class="sum"><span>GST ${Math.round(p.tax / p.room_amount * 100)}% (added on top)</span><span>${inr(p.tax)}</span></div>${addLines}<div class="sum total"><span>Total</span><span>${inr(grand)}</span></div>${adv ? `<div class="sum"><span>Pay now (50%)</span><b>${inr(Math.ceil(grand * 0.5))}</b></div><div class="sum"><span>Balance on arrival (cash or UPI)</span><span>${inr(p.total - Math.ceil(p.total * 0.5))}</span></div>` : ""}`;
 }
 
 $("book").onclick = async () => {
   $("berr").classList.add("hidden");
   const body = { unit: "UDS", unit_type: PICK.t.unit_type, meal_plan: PICK.p.meal_plan, check_in: $("in").value, check_out: $("out").value, adults: +$("ad").value, children: +$("ch").value, rooms: QUOTE.rooms,
-    name: $("g-name").value, phone: $("g-phone").value, email: $("g-email").value, requests: $("g-req").value, pay: "advance",
+    name: $("g-name").value, phone: $("g-phone").value, email: $("g-email").value, requests: $("g-req").value, pay: "advance", addons: ADDONS.filter((a) => SEL[a.id]).map((a) => ({ id: a.id, qty: SEL[a.id] })),
     gst_company: $("g-gst").checked ? $("g-co").value : "", gstin: $("g-gst").checked ? $("g-gstin").value.trim() : "", gst_address: $("g-gst").checked ? $("g-addr").value : "" };
   $("book").disabled = true; $("book").textContent = "Holding your room…";
   const { data, error } = await sb.rpc("be_book", { p: body });
