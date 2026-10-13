@@ -45,12 +45,17 @@ import { housekeepingReports } from "@/modules/housekeeping/entity";
 import { pettyCash } from "@/modules/petty-cash/entity";
 import { agents } from "@/modules/agents/entity";
 import { addOns } from "@/modules/add-ons/entity";
+import { deals } from "@/modules/deals/entity";
+import { dailyFilings } from "@/modules/daily-filings/entity";
+import { vehicleLogs } from "@/modules/vehicle-logs/entity";
+import { shiftCloses } from "@/modules/shift-closes/entity";
 
 export const entities: EntityDef[] = [
   businessUnits,
   staff,
   customers,
   leads,
+  deals,
   activities,
   bookings,
   rooms,
@@ -64,6 +69,9 @@ export const entities: EntityDef[] = [
   payments,
   checkins,
   dailyReports,
+  shiftCloses,
+  vehicleLogs,
+  dailyFilings,
   attendance,
   expenses,
   salaryPayments,

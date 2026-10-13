@@ -1,13 +1,13 @@
 import type { Metadata } from "next";
 import { AuthGate } from "@/core/ui/AuthGate";
-import { Pipeline } from "@/modules/pipeline/Pipeline";
+import { SalesPage } from "@/modules/pipeline/SalesPage";
 
 export const metadata: Metadata = { title: "Sales pipeline" };
 
 export default function Page() {
   return (
     <AuthGate>
-      <Pipeline />
+      <SalesPage />
     </AuthGate>
   );
 }
