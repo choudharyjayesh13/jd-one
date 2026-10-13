@@ -1,8 +1,8 @@
 #!/bin/bash
-# Build JD.app (AppKit + WebKit, no dependencies): ./build.sh → ~/Desktop/JD.app
+# Build "JD One.app" (AppKit + WebKit, no dependencies): ./build.sh → ~/Desktop/JD One.app
 set -euo pipefail
 cd "$(dirname "$0")"
-OUT="${1:-$HOME/Desktop}/JD.app"
+OUT="${1:-$HOME/Desktop}/JD One.app"
 rm -rf build "$OUT"; mkdir -p build/JD.app/Contents/{MacOS,Resources}
 swiftc -O -target arm64-apple-macos12.0 -framework AppKit -framework WebKit -framework CoreLocation -o build/JD.app/Contents/MacOS/JD JDOne/main.swift
 cp JDOne/Info.plist build/JD.app/Contents/Info.plist
