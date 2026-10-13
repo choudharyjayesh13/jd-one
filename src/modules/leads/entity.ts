@@ -1,10 +1,10 @@
-import { Target, BedDouble, MessageSquarePlus, PhoneOff, PhoneCall, Trophy } from "lucide-react";
+import { Target, BedDouble, MessageSquarePlus, PhoneOff, PhoneCall, Trophy, ShieldCheck } from "lucide-react";
 import { addDays, todayISO } from "@/core/format";
 import { defineEntity } from "@/core/schema/types";
 import { normalizePhone } from "@/core/phone";
 import { newHref } from "@/core/routes";
 import { customerLiveHint, findCustomerByPhone } from "@/modules/customers/match";
-import { LEAD_QUALIFICATIONS, LEAD_SOURCES, LEAD_STAGES } from "./options";
+import { APPROVAL_STATUSES, LEAD_QUALIFICATIONS, LEAD_SOURCES, LEAD_STAGES, LEAD_TYPES, LOST_REASONS } from "./options";
 
 export const leads = defineEntity({
   name: "leads",
@@ -27,26 +27,37 @@ export const leads = defineEntity({
     { name: "business_unit_id", label: "Business unit", type: "relation", entity: "business-units", required: true },
     { name: "source", label: "Source", type: "select", options: LEAD_SOURCES, required: true },
     { name: "campaign", label: "Campaign / ad", type: "text" },
+    { name: "lead_type", label: "Lead type", type: "select", options: LEAD_TYPES },
+    { name: "city", label: "City", type: "text" },
     { name: "requirement", label: "Requirement", type: "textarea", placeholder: "What are they looking for?" },
-    { name: "visit_from", label: "Stay / visit from", type: "date" },
-    { name: "visit_to", label: "Stay / visit to", type: "date" },
-    { name: "guests", label: "Guests", type: "number", min: 0 },
-    { name: "budget", label: "Budget / deal value", type: "money", min: 0 },
+    { name: "visit_from", label: "Check-in / event date", type: "date" },
+    { name: "visit_to", label: "Check-out", type: "date" },
+    { name: "adults", label: "Adults", type: "number", min: 0 },
+    { name: "children", label: "Children", type: "number", min: 0 },
+    { name: "guests", label: "Total guests", type: "number", min: 0, computed: (v) => (v.adults != null || v.children != null ? Number(v.adults ?? 0) + Number(v.children ?? 0) || null : v.guests ?? null) },
+    { name: "rooms_count", label: "Rooms / units", type: "number", min: 0 },
+    { name: "event_requirement", label: "Event / lawn requirement", type: "text" },
+    { name: "budget", label: "Budget shared (₹)", type: "money", min: 0 },
     { name: "qualification", label: "Qualification", type: "select", options: LEAD_QUALIFICATIONS },
     { name: "stage", label: "Stage", type: "select", options: LEAD_STAGES, required: true, default: "New" },
     { name: "assigned_to", label: "Assigned to", type: "relation", entity: "staff" },
     { name: "next_follow_up", label: "Next follow-up", type: "date" },
+    { name: "next_action", label: "Next action", type: "text", placeholder: "Call back 6 pm with pool-view rates" },
     { name: "follow_up_status", label: "Follow-up", type: "text", virtual: true, computed: (v) => followUpStatus(v) },
     { name: "call_attempts", label: "Call attempts", type: "number", min: 0, default: 0 },
     { name: "last_contact", label: "Last contact", type: "date" },
-    { name: "lost_reason", label: "Lost reason", type: "text" },
+    { name: "package_proposed", label: "Package / rate proposed (₹)", type: "money", min: 0 },
+    { name: "approval_status", label: "Approval (Akshayraj)", type: "select", options: APPROVAL_STATUSES, default: "Not needed" },
+    { name: "approval_notes", label: "Decision-maker notes", type: "textarea" },
+    { name: "booking_value", label: "Booking value (₹)", type: "money", min: 0 },
+    { name: "lost_reason", label: "Lost reason", type: "select", options: LOST_REASONS },
     { name: "notes", label: "Notes", type: "textarea" },
     { name: "external_source", label: "Imported from", type: "text", readOnly: true },
     { name: "crm_id", label: "CRM / sheet ref", type: "text", readOnly: true },
     { name: "won_at", label: "Converted on", type: "datetime", readOnly: true },
     { name: "external_id", label: "External id", type: "text", readOnly: true, hidden: true },
   ],
-  listColumns: ["name", "stage", "follow_up_status", "next_follow_up", "assigned_to", "qualification", "call_attempts", "phone"],
+  listColumns: ["name", "stage", "follow_up_status", "next_follow_up", "next_action", "assigned_to", "qualification", "phone"],
   reverse: [
     { entity: "activities", field: "lead_id", label: "Activities" },
     { entity: "bookings", field: "lead_id", label: "Bookings" },
@@ -71,7 +82,7 @@ export const leads = defineEntity({
           call_attempts: Number(record.call_attempts ?? 0) + 1,
           last_contact: todayISO(),
           next_follow_up: addDays(todayISO(), 1),
-          stage: record.stage === "New" ? "Contacted" : record.stage,
+          stage: record.stage === "New" ? "Contact attempted" : record.stage,
         });
         toast("Logged — follow-up set for tomorrow");
         await refresh();
@@ -82,7 +93,14 @@ export const leads = defineEntity({
       label: "Update after call",
       icon: PhoneCall,
       visible: (r) => r.stage !== "Won" && r.stage !== "Lost",
-      form: { title: "What happened on the call?", fields: ["stage", "qualification", "next_follow_up", "visit_from", "visit_to", "guests", "budget", "lost_reason", "notes"], submitLabel: "Save" },
+      form: { title: "What happened on the call?", fields: ["stage", "qualification", "next_action", "next_follow_up", "visit_from", "visit_to", "adults", "children", "rooms_count", "budget", "lost_reason", "notes"], submitLabel: "Save" },
+    },
+    {
+      id: "send-approval",
+      label: "Send quote for approval",
+      icon: ShieldCheck,
+      visible: (r) => r.stage !== "Won" && r.stage !== "Lost" && r.approval_status !== "Pending",
+      form: { title: "Quote for Akshayraj's approval", fields: ["package_proposed", "approval_notes", "next_follow_up"], patch: { stage: "Awaiting approval", approval_status: "Pending" }, submitLabel: "Send for approval" },
     },
     {
       id: "won",

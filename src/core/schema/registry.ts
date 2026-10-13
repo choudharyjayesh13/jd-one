@@ -45,6 +45,12 @@ import { housekeepingReports } from "@/modules/housekeeping/entity";
 import { pettyCash } from "@/modules/petty-cash/entity";
 import { agents } from "@/modules/agents/entity";
 import { addOns } from "@/modules/add-ons/entity";
+import { deals } from "@/modules/deals/entity";
+import { dailyFilings } from "@/modules/daily-filings/entity";
+import { vehicleLogs } from "@/modules/vehicle-logs/entity";
+import { shiftCloses } from "@/modules/shift-closes/entity";
+import { salesEod } from "@/modules/sales-eod/entity";
+import { leadStageHistory } from "@/modules/lead-stage-history/entity";
 
 export const entities: EntityDef[] = [
   businessUnits,
@@ -88,6 +94,13 @@ export const entities: EntityDef[] = [
   restPeriods,
   staffPay,
   signupRequests,
+  // added 13–14 Oct 2026 — kept at the end so the phone bottom bar keeps its first modules
+  deals,
+  salesEod,
+  leadStageHistory,
+  shiftCloses,
+  vehicleLogs,
+  dailyFilings,
 ];
 
 const byName = new Map(entities.map((e) => [e.name, e]));
