@@ -111,7 +111,7 @@ function Wordmark() {
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src={`${BASE}/icons/icon-192.png`} alt="JD Group" className="block h-9 w-9 rounded-full" />
       </span>
-      <span className="jd-serif text-xl font-semibold uppercase tracking-[0.22em] text-white">JD One</span>
+      <span className="jd-serif text-xl font-semibold uppercase tracking-[0.22em] text-[#17140f]">JD One</span>
     </Link>
   );
 }
@@ -139,28 +139,28 @@ function SideMenu({ onNavigate, pathname }: { onNavigate: () => void; pathname: 
           key={t.href}
           href={t.href}
           onClick={onNavigate}
-          className={cn("flex min-h-10 items-center gap-3 rounded px-3 text-sm", isActive(t.href) ? "bg-[#d7aa60]/15 font-medium text-[#f4d390]" : "text-white/80 hover:bg-white/5 hover:text-white")}
+          className={cn("flex min-h-10 items-center gap-3 rounded px-3 text-sm", isActive(t.href) ? "bg-[#d7aa60]/15 font-medium text-[#9a7128]" : "text-[#3a332a] hover:bg-[#17140f]/[0.04] hover:text-[#17140f]")}
         >
           <t.icon className="h-4 w-4" />
           {t.label}
         </Link>
       ))}
-      <div className="my-3 h-px bg-white/10" />
+      <div className="my-3 h-px bg-[#17140f]/[0.06]" />
       {menu.map(({ dept, modules }) => {
         const isOpen = !!open[dept.id];
         const count = modules.reduce((n, m) => n + (badges[m.key] ?? 0), 0);
         return (
-          <div key={dept.id} className={cn(dept.adminOnly && "mt-3 border-t border-white/10 pt-3")}>
+          <div key={dept.id} className={cn(dept.adminOnly && "mt-3 border-t border-[#e7e1d5] pt-3")}>
             <button
               type="button"
               aria-expanded={isOpen}
               onClick={() => setOpen((o) => ({ ...o, [dept.id]: !isOpen }))}
-              className={cn("flex min-h-10 w-full items-center justify-between gap-2 rounded px-3 text-left text-[11px] uppercase tracking-[0.18em] hover:bg-white/5", dept.adminOnly ? "text-[#d7aa60]" : "text-white")}
+              className={cn("flex min-h-10 w-full items-center justify-between gap-2 rounded px-3 text-left text-[11px] uppercase tracking-[0.18em] hover:bg-[#17140f]/[0.04]", dept.adminOnly ? "text-[#9a7128]" : "text-[#17140f]")}
             >
               <span>{dept.label}</span>
               <span className="flex items-center gap-2">
-                {count > 0 && !isOpen && <span className="rounded-full bg-[#ee8122] px-1.5 text-[10px] font-semibold leading-4 tracking-normal text-black">{count}</span>}
-                <ChevronDown className={cn("h-4 w-4 text-white/50 transition-transform", isOpen && "rotate-180")} />
+                {count > 0 && !isOpen && <span className="rounded-full bg-[#ee8122] px-1.5 text-[10px] font-semibold leading-4 tracking-normal text-white">{count}</span>}
+                <ChevronDown className={cn("h-4 w-4 text-[#6b6255] transition-transform", isOpen && "rotate-180")} />
               </span>
             </button>
             {isOpen && (
@@ -173,13 +173,13 @@ function SideMenu({ onNavigate, pathname }: { onNavigate: () => void; pathname: 
                       key={m.key}
                       href={href}
                       onClick={onNavigate}
-                      className={cn("flex min-h-9 items-center justify-between gap-2 rounded px-3 text-[13px]", isActive(href) ? "bg-[#d7aa60]/15 font-medium text-[#f4d390]" : "text-white/75 hover:bg-white/5 hover:text-white")}
+                      className={cn("flex min-h-9 items-center justify-between gap-2 rounded px-3 text-[13px]", isActive(href) ? "bg-[#d7aa60]/15 font-medium text-[#9a7128]" : "text-[#3a332a] hover:bg-[#17140f]/[0.04] hover:text-[#17140f]")}
                     >
                       <span className="truncate">{m.label}</span>
                       {badges[m.key] ? (
-                        <span className="rounded-full bg-[#ee8122] px-1.5 text-[10px] font-semibold leading-4 text-black">{badges[m.key]}</span>
+                        <span className="rounded-full bg-[#ee8122] px-1.5 text-[10px] font-semibold leading-4 text-white">{badges[m.key]}</span>
                       ) : lvl === 1 ? (
-                        <span className="text-[9px] uppercase tracking-[0.14em] text-white/40">View</span>
+                        <span className="text-[9px] uppercase tracking-[0.14em] text-[#9a917f]">View</span>
                       ) : null}
                     </Link>
                   );
@@ -212,24 +212,24 @@ function ProfileMenu() {
   ];
   return (
     <div className="relative">
-      <button type="button" onClick={() => setOpen((o) => !o)} aria-haspopup="menu" aria-expanded={open} className="flex min-h-11 items-center gap-2.5 rounded-full pr-2 text-left hover:bg-white/5">
-        <span className="jd-serif flex h-9 w-9 items-center justify-center rounded-full border border-[#d7aa60] font-semibold text-[#f4d390]">{initials || "JD"}</span>
+      <button type="button" onClick={() => setOpen((o) => !o)} aria-haspopup="menu" aria-expanded={open} className="flex min-h-11 items-center gap-2.5 rounded-full pr-2 text-left hover:bg-[#17140f]/[0.04]">
+        <span className="jd-serif flex h-9 w-9 items-center justify-center rounded-full border border-[#d7aa60] font-semibold text-[#9a7128]">{initials || "JD"}</span>
         <span className="hidden flex-col sm:flex">
-          <span className="text-sm font-medium leading-tight text-white">{user.name}</span>
-          <span className="text-xs capitalize leading-tight text-white/60">{postLabel}</span>
+          <span className="text-sm font-medium leading-tight text-[#17140f]">{user.name}</span>
+          <span className="text-xs capitalize leading-tight text-[#6b6255]">{postLabel}</span>
         </span>
-        <ChevronDown className="h-4 w-4 text-white/50" />
+        <ChevronDown className="h-4 w-4 text-[#6b6255]" />
       </button>
       {open && (
         <>
           <button type="button" aria-label="Close menu" className="fixed inset-0 z-40 cursor-default" onClick={() => setOpen(false)} />
-          <div role="menu" className="absolute right-0 z-50 mt-2 w-56 overflow-hidden rounded-md border border-white/15 bg-[#0e0d0b] py-1 shadow-2xl">
+          <div role="menu" className="absolute right-0 z-50 mt-2 w-56 overflow-hidden rounded-md border border-[#e7e1d5] bg-white py-1 shadow-2xl">
             {items.map((i) => (
-              <Link key={i.href} href={i.href} role="menuitem" onClick={() => setOpen(false)} className="flex min-h-11 items-center px-4 text-sm text-white/85 hover:bg-white/5 hover:text-white">
+              <Link key={i.href} href={i.href} role="menuitem" onClick={() => setOpen(false)} className="flex min-h-11 items-center px-4 text-sm text-[#3a332a] hover:bg-[#17140f]/[0.04] hover:text-[#17140f]">
                 {i.label}
               </Link>
             ))}
-            <button type="button" role="menuitem" onClick={() => void signOut()} className="flex min-h-11 w-full items-center gap-2 border-t border-white/10 px-4 text-left text-sm text-white/85 hover:bg-white/5">
+            <button type="button" role="menuitem" onClick={() => void signOut()} className="flex min-h-11 w-full items-center gap-2 border-t border-[#e7e1d5] px-4 text-left text-sm text-[#3a332a] hover:bg-[#17140f]/[0.04]">
               <LogOut className="h-4 w-4" /> Sign out
             </button>
           </div>
@@ -249,10 +249,10 @@ export function AppShell({ children }: { children: ReactNode }) {
   const close = () => setDrawer(false);
 
   return (
-    <div className="jd-dark jd-sans flex min-h-screen flex-col">
-      <header className="sticky top-0 z-40 flex print:hidden items-center justify-between gap-3 border-b border-white/10 bg-black px-3 py-2.5 sm:px-6" style={{ paddingTop: "max(0.625rem, env(safe-area-inset-top))" }}>
+    <div className="jd-light jd-sans flex min-h-screen flex-col">
+      <header className="sticky top-0 z-40 flex print:hidden items-center justify-between gap-3 border-b border-[#e7e1d5] bg-white px-3 py-2.5 sm:px-6" style={{ paddingTop: "max(0.625rem, env(safe-area-inset-top))" }}>
         <div className="flex items-center gap-2">
-          <button type="button" onClick={() => setDrawer(true)} className="flex h-11 w-11 items-center justify-center rounded-full text-white/80 hover:bg-white/10 lg:hidden" aria-label="Open menu">
+          <button type="button" onClick={() => setDrawer(true)} className="flex h-11 w-11 items-center justify-center rounded-full text-[#3a332a] hover:bg-[#17140f]/[0.06] lg:hidden" aria-label="Open menu">
             <Menu className="h-5 w-5" />
           </button>
           <Wordmark />
@@ -260,19 +260,19 @@ export function AppShell({ children }: { children: ReactNode }) {
         <div className="hidden items-center gap-3 md:flex">
           {property.logo && (
             // eslint-disable-next-line @next/next/no-img-element
-            <img src={`${BASE}/brands/${property.logo}`} alt="" className={cn("h-8 w-8 rounded-full", property.plate === "light" ? "bg-[#ffffff] object-contain p-1" : "object-cover")} />
+            <img src={`${BASE}/brands/${property.logo}`} alt="" className={cn("h-8 w-8 rounded-full", property.plate === "light" ? "border border-[#e7e1d5] bg-white object-contain p-1" : "object-cover")} />
           )}
           <span className="flex flex-col">
-            <span className="jd-serif text-[15px] font-semibold uppercase leading-tight tracking-[0.16em] text-white">{property.name}</span>
-            <span className="text-[10px] uppercase leading-tight tracking-[0.26em] text-[#d7aa60]">JD Stays &amp; Hospitality</span>
+            <span className="jd-serif text-[15px] font-semibold uppercase leading-tight tracking-[0.16em] text-[#17140f]">{property.name}</span>
+            <span className="text-[10px] uppercase leading-tight tracking-[0.26em] text-[#9a7128]">JD Stays &amp; Hospitality</span>
           </span>
         </div>
         <div className="flex items-center gap-1 sm:gap-3">
           {user.post === "chairman" && (
-            <Link href="/director-changes/" aria-label={`${badges["director-changes"] ?? 0} new Director changes`} className="relative flex h-11 w-11 items-center justify-center rounded-full border border-white/15 text-white hover:bg-white/5">
+            <Link href="/director-changes/" aria-label={`${badges["director-changes"] ?? 0} new Director changes`} className="relative flex h-11 w-11 items-center justify-center rounded-full border border-[#e7e1d5] text-[#17140f] hover:bg-[#17140f]/[0.04]">
               <Bell className="h-[18px] w-[18px]" />
               {badges["director-changes"] ? (
-                <span className="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-[#ee8122] px-1 text-[11px] font-semibold text-black">{badges["director-changes"]}</span>
+                <span className="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-[#ee8122] px-1 text-[11px] font-semibold text-white">{badges["director-changes"]}</span>
               ) : null}
             </Link>
           )}
@@ -281,19 +281,19 @@ export function AppShell({ children }: { children: ReactNode }) {
       </header>
 
       <DbUpdateStrip />
-      {mode === "local" && <div className="bg-[#d7aa60]/15 px-4 py-1 text-center text-[11px] text-[#f4d390]">Local mode – single device. Data lives in this browser; export it from Settings.</div>}
+      {mode === "local" && <div className="border-b border-[#eadfc6] bg-[#faf5ea] px-4 py-1 text-center text-[11px] text-[#7a5a1f]">Local mode – single device. Data lives in this browser; export it from Settings.</div>}
 
       <div className="flex flex-1">
-        <aside className="sticky top-[61px] hidden print:!hidden h-[calc(100vh-61px)] w-64 shrink-0 overflow-y-auto border-r border-white/10 lg:block">
+        <aside className="sticky top-[61px] hidden print:!hidden h-[calc(100vh-61px)] w-64 shrink-0 overflow-y-auto border-r border-[#e7e1d5] lg:block">
           <SideMenu onNavigate={() => undefined} pathname={pathname} />
         </aside>
 
         {drawer && (
-          <div className="fixed inset-0 z-50 bg-black/70 lg:hidden" onClick={close}>
-            <div className="absolute inset-y-0 left-0 w-[82%] max-w-xs overflow-y-auto border-r border-white/10 bg-black" onClick={(e) => e.stopPropagation()}>
-              <div className="flex items-center justify-between border-b border-white/10 px-3 py-2.5" style={{ paddingTop: "max(0.625rem, env(safe-area-inset-top))" }}>
+          <div className="fixed inset-0 z-50 bg-[#17140f]/40 lg:hidden" onClick={close}>
+            <div className="absolute inset-y-0 left-0 w-[82%] max-w-xs overflow-y-auto border-r border-[#e7e1d5] bg-white" onClick={(e) => e.stopPropagation()}>
+              <div className="flex items-center justify-between border-b border-[#e7e1d5] px-3 py-2.5" style={{ paddingTop: "max(0.625rem, env(safe-area-inset-top))" }}>
                 <Wordmark />
-                <button type="button" onClick={close} className="flex h-11 w-11 items-center justify-center rounded-full text-white/80 hover:bg-white/10" aria-label="Close menu">
+                <button type="button" onClick={close} className="flex h-11 w-11 items-center justify-center rounded-full text-[#3a332a] hover:bg-[#17140f]/[0.06]" aria-label="Close menu">
                   <X className="h-5 w-5" />
                 </button>
               </div>
@@ -306,7 +306,7 @@ export function AppShell({ children }: { children: ReactNode }) {
       </div>
 
       {/* Phone: the few things people open all day */}
-      <nav className="fixed inset-x-0 bottom-0 z-40 grid print:hidden grid-cols-4 border-t border-white/10 bg-black lg:hidden" style={{ paddingBottom: "env(safe-area-inset-bottom)" }}>
+      <nav className="fixed inset-x-0 bottom-0 z-40 grid print:hidden grid-cols-4 border-t border-[#e7e1d5] bg-white lg:hidden" style={{ paddingBottom: "env(safe-area-inset-bottom)" }}>
         {[
           { href: "/", label: "Home", icon: LayoutDashboard },
           { href: "/my-day/", label: "My Day", icon: Sun },
@@ -314,13 +314,13 @@ export function AppShell({ children }: { children: ReactNode }) {
         ].map((t) => {
           const on = t.href === "/" ? pathname === "/" : pathname.startsWith(t.href);
           return (
-            <Link key={t.href} href={t.href} className={cn("flex min-h-14 flex-col items-center justify-center gap-1 text-[11px]", on ? "font-medium text-[#f4d390]" : "text-white/60")}>
+            <Link key={t.href} href={t.href} className={cn("flex min-h-14 flex-col items-center justify-center gap-1 text-[11px]", on ? "font-medium text-[#9a7128]" : "text-[#6b6255]")}>
               <t.icon className="h-5 w-5" />
               {t.label}
             </Link>
           );
         })}
-        <button type="button" onClick={() => setDrawer(true)} className="flex min-h-14 flex-col items-center justify-center gap-1 text-[11px] text-white/60">
+        <button type="button" onClick={() => setDrawer(true)} className="flex min-h-14 flex-col items-center justify-center gap-1 text-[11px] text-[#6b6255]">
           <Menu className="h-5 w-5" />
           Menu
         </button>

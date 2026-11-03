@@ -27,11 +27,11 @@ function AppleIcon() {
 
 function Step({ n, title, hi }: { n: number; title: ReactNode; hi: string }) {
   return (
-    <li className="flex gap-4 border-t border-white/10 py-4">
-      <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-[#d7aa60] text-sm text-[#f4d390]">{n}</span>
+    <li className="flex gap-4 border-t border-[#e7e1d5] py-4">
+      <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-[#d7aa60] text-sm text-[#9a7128]">{n}</span>
       <span className="flex flex-col gap-1">
-        <span className="text-[15px] text-white">{title}</span>
-        <span className="text-[13px] text-white/60">{hi}</span>
+        <span className="text-[15px] text-[#17140f]">{title}</span>
+        <span className="text-[13px] text-[#6b6255]">{hi}</span>
       </span>
     </li>
   );
@@ -48,7 +48,7 @@ function CopyLink() {
           window.setTimeout(() => setCopied(false), 2000);
         });
       }}
-      className="min-h-11 rounded-[4px] border border-white/30 px-4 text-xs uppercase tracking-[0.2em] text-white hover:border-[#d7aa60]"
+      className="min-h-11 rounded-[4px] border border-[#d9d1c2] px-4 text-xs uppercase tracking-[0.2em] text-[#17140f] hover:border-[#d7aa60]"
     >
       {copied ? "Link copied ✓" : "Copy link"}
     </button>
@@ -90,7 +90,7 @@ export function InstallSheet({ open, onClose }: { open: boolean; onClose: () => 
       onClick={() => setPlatform(p)}
       className={cn(
         "flex min-h-[52px] flex-1 items-center justify-center gap-2.5 rounded-[4px] border text-sm tracking-[0.08em]",
-        platform === p ? "border-[#ffffff] bg-[#ffffff] font-medium text-[#000000]" : "border-white/25 text-white/80 hover:border-white/50",
+        platform === p ? "border-[#17140f] bg-[#17140f] font-medium text-white" : "border-[#d9d1c2] text-[#3a332a] hover:border-[#cfc6b4]",
       )}
     >
       {icon}
@@ -99,12 +99,12 @@ export function InstallSheet({ open, onClose }: { open: boolean; onClose: () => 
   );
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/75 sm:items-center" onClick={onClose}>
+    <div className="fixed inset-0 z-50 flex items-end justify-center bg-[#17140f]/40 sm:items-center" onClick={onClose}>
       <div
         role="dialog"
         aria-modal="true"
         aria-label="Download JD One"
-        className="jd-rise max-h-[92vh] w-full max-w-[460px] overflow-y-auto rounded-t-[22px] border border-[#d7aa60]/40 bg-[#0e0d0b] px-6 pb-8 pt-6 text-white sm:rounded-[22px]"
+        className="jd-rise max-h-[92vh] w-full max-w-[460px] overflow-y-auto rounded-t-[22px] border border-[#d7aa60]/40 bg-white px-6 pb-8 pt-6 text-[#17140f] sm:rounded-[22px]"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="mb-5 flex items-start justify-between gap-4">
@@ -113,10 +113,10 @@ export function InstallSheet({ open, onClose }: { open: boolean; onClose: () => 
             <img src={`${process.env.NEXT_PUBLIC_BASE_PATH ?? ""}/icons/icon-192.png`} alt="" className="h-14 w-14 rounded-2xl" />
             <div className="flex flex-col gap-1">
               <span className="jd-serif text-2xl font-semibold uppercase tracking-[0.16em]">JD One</span>
-              <span className="text-[11px] uppercase tracking-[0.28em] text-[#d7aa60]">Download the app</span>
+              <span className="text-[11px] uppercase tracking-[0.28em] text-[#9a7128]">Download the app</span>
             </div>
           </div>
-          <button type="button" onClick={onClose} aria-label="Close" className="flex h-11 w-11 items-center justify-center rounded-full border border-white/20 text-xl text-white/80 hover:text-white">
+          <button type="button" onClick={onClose} aria-label="Close" className="flex h-11 w-11 items-center justify-center rounded-full border border-[#d9d1c2] text-xl text-[#3a332a] hover:text-[#17140f]">
             ×
           </button>
         </div>
@@ -124,7 +124,7 @@ export function InstallSheet({ open, onClose }: { open: boolean; onClose: () => 
         {installed ? (
           <p className="rounded-[4px] border border-[#d7aa60] px-4 py-4 text-sm">
             JD One is already installed on this phone. Open it from your home screen.
-            <span className="mt-1 block text-white/60">JD One इस फ़ोन में पहले से है — होम स्क्रीन से खोलें।</span>
+            <span className="mt-1 block text-[#6b6255]">JD One इस फ़ोन में पहले से है — होम स्क्रीन से खोलें।</span>
           </p>
         ) : (
           <>
@@ -137,7 +137,7 @@ export function InstallSheet({ open, onClose }: { open: boolean; onClose: () => 
               <div className="mb-4 flex flex-col gap-3 rounded-[4px] border border-[#d7aa60]/60 px-4 py-3 text-sm">
                 <span>
                   You opened this link inside WhatsApp. Open it in {platform === "ios" ? "Safari" : "Chrome"} to install.
-                  <span className="mt-1 block text-white/60">
+                  <span className="mt-1 block text-[#6b6255]">
                     WhatsApp के अंदर से ऐप इंस्टॉल नहीं होता — ऊपर ⋮ या शेयर से “{platform === "ios" ? "Open in Safari" : "Open in Chrome"}” चुनें।
                   </span>
                 </span>
@@ -194,8 +194,8 @@ export function InstallSheet({ open, onClose }: { open: boolean; onClose: () => 
               </ol>
             )}
 
-            <div className="mt-5 flex items-center justify-between gap-3 border-t border-white/10 pt-5">
-              <span className="text-sm text-white/60">Share with staff: app.myjdgroup.com</span>
+            <div className="mt-5 flex items-center justify-between gap-3 border-t border-[#e7e1d5] pt-5">
+              <span className="text-sm text-[#6b6255]">Share with staff: app.myjdgroup.com</span>
               <CopyLink />
             </div>
           </>

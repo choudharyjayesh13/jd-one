@@ -252,7 +252,7 @@ export function BookingForm({ id, prefill, onSaved, onCancel }: CustomFormProps)
   };
 
   const chip = (on: boolean) =>
-    cn("h-10 rounded-full border px-4 text-sm transition-colors", on ? "border-[#ffffff] bg-[#ffffff] font-medium text-[#000000]" : "border-line text-slate-600 hover:border-slate-400");
+    cn("h-10 rounded-full border px-4 text-sm transition-colors", on ? "border-navy bg-navy font-medium text-white" : "border-line text-slate-600 hover:border-slate-400");
 
   return (
     <div className="flex flex-col gap-5">

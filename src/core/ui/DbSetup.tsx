@@ -39,7 +39,7 @@ export function DbUpdateStrip() {
   const { needed } = useDbUpdateNeeded();
   if (!user.post || !needed) return null;
   return (
-    <Link href="/setup-database/" className="block bg-[#d7aa60] px-4 py-2 text-center text-sm font-medium text-black">
+    <Link href="/setup-database/" className="block border-b border-[#eadfc6] bg-[#faf5ea] px-4 py-2 text-center text-sm font-medium text-[#7a5a1f]">
       Database update pending — some departments will not save until it is done. Tap here (2 minutes).
     </Link>
   );
@@ -81,7 +81,7 @@ export function DbSetupPage() {
       <ol className="flex flex-col">
         {steps.map(([t, d], i) => (
           <li key={t} className="flex gap-4 border-t border-line py-4">
-            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-[#d7aa60] text-sm text-[#f4d390]">{i + 1}</span>
+            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-[#d7aa60] text-sm text-[#9a7128]">{i + 1}</span>
             <span className="flex flex-col gap-1">
               <span className="font-medium">{t}</span>
               <span className="text-sm text-slate-500">{d}</span>

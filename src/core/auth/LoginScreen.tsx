@@ -61,13 +61,13 @@ function Diamond() {
 }
 
 function Eyebrow({ children, className }: { children: ReactNode; className?: string }) {
-  return <span className={cn("text-[11px] uppercase tracking-[0.34em] text-[#d7aa60]", className)}>{children}</span>;
+  return <span className={cn("text-[11px] uppercase tracking-[0.34em] text-[#9a7128]", className)}>{children}</span>;
 }
 
 /** A logo on a round plate. */
 function LogoCircle({ brand, size }: { brand: Brand; size: number | string }) {
   const px = typeof size === "number" ? `${size}px` : size;
-  const plate = brand.plate === "light" ? "bg-white" : brand.plate === "cover" ? "bg-[#ee8122]" : "border border-[#d7aa60]/45 bg-black";
+  const plate = brand.plate === "light" ? "border border-[#e7e1d5] bg-white" : brand.plate === "cover" ? "bg-[#ee8122]" : "border border-[#d7aa60]/45 bg-[#17140f]";
   return (
     <span className={cn("jd-plate flex shrink-0 items-center justify-center overflow-hidden rounded-full transition-shadow", plate)} style={{ width: px, height: px }}>
       {brand.logo ? (
@@ -78,7 +78,7 @@ function LogoCircle({ brand, size }: { brand: Brand; size: number | string }) {
           className={brand.plate === "cover" ? "h-full w-full object-cover" : "max-h-[68%] max-w-[68%] object-contain"}
         />
       ) : (
-        <span className="jd-serif font-semibold tracking-[0.1em] text-[#d7aa60]" style={{ fontSize: `calc(${px} * 0.26)` }}>
+        <span className="jd-serif font-semibold tracking-[0.1em] text-[#9a7128]" style={{ fontSize: `calc(${px} * 0.26)` }}>
           {brand.initials}
         </span>
       )}
@@ -88,11 +88,11 @@ function LogoCircle({ brand, size }: { brand: Brand; size: number | string }) {
 
 function BrandButton({ brand, size, delay, onClick }: { brand: Brand; size: number; delay: number; onClick: () => void }) {
   return (
-    <button type="button" onClick={onClick} className="jd-circ jd-pop flex flex-col items-center gap-3.5 text-center text-white outline-none" style={{ animationDelay: `${delay}s` }}>
+    <button type="button" onClick={onClick} className="jd-circ jd-pop flex flex-col items-center gap-3.5 text-center text-[#17140f] outline-none" style={{ animationDelay: `${delay}s` }}>
       <LogoCircle brand={brand} size={size} />
       <span className="flex flex-col items-center gap-1">
         <span className="jd-serif text-xl font-semibold tracking-[0.04em]">{brand.name}</span>
-        <span className="text-[10px] uppercase tracking-[0.22em] text-[#d7aa60]">{brand.tagline}</span>
+        <span className="text-[10px] uppercase tracking-[0.22em] text-[#9a7128]">{brand.tagline}</span>
       </span>
     </button>
   );
@@ -100,22 +100,22 @@ function BrandButton({ brand, size, delay, onClick }: { brand: Brand; size: numb
 
 function BackLink({ onClick, children }: { onClick: () => void; children: ReactNode }) {
   return (
-    <button type="button" onClick={onClick} className="min-h-11 self-start text-xs uppercase tracking-[0.2em] text-[#d7aa60] hover:text-[#f4d390]">
+    <button type="button" onClick={onClick} className="min-h-11 self-start text-xs uppercase tracking-[0.2em] text-[#9a7128] hover:text-[#9a7128]">
       {children}
     </button>
   );
 }
 
-const fieldLabel = "flex flex-col gap-2 text-[11px] uppercase tracking-[0.24em] text-white/70";
+const fieldLabel = "flex flex-col gap-2 text-[11px] uppercase tracking-[0.24em] text-[#3a332a]";
 const fieldInput =
-  "min-h-[52px] rounded-[4px] border border-white/25 bg-[#0e0d0b] px-4 text-base normal-case tracking-normal text-white placeholder:text-white/35 outline-none focus:border-[#d7aa60]";
+  "min-h-[52px] rounded-[4px] border border-[#d9d1c2] bg-white px-4 text-base normal-case tracking-normal text-[#17140f] placeholder:text-[#9a917f] outline-none focus:border-[#d7aa60]";
 
 function DarkField({ label, children, help }: { label: string; children: ReactNode; help?: string }) {
   return (
     <label className={fieldLabel}>
       {label}
       {children}
-      {help && <span className="text-xs normal-case tracking-normal text-white/55">{help}</span>}
+      {help && <span className="text-xs normal-case tracking-normal text-[#6b6255]">{help}</span>}
     </label>
   );
 }
@@ -207,7 +207,7 @@ export function LoginScreen() {
 
   // ⋮ menu (top right) with "Download app", on every screen after the loader.
   const shell = (children: ReactNode, withMenu = true) => (
-    <div className="jd-sans relative min-h-screen w-full bg-black text-white">
+    <div className="jd-sans relative min-h-screen w-full bg-white text-[#17140f]">
       {children}
       {withMenu && (
         <div className="absolute right-3 top-3 z-40 sm:right-6 sm:top-5">
@@ -217,7 +217,7 @@ export function LoginScreen() {
             aria-haspopup="menu"
             aria-expanded={menuOpen}
             onClick={() => setMenuOpen((o) => !o)}
-            className="flex h-11 w-11 items-center justify-center rounded-full text-white/80 hover:bg-white/10 hover:text-white"
+            className="flex h-11 w-11 items-center justify-center rounded-full text-[#3a332a] hover:bg-[#17140f]/[0.06] hover:text-[#17140f]"
           >
             <svg viewBox="0 0 24 24" className="h-6 w-6" fill="currentColor" aria-hidden="true">
               <circle cx="12" cy="5" r="1.8" />
@@ -228,9 +228,9 @@ export function LoginScreen() {
           {menuOpen && (
             <>
               <button type="button" aria-label="Close menu" className="fixed inset-0 cursor-default" onClick={() => setMenuOpen(false)} />
-              <div role="menu" className="jd-rise absolute right-0 mt-2 w-56 overflow-hidden rounded-[6px] border border-white/15 bg-[#0e0d0b] py-1 shadow-2xl">
-                <button type="button" role="menuitem" onClick={openInstall} className="flex min-h-12 w-full items-center gap-3 px-4 text-left text-sm hover:bg-white/5">
-                  <svg viewBox="0 0 24 24" className="h-5 w-5 text-[#d7aa60]" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true">
+              <div role="menu" className="jd-rise absolute right-0 mt-2 w-56 overflow-hidden rounded-[6px] border border-[#e7e1d5] bg-white py-1 shadow-2xl">
+                <button type="button" role="menuitem" onClick={openInstall} className="flex min-h-12 w-full items-center gap-3 px-4 text-left text-sm hover:bg-[#17140f]/[0.04]">
+                  <svg viewBox="0 0 24 24" className="h-5 w-5 text-[#9a7128]" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true">
                     <path d="M12 4v11M7 10l5 5 5-5M5 20h14" />
                   </svg>
                   Download app
@@ -257,11 +257,11 @@ export function LoginScreen() {
           <span className="jd-serif pl-[0.24em] text-4xl font-semibold uppercase tracking-[0.24em]">JD Group</span>
           <Eyebrow className="pl-[0.34em]">of companies · Udaipur · since 1995</Eyebrow>
         </div>
-        <div className="h-0.5 w-56 overflow-hidden rounded bg-white/10">
+        <div className="h-0.5 w-56 overflow-hidden rounded bg-[#17140f]/[0.06]">
           <div className="jd-bar" />
         </div>
         {!loading && (
-          <button type="button" onClick={() => setStage("group")} className="min-h-11 px-4 text-xs uppercase tracking-[0.2em] text-white/60 hover:text-white">
+          <button type="button" onClick={() => setStage("group")} className="min-h-11 px-4 text-xs uppercase tracking-[0.2em] text-[#6b6255] hover:text-[#17140f]">
             Skip
           </button>
         )}
@@ -282,20 +282,20 @@ export function LoginScreen() {
           <div className="flex flex-col items-center gap-3">
             <Eyebrow>{rejected ? "Sign-up not approved" : "Pending approval"}</Eyebrow>
             <h1 className="jd-serif text-4xl font-medium">
-              Hi <em className="text-[#d7aa60]">{pendingSignup.name.split(" ")[0]}</em>
+              Hi <em className="text-[#9a7128]">{pendingSignup.name.split(" ")[0]}</em>
             </h1>
             <Diamond />
           </div>
-          <p className="font-light text-white/75">
+          <p className="font-light text-[#3a332a]">
             {rejected ? "JD Group did not approve this account." : "Your account is waiting for JD Group (HR) to approve it. We'll notify you — then just sign in again."}
           </p>
-          {pendingSignup.note && <p className="italic text-white/70">“{pendingSignup.note}”</p>}
-          {pendingSignup.email && <p className="text-xs text-white/55">Signed in as {pendingSignup.email}</p>}
+          {pendingSignup.note && <p className="italic text-[#3a332a]">“{pendingSignup.note}”</p>}
+          {pendingSignup.email && <p className="text-xs text-[#6b6255]">Signed in as {pendingSignup.email}</p>}
           <div className="flex gap-3">
             <button type="button" onClick={() => window.location.reload()} className="jd-gold-btn min-h-[52px] flex-1 rounded-[4px] text-xs font-medium uppercase tracking-[0.24em]">
               Check again
             </button>
-            <button type="button" onClick={() => void signOut()} className="min-h-[52px] rounded-[4px] border border-white/30 px-6 text-xs uppercase tracking-[0.24em] text-white">
+            <button type="button" onClick={() => void signOut()} className="min-h-[52px] rounded-[4px] border border-[#d9d1c2] px-6 text-xs uppercase tracking-[0.24em] text-[#17140f]">
               Sign out
             </button>
           </div>
@@ -330,7 +330,7 @@ export function LoginScreen() {
         <button
           type="button"
           onClick={() => setStage("stays")}
-          className="jd-circ flex flex-wrap items-center gap-9 rounded-[22px] border border-[#d7aa60]/45 bg-[#0e0d0b] p-8 text-left text-white hover:border-[#d7aa60]/80"
+          className="jd-circ flex flex-wrap items-center gap-9 rounded-[22px] border border-[#d7aa60]/45 bg-white p-8 text-left text-[#17140f] hover:border-[#d7aa60]/80"
         >
           <span className="relative m-3 shrink-0">
             <span className="jd-orbit gold" aria-hidden="true" />
@@ -341,12 +341,12 @@ export function LoginScreen() {
             <span className="jd-serif text-[clamp(28px,3.4vw,44px)] font-semibold uppercase leading-tight tracking-[0.14em]">JD Stays &amp; Hospitality</span>
             <span className="flex flex-wrap gap-2">
               {STAYS_PROPERTIES.map((p) => (
-                <span key={p.id} className="rounded-full border border-white/20 px-3.5 py-1.5 text-[13px] text-white/85">
+                <span key={p.id} className="rounded-full border border-[#d9d1c2] px-3.5 py-1.5 text-[13px] text-[#3a332a]">
                   {p.name}
                 </span>
               ))}
             </span>
-            <span className="mt-1 text-xs uppercase tracking-[0.24em] text-[#f4d390]">Open →</span>
+            <span className="mt-1 text-xs uppercase tracking-[0.24em] text-[#9a7128]">Open →</span>
           </span>
         </button>
       </div>
@@ -361,7 +361,7 @@ export function LoginScreen() {
         <header className="jd-pop flex flex-col items-center gap-5 text-center">
           <div className="relative">
             <span className="jd-orbit gold" aria-hidden="true" />
-            <span className="flex h-[150px] w-[150px] items-center justify-center rounded-full border border-[#d7aa60]/45 bg-black">
+            <span className="flex h-[150px] w-[150px] items-center justify-center rounded-full border border-[#d7aa60]/45 bg-[#17140f]">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src={`${BASE}/brands/jd-lotus.webp`} alt="" className="w-[62%]" />
             </span>
@@ -382,7 +382,7 @@ export function LoginScreen() {
   // 4. Sign in under the chosen business's logo.
   return shell(
     <div className="flex min-h-screen flex-wrap">
-      <div className="flex flex-[1_1_480px] flex-col items-center justify-center gap-4 border-white/10 bg-[#0e0d0b] px-8 py-8 md:min-h-screen md:gap-6 md:py-14 text-center md:border-r">
+      <div className="flex flex-[1_1_480px] flex-col items-center justify-center gap-4 border-[#e7e1d5] bg-white px-8 py-8 md:min-h-screen md:gap-6 md:py-14 text-center md:border-r">
         <span className="jd-pop">
           <LogoCircle brand={brand} size="clamp(150px, 26vw, 300px)" />
         </span>
@@ -404,15 +404,15 @@ export function LoginScreen() {
             <h1 className="jd-serif text-5xl font-medium leading-none">
               {tab === "signup" ? (
                 <>
-                  Join <em className="text-[#d7aa60]">JD One</em>
+                  Join <em className="text-[#9a7128]">JD One</em>
                 </>
               ) : (
                 <>
-                  Welcome <em className="text-[#d7aa60]">back</em>
+                  Welcome <em className="text-[#9a7128]">back</em>
                 </>
               )}
             </h1>
-            <p className="font-light text-white/70">{mode === "local" ? "Local mode – single device." : tab === "signup" ? "Your account is activated once JD Group (HR) approves it." : "Use the login your manager gave you."}</p>
+            <p className="font-light text-[#3a332a]">{mode === "local" ? "Local mode – single device." : tab === "signup" ? "Your account is activated once JD Group (HR) approves it." : "Use the login your manager gave you."}</p>
           </div>
 
           {mode === "local" ? (
@@ -427,7 +427,7 @@ export function LoginScreen() {
               )}
             </>
           ) : done ? (
-            <div className="rounded-[4px] border border-[#d7aa60] px-4 py-4 text-sm text-white/85">{done}</div>
+            <div className="rounded-[4px] border border-[#d7aa60] px-4 py-4 text-sm text-[#3a332a]">{done}</div>
           ) : tab === "signin" ? (
             <>
               <DarkField label="Email">
@@ -468,7 +468,7 @@ export function LoginScreen() {
             </>
           )}
 
-          {error && <p className="text-sm text-[#ff9b85]">{error}</p>}
+          {error && <p className="text-sm text-[#b4321f]">{error}</p>}
           {!done && (
             <button type="submit" disabled={busy} className="jd-gold-btn min-h-[54px] rounded-[4px] text-[13px] font-medium uppercase tracking-[0.26em] disabled:opacity-60">
               {busy ? "Please wait…" : mode === "local" ? (pinSet ? "Unlock" : "Set PIN & open") : tab === "signup" ? "Create account" : "Sign in"}
@@ -483,7 +483,7 @@ export function LoginScreen() {
                 setError(null);
                 setDone(null);
               }}
-              className="min-h-11 self-center text-sm text-[#d7aa60] hover:text-[#f4d390]"
+              className="min-h-11 self-center text-sm text-[#9a7128] hover:text-[#9a7128]"
             >
               {tab === "signin" ? "New staff? Create an account" : "Already have an account? Sign in"}
             </button>

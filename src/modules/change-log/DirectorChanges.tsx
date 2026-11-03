@@ -47,10 +47,10 @@ function titleOf(def: EntityDef | undefined, data: Record<string, unknown> | nul
 }
 
 const BADGE: Record<Exclude<Filter, "All">, string> = {
-  Edited: "border-white/40 text-white",
-  Deleted: "border-[#ff9b85]/80 text-[#ffb4a3]",
-  Created: "border-[#7fbf9a]/80 text-[#a9ddbf]",
-  Access: "border-[#d7aa60]/80 text-[#f4d390]",
+  Edited: "border-[#cfc6b4] text-[#17140f]",
+  Deleted: "border-[#ff9b85]/80 text-[#b4321f]",
+  Created: "border-[#7fbf9a]/80 text-[#1f7a4a]",
+  Access: "border-[#d7aa60]/80 text-[#9a7128]",
 };
 
 export function DirectorChanges() {
@@ -121,27 +121,27 @@ export function DirectorChanges() {
     <div className="flex flex-col gap-6">
       <header className="flex flex-wrap items-end justify-between gap-4">
         <div className="flex flex-col gap-2">
-          <span className="text-[11px] uppercase tracking-[0.34em] text-[#d7aa60]">Administration · Chairman only</span>
-          <h1 className="jd-serif text-4xl font-medium leading-none text-white sm:text-5xl">
-            Director <em className="text-[#d7aa60]">changes</em>
+          <span className="text-[11px] uppercase tracking-[0.34em] text-[#9a7128]">Administration · Chairman only</span>
+          <h1 className="jd-serif text-4xl font-medium leading-none text-[#17140f] sm:text-5xl">
+            Director <em className="text-[#9a7128]">changes</em>
           </h1>
-          <p className="max-w-2xl text-sm font-light text-white/70">Everything created, edited or removed from the Director’s login, with the old and the new value. You can undo a change.</p>
+          <p className="max-w-2xl text-sm font-light text-[#3a332a]">Everything created, edited or removed from the Director’s login, with the old and the new value. You can undo a change.</p>
         </div>
-        <button type="button" disabled={!unseen.length || busy === "all"} onClick={() => void markAllSeen()} className="min-h-11 rounded border border-white/30 px-4 text-xs uppercase tracking-[0.18em] text-white hover:bg-white/5 disabled:opacity-40">
+        <button type="button" disabled={!unseen.length || busy === "all"} onClick={() => void markAllSeen()} className="min-h-11 rounded border border-[#d9d1c2] px-4 text-xs uppercase tracking-[0.18em] text-[#17140f] hover:bg-[#17140f]/[0.04] disabled:opacity-40">
           Mark all as seen
         </button>
       </header>
 
-      <div className="grid grid-cols-2 gap-px border border-white/10 bg-white/10 sm:grid-cols-4">
+      <div className="grid grid-cols-2 gap-px border border-[#e7e1d5] bg-[#17140f]/[0.06] sm:grid-cols-4">
         {[
           ["New, not seen", unseen.length],
           ["Edited", count("Edited")],
           ["Deleted", count("Deleted")],
           ["Access changes", count("Access")],
         ].map(([l, v]) => (
-          <div key={String(l)} className="flex flex-col gap-1.5 bg-black p-4">
-            <span className="text-[10px] uppercase tracking-[0.24em] text-white/65">{l}</span>
-            <span className="jd-serif text-4xl font-semibold leading-none text-white">{v}</span>
+          <div key={String(l)} className="flex flex-col gap-1.5 bg-white p-4">
+            <span className="text-[10px] uppercase tracking-[0.24em] text-[#6b6255]">{l}</span>
+            <span className="jd-serif text-4xl font-semibold leading-none text-[#17140f]">{v}</span>
           </div>
         ))}
       </div>
@@ -152,14 +152,14 @@ export function DirectorChanges() {
             key={f}
             type="button"
             onClick={() => setFilter(f)}
-            className={cn("min-h-11 rounded-full border px-4 text-sm", filter === f ? "border-white bg-[#ffffff] font-medium text-black" : "border-white/20 text-white/80 hover:border-white/40")}
+            className={cn("min-h-11 rounded-full border px-4 text-sm", filter === f ? "border-[#17140f] bg-[#17140f] font-medium text-white" : "border-[#d9d1c2] text-[#3a332a] hover:border-[#cfc6b4]")}
           >
             {f === "Access" ? "Access changes" : f}
           </button>
         ))}
       </div>
 
-      {!shown.length && <p className="text-sm text-white/60">No changes {filter === "All" ? "yet" : `of this kind`}.</p>}
+      {!shown.length && <p className="text-sm text-[#6b6255]">No changes {filter === "All" ? "yet" : `of this kind`}.</p>}
 
       <div className="flex flex-col gap-2.5">
         {shown.map((it) => {
@@ -167,37 +167,37 @@ export function DirectorChanges() {
           const where = def?.label ?? String(r.table_name);
           const title = titleOf(def, after ?? before);
           return (
-            <article key={r.id} className={cn("flex flex-col gap-3 rounded-md border bg-[#0e0d0b] p-4", r.seen ? "border-white/15" : "border-[#ee8122]/55")}>
+            <article key={r.id} className={cn("flex flex-col gap-3 rounded-md border bg-white p-4", r.seen ? "border-[#e7e1d5]" : "border-[#ee8122]/55")}>
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <div className="flex flex-wrap items-center gap-2.5">
                   {!r.seen && <span className="h-2 w-2 rounded-full bg-[#ee8122]" aria-label="New" />}
                   <span className={cn("rounded-full border px-2.5 py-0.5 text-[11px] uppercase tracking-[0.14em]", BADGE[kind])}>{kind === "Access" ? "Access changed" : kind}</span>
-                  <span className="text-xs uppercase tracking-[0.14em] text-white/60">{where}</span>
+                  <span className="text-xs uppercase tracking-[0.14em] text-[#6b6255]">{where}</span>
                 </div>
-                <span className="text-xs text-white/55">
+                <span className="text-xs text-[#6b6255]">
                   {String(r.actor_email ?? "Director")} · {formatDateTime(r.at)}
                 </span>
               </div>
-              <span className="text-base font-medium text-white">{title || where}</span>
+              <span className="text-base font-medium text-[#17140f]">{title || where}</span>
 
               {r.action === "UPDATE" && changed.length > 0 && (
                 <div className="flex flex-col gap-1.5">
                   {changed.slice(0, 8).map((k) => (
                     <div key={k} className="grid gap-2 text-sm sm:grid-cols-[160px_1fr_1fr]">
-                      <span className="text-white/55">{labelOf(def, k)}</span>
-                      <span className="rounded border border-white/15 px-2.5 py-1 text-white/70 line-through decoration-white/35">{show(def, k, before?.[k])}</span>
-                      <span className="rounded border border-[#d7aa60]/50 px-2.5 py-1 text-white">{show(def, k, after?.[k])}</span>
+                      <span className="text-[#6b6255]">{labelOf(def, k)}</span>
+                      <span className="rounded border border-[#e7e1d5] px-2.5 py-1 text-[#3a332a] line-through decoration-white/35">{show(def, k, before?.[k])}</span>
+                      <span className="rounded border border-[#d7aa60]/50 px-2.5 py-1 text-[#17140f]">{show(def, k, after?.[k])}</span>
                     </div>
                   ))}
                 </div>
               )}
-              {r.action === "DELETE" && before && <p className="text-sm text-white/65">Removed record: {titleOf(def, before)}</p>}
+              {r.action === "DELETE" && before && <p className="text-sm text-[#6b6255]">Removed record: {titleOf(def, before)}</p>}
 
               <div className="flex flex-wrap items-center gap-3">
                 {r.undone_at ? (
-                  <span className="text-sm text-[#f4d390]">Undone · {formatDateTime(r.undone_at)}</span>
+                  <span className="text-sm text-[#9a7128]">Undone · {formatDateTime(r.undone_at)}</span>
                 ) : (
-                  <button type="button" disabled={busy === r.id} onClick={() => void undo(it)} className="min-h-10 rounded border border-white/30 px-4 text-xs uppercase tracking-[0.16em] text-white hover:bg-white/5 disabled:opacity-40">
+                  <button type="button" disabled={busy === r.id} onClick={() => void undo(it)} className="min-h-10 rounded border border-[#d9d1c2] px-4 text-xs uppercase tracking-[0.16em] text-[#17140f] hover:bg-[#17140f]/[0.04] disabled:opacity-40">
                     Undo change
                   </button>
                 )}
@@ -205,7 +205,7 @@ export function DirectorChanges() {
                   <button
                     type="button"
                     onClick={() => void getStore().update("change-log", r.id, { seen: true }).then(() => reload())}
-                    className="min-h-10 px-2 text-sm text-[#d7aa60] hover:text-[#f4d390]"
+                    className="min-h-10 px-2 text-sm text-[#9a7128] hover:text-[#9a7128]"
                   >
                     Mark as seen
                   </button>

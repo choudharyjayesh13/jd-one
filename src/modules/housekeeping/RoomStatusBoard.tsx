@@ -94,7 +94,7 @@ export function RoomStatusBoard() {
             key={s}
             type="button"
             onClick={() => setFilter(s)}
-            className={cn("h-10 rounded-full border px-4 text-sm", filter === s ? "border-[#ffffff] bg-[#ffffff] font-medium text-[#000000]" : "border-line text-slate-600")}
+            className={cn("h-10 rounded-full border px-4 text-sm", filter === s ? "border-navy bg-navy font-medium text-white" : "border-line text-slate-600")}
           >
             {s} {s === "All" ? rooms.length : count(s)}
           </button>

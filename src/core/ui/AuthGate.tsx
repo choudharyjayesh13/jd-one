@@ -16,9 +16,9 @@ import { PasswordPrompt } from "@/core/auth/ChangePassword";
 export function NoAccess() {
   return (
     <div className="mx-auto mt-16 flex max-w-md flex-col items-center gap-3 text-center">
-      <span className="text-[11px] uppercase tracking-[0.3em] text-[#d7aa60]">No access</span>
-      <h1 className="jd-serif text-3xl font-medium text-white">This page is not part of your work</h1>
-      <p className="text-sm font-light text-white/70">Ask the Chairman or the Director to give you access in Team access.</p>
+      <span className="text-[11px] uppercase tracking-[0.3em] text-[#9a7128]">No access</span>
+      <h1 className="jd-serif text-3xl font-medium text-[#17140f]">This page is not part of your work</h1>
+      <p className="text-sm font-light text-[#3a332a]">Ask the Chairman or the Director to give you access in Team access.</p>
     </div>
   );
 }
@@ -34,7 +34,7 @@ export function AuthGate({ children }: { children: ReactNode }) {
 
   if (loading || !user)
     return (
-      <div className="jd-dark jd-sans min-h-screen">
+      <div className="jd-light jd-sans min-h-screen">
         <Loading label="Opening JD One…" />
       </div>
     );

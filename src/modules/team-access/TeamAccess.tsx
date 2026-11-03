@@ -42,7 +42,7 @@ function Diamond() {
 
 function LevelPicker({ value, onChange, label }: { value: Level; onChange: (l: Level) => void; label: string }) {
   return (
-    <div role="radiogroup" aria-label={`${label} access`} className="grid min-w-[300px] grid-cols-4 overflow-hidden rounded border border-white/20">
+    <div role="radiogroup" aria-label={`${label} access`} className="grid min-w-[300px] grid-cols-4 overflow-hidden rounded border border-[#d9d1c2]">
       {LEVELS.map((l, i) => {
         const on = value === l.level;
         return (
@@ -55,8 +55,8 @@ function LevelPicker({ value, onChange, label }: { value: Level; onChange: (l: L
             onClick={() => onChange(l.level)}
             className={cn(
               "min-h-9 px-2 text-xs",
-              i > 0 && "border-l border-white/15",
-              on ? (l.level === 3 ? "jd-gold-btn font-semibold" : l.level === 0 ? "bg-white/15 font-medium text-white" : "bg-[#ffffff] font-medium text-black") : "text-white/65 hover:bg-white/5",
+              i > 0 && "border-l border-[#e7e1d5]",
+              on ? (l.level === 3 ? "jd-gold-btn font-semibold" : l.level === 0 ? "bg-[#17140f]/10 font-medium text-[#17140f]" : "bg-[#17140f] font-medium text-white") : "text-[#6b6255] hover:bg-[#17140f]/[0.04]",
             )}
           >
             {l.label}
@@ -190,22 +190,22 @@ export function TeamAccess() {
   return (
     <div className="flex flex-col gap-7">
       <header className="flex flex-col gap-2">
-        <span className="text-[11px] uppercase tracking-[0.34em] text-[#d7aa60]">Administration · The Udaisarovar</span>
-        <h1 className="jd-serif text-4xl font-medium leading-none text-white sm:text-5xl">
-          Team <em className="text-[#d7aa60]">access</em>
+        <span className="text-[11px] uppercase tracking-[0.34em] text-[#9a7128]">Administration · The Udaisarovar</span>
+        <h1 className="jd-serif text-4xl font-medium leading-none text-[#17140f] sm:text-5xl">
+          Team <em className="text-[#9a7128]">access</em>
         </h1>
         <Diamond />
-        <p className="max-w-2xl text-sm font-light text-white/70">
+        <p className="max-w-2xl text-sm font-light text-[#3a332a]">
           Choose the departments and modules each team member can use. Only the Chairman and the Director can change access, and every change the Director makes is recorded for the Chairman.
         </p>
       </header>
 
       <div className="flex flex-wrap items-start gap-6">
-        <section aria-label="Team members" className="w-full overflow-hidden rounded-md border border-white/15 bg-[#0e0d0b] lg:w-80">
-          <label className="flex items-center gap-2 border-b border-white/10 px-3">
-            <Search className="h-4 w-4 text-white/50" />
+        <section aria-label="Team members" className="w-full overflow-hidden rounded-md border border-[#e7e1d5] bg-white lg:w-80">
+          <label className="flex items-center gap-2 border-b border-[#e7e1d5] px-3">
+            <Search className="h-4 w-4 text-[#6b6255]" />
             <span className="sr-only">Search team</span>
-            <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search name or post" className="min-h-12 flex-1 bg-transparent text-sm text-white outline-none placeholder:text-white/40" />
+            <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search name or post" className="min-h-12 flex-1 bg-transparent text-sm text-[#17140f] outline-none placeholder:text-[#9a917f]" />
           </label>
           <div className="max-h-[70vh] overflow-y-auto">
             {list.map((p) => {
@@ -218,29 +218,29 @@ export function TeamAccess() {
                   key={p.id}
                   type="button"
                   onClick={() => setSel(p.id)}
-                  className={cn("flex w-full items-center gap-3 border-t border-white/5 px-3.5 py-3 text-left", on ? "bg-[#d7aa60]/12 shadow-[inset_2px_0_0_#d7aa60]" : "hover:bg-white/5")}
+                  className={cn("flex w-full items-center gap-3 border-t border-[#e7e1d5] px-3.5 py-3 text-left", on ? "bg-[#d7aa60]/12 shadow-[inset_2px_0_0_#d7aa60]" : "hover:bg-[#17140f]/[0.04]")}
                 >
-                  <span className={cn("jd-serif flex h-9 w-9 shrink-0 items-center justify-center rounded-full font-semibold", post ? "jd-gold-btn" : "border border-[#d7aa60]/60 text-[#f4d390]")}>{initialsOf(String(p.name ?? "?"))}</span>
+                  <span className={cn("jd-serif flex h-9 w-9 shrink-0 items-center justify-center rounded-full font-semibold", post ? "jd-gold-btn" : "border border-[#d7aa60]/60 text-[#9a7128]")}>{initialsOf(String(p.name ?? "?"))}</span>
                   <span className="flex min-w-0 flex-1 flex-col">
-                    <span className="truncate text-[15px] font-medium text-white">{String(p.name ?? "")}</span>
-                    <span className="truncate text-xs text-white/55">{post ? (post === "chairman" ? "Chairman" : "Director") : String(p.designation ?? p.role ?? "")}</span>
+                    <span className="truncate text-[15px] font-medium text-[#17140f]">{String(p.name ?? "")}</span>
+                    <span className="truncate text-xs text-[#6b6255]">{post ? (post === "chairman" ? "Chairman" : "Director") : String(p.designation ?? p.role ?? "")}</span>
                   </span>
-                  <span className="whitespace-nowrap text-[10px] uppercase tracking-[0.14em] text-[#d7aa60]">{post ? "All · admin" : rows.length ? `${depts} dept${depts === 1 ? "" : "s"}` : "Old rules"}</span>
+                  <span className="whitespace-nowrap text-[10px] uppercase tracking-[0.14em] text-[#9a7128]">{post ? "All · admin" : rows.length ? `${depts} dept${depts === 1 ? "" : "s"}` : "Old rules"}</span>
                 </button>
               );
             })}
-            {!list.length && <p className="px-4 py-6 text-sm text-white/60">No one matches “{q}”.</p>}
+            {!list.length && <p className="px-4 py-6 text-sm text-[#6b6255]">No one matches “{q}”.</p>}
           </div>
         </section>
 
         {selected && (
           <section aria-label="Access" className="flex min-w-0 flex-1 basis-[520px] flex-col gap-4">
-            <div className="flex flex-wrap items-center justify-between gap-4 rounded-md border border-white/15 bg-[#0e0d0b] p-5">
+            <div className="flex flex-wrap items-center justify-between gap-4 rounded-md border border-[#e7e1d5] bg-white p-5">
               <div className="flex items-center gap-4">
-                <span className="jd-serif flex h-14 w-14 items-center justify-center rounded-full border border-[#d7aa60] text-xl font-semibold text-[#f4d390]">{initialsOf(String(selected.name ?? "?"))}</span>
+                <span className="jd-serif flex h-14 w-14 items-center justify-center rounded-full border border-[#d7aa60] text-xl font-semibold text-[#9a7128]">{initialsOf(String(selected.name ?? "?"))}</span>
                 <span className="flex flex-col gap-1">
-                  <span className="jd-serif text-3xl font-semibold leading-none text-white">{String(selected.name ?? "")}</span>
-                  <span className="text-sm text-white/65">
+                  <span className="jd-serif text-3xl font-semibold leading-none text-[#17140f]">{String(selected.name ?? "")}</span>
+                  <span className="text-sm text-[#6b6255]">
                     {selectedPost ? (selectedPost === "chairman" ? "Chairman" : "Director") : String(selected.designation ?? selected.role ?? "")}
                     {!selectedPost && !configured && " · not set up yet (old role rules)"}
                   </span>
@@ -248,7 +248,7 @@ export function TeamAccess() {
               </div>
               {!selectedPost && (
                 <div className="flex flex-wrap items-end gap-2.5">
-                  <label className="flex flex-col gap-1.5 text-[10px] uppercase tracking-[0.24em] text-white/65">
+                  <label className="flex flex-col gap-1.5 text-[10px] uppercase tracking-[0.24em] text-[#6b6255]">
                     Role template
                     <select
                       value={template}
@@ -257,7 +257,7 @@ export function TeamAccess() {
                         setDraft(levelsFromTemplate(e.target.value) as Record<string, Level>);
                         setDirty(true);
                       }}
-                      className="min-h-11 rounded border border-white/20 bg-black px-3 text-sm normal-case tracking-normal text-white"
+                      className="min-h-11 rounded border border-[#d9d1c2] bg-white px-3 text-sm normal-case tracking-normal text-[#17140f]"
                     >
                       {Object.keys(ROLE_TEMPLATES).map((t) => (
                         <option key={t} value={t}>
@@ -266,7 +266,7 @@ export function TeamAccess() {
                       ))}
                     </select>
                   </label>
-                  <button type="button" onClick={() => setPreview((p) => !p)} className="min-h-11 rounded border border-white/30 px-4 text-xs uppercase tracking-[0.16em] text-white hover:bg-white/5">
+                  <button type="button" onClick={() => setPreview((p) => !p)} className="min-h-11 rounded border border-[#d9d1c2] px-4 text-xs uppercase tracking-[0.16em] text-[#17140f] hover:bg-[#17140f]/[0.04]">
                     {preview ? "Close preview" : "Preview menu"}
                   </button>
                   <button type="button" disabled={!dirty || saving} onClick={() => void save()} className="jd-gold-btn min-h-11 rounded px-5 text-xs font-medium uppercase tracking-[0.2em] disabled:opacity-50">
@@ -278,37 +278,37 @@ export function TeamAccess() {
 
             {selectedPost ? (
               <div className="flex flex-col gap-2 rounded-md border border-[#d7aa60]/60 p-6">
-                <span className="jd-serif text-2xl font-semibold text-[#f4d390]">Full access to every department</span>
-                <span className="font-light text-white/75">
+                <span className="jd-serif text-2xl font-semibold text-[#9a7128]">Full access to every department</span>
+                <span className="font-light text-[#3a332a]">
                   This access belongs to the post of {selectedPost === "chairman" ? "Chairman" : "Director"}, not to the person. If the post is given to someone else, the access moves with it. It cannot be changed from this page.
                 </span>
               </div>
             ) : (
               <>
-                {dirty && <div className="rounded border border-white/30 px-4 py-3 text-sm text-white/85">Unsaved changes — press Save changes to apply.</div>}
-                <div className="flex flex-wrap gap-x-6 gap-y-1.5 px-0.5 text-xs text-white/65">
+                {dirty && <div className="rounded border border-[#d9d1c2] px-4 py-3 text-sm text-[#3a332a]">Unsaved changes — press Save changes to apply.</div>}
+                <div className="flex flex-wrap gap-x-6 gap-y-1.5 px-0.5 text-xs text-[#6b6255]">
                   {LEVELS.map((l) => (
                     <span key={l.level}>
-                      <b className="font-medium text-white">{l.label}</b> — {l.hint.toLowerCase()}
+                      <b className="font-medium text-[#17140f]">{l.label}</b> — {l.hint.toLowerCase()}
                     </span>
                   ))}
                 </div>
 
                 {preview && (
-                  <div className="rounded-md border border-[#d7aa60]/50 bg-[#0e0d0b] p-5">
-                    <span className="text-[11px] uppercase tracking-[0.3em] text-[#d7aa60]">Menu as {String(selected.name)} will see it</span>
+                  <div className="rounded-md border border-[#d7aa60]/50 bg-white p-5">
+                    <span className="text-[11px] uppercase tracking-[0.3em] text-[#9a7128]">Menu as {String(selected.name)} will see it</span>
                     <div className="mt-3 grid gap-4 sm:grid-cols-2">
                       {ASSIGNABLE_DEPARTMENTS.map((d) => {
                         const mods = d.modules.filter((m) => !m.soon && (draft[m.key] ?? 0) > 0);
                         if (!mods.length) return null;
                         return (
                           <div key={d.id}>
-                            <div className="text-[11px] uppercase tracking-[0.18em] text-white">{d.label}</div>
-                            <ul className="mt-1.5 border-l border-[#d7aa60]/30 pl-3 text-[13px] text-white/75">
+                            <div className="text-[11px] uppercase tracking-[0.18em] text-[#17140f]">{d.label}</div>
+                            <ul className="mt-1.5 border-l border-[#d7aa60]/30 pl-3 text-[13px] text-[#3a332a]">
                               {mods.map((m) => (
                                 <li key={m.key} className="flex justify-between py-0.5">
                                   {m.label}
-                                  {draft[m.key] === 1 && <span className="text-[9px] uppercase tracking-[0.14em] text-white/40">View</span>}
+                                  {draft[m.key] === 1 && <span className="text-[9px] uppercase tracking-[0.14em] text-[#9a917f]">View</span>}
                                 </li>
                               ))}
                             </ul>
@@ -325,7 +325,7 @@ export function TeamAccess() {
                     const on = given > 0;
                     const live = d.modules.filter((m) => !m.soon);
                     return (
-                      <div key={d.id} className={cn("overflow-hidden rounded-md border bg-[#0e0d0b]", on ? "border-[#d7aa60]/50" : "border-white/15")}>
+                      <div key={d.id} className={cn("overflow-hidden rounded-md border bg-white", on ? "border-[#d7aa60]/50" : "border-[#e7e1d5]")}>
                         <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-3">
                           <label className="flex min-h-11 cursor-pointer items-center gap-3.5">
                             <input
@@ -335,15 +335,15 @@ export function TeamAccess() {
                               className="h-5 w-5 accent-[#d7aa60]"
                             />
                             <span className="flex flex-col">
-                              <span className="jd-serif text-xl font-semibold uppercase tracking-[0.08em] text-white">{d.label}</span>
-                              <span className="text-xs text-white/55">{on ? `${given} of ${d.modules.length} modules` : "Not given · hidden from the menu"}</span>
+                              <span className="jd-serif text-xl font-semibold uppercase tracking-[0.08em] text-[#17140f]">{d.label}</span>
+                              <span className="text-xs text-[#6b6255]">{on ? `${given} of ${d.modules.length} modules` : "Not given · hidden from the menu"}</span>
                             </span>
                           </label>
                           {on && (
                             <div className="flex flex-wrap items-center gap-1.5">
-                              <span className="mr-1 text-[10px] uppercase tracking-[0.22em] text-white/50">Apply to all</span>
+                              <span className="mr-1 text-[10px] uppercase tracking-[0.22em] text-[#6b6255]">Apply to all</span>
                               {LEVELS.filter((l) => l.level > 0).map((l) => (
-                                <button key={l.level} type="button" onClick={() => set(Object.fromEntries(live.map((m) => [m.key, l.level])))} className="min-h-8 rounded border border-white/25 px-3 text-xs text-white/85 hover:bg-white/5">
+                                <button key={l.level} type="button" onClick={() => set(Object.fromEntries(live.map((m) => [m.key, l.level])))} className="min-h-8 rounded border border-[#d9d1c2] px-3 text-xs text-[#3a332a] hover:bg-[#17140f]/[0.04]">
                                   {l.label}
                                 </button>
                               ))}
@@ -351,14 +351,14 @@ export function TeamAccess() {
                           )}
                         </div>
                         {on && (
-                          <div className="border-t border-white/10">
+                          <div className="border-t border-[#e7e1d5]">
                             {d.modules.map((m) => {
                               const lvl = (draft[m.key] ?? 0) as Level;
                               return (
-                                <div key={m.key} className="flex flex-wrap items-center justify-between gap-2.5 border-t border-white/5 py-2 pl-12 pr-4 first:border-t-0">
-                                  <span className={cn("text-[15px]", lvl === 0 ? "text-white/45" : "text-white")}>
+                                <div key={m.key} className="flex flex-wrap items-center justify-between gap-2.5 border-t border-[#e7e1d5] py-2 pl-12 pr-4 first:border-t-0">
+                                  <span className={cn("text-[15px]", lvl === 0 ? "text-[#9a917f]" : "text-[#17140f]")}>
                                     {m.label}
-                                    {m.soon && <span className="ml-2 text-[9px] uppercase tracking-[0.16em] text-[#d7aa60]">Coming soon</span>}
+                                    {m.soon && <span className="ml-2 text-[9px] uppercase tracking-[0.16em] text-[#9a7128]">Coming soon</span>}
                                   </span>
                                   <LevelPicker value={lvl} label={m.label} onChange={(l) => set({ [m.key]: l })} />
                                 </div>
@@ -372,7 +372,7 @@ export function TeamAccess() {
                 </div>
 
                 {configured && (
-                  <button type="button" disabled={saving} onClick={() => void resetToOldRules()} className="self-start text-sm text-white/55 underline-offset-4 hover:text-white hover:underline">
+                  <button type="button" disabled={saving} onClick={() => void resetToOldRules()} className="self-start text-sm text-[#6b6255] underline-offset-4 hover:text-[#17140f] hover:underline">
                     Remove Team access for {String(selected.name)} (go back to the old role rules)
                   </button>
                 )}

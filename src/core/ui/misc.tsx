@@ -30,7 +30,7 @@ export function PageHeader({ title, subtitle, back, actions }: { title: ReactNod
     <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
       <div className="min-w-0">
         {back && (
-          <Link href={back} className="mb-1 inline-flex items-center gap-1 text-xs uppercase tracking-[0.18em] text-[#d7aa60] hover:text-[#f4d390]">
+          <Link href={back} className="mb-1 inline-flex items-center gap-1 text-xs uppercase tracking-[0.18em] text-[#9a7128] hover:text-[#17140f]">
             <ChevronLeft className="h-3.5 w-3.5" /> Back
           </Link>
         )}
