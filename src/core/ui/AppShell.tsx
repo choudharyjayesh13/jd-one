@@ -199,7 +199,7 @@ function ProfileMenu() {
   const [open, setOpen] = useState(false);
   const initials = user.name
     .split(" ")
-    .filter(Boolean)
+    .filter((w) => /^[A-Za-z]/.test(w))
     .slice(0, 2)
     .map((w) => w[0]?.toUpperCase())
     .join("");

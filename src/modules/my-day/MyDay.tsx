@@ -205,7 +205,7 @@ export function MyDay() {
       <section className="relative overflow-hidden rounded-3xl text-white shadow-lg">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src={photoOfDay().url} alt="" className="absolute inset-0 h-full w-full object-cover" />
-        <div className="absolute inset-0 bg-gradient-to-br from-navy/95 via-navy/80 to-navy/40" />
+        <div className="absolute inset-0 bg-gradient-to-br from-black/95 via-black/80 to-black/40" />
         <div className="relative p-6 sm:p-8">
         <div className="flex flex-col gap-6 sm:flex-row sm:items-end sm:justify-between">
           <div>

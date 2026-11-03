@@ -491,7 +491,7 @@ export function BookingForm({ id, prefill, onSaved, onCancel }: CustomFormProps)
           <div className="h-px bg-line" />
           <div className="flex justify-between text-sm text-slate-600">
             <span>
-              {lines.reduce((s, l) => s + l.rooms, 0)} rooms
+              {lines.reduce((s, l) => s + l.rooms, 0)} room{lines.reduce((s, l) => s + l.rooms, 0) === 1 ? "" : "s"}
             </span>
             <span>
               {lines.reduce((s, l) => s + l.adults, 0)} adults · {lines.reduce((s, l) => s + l.children, 0)} children

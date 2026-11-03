@@ -91,7 +91,7 @@ export function TaskBoard() {
       <section className="relative overflow-hidden rounded-3xl text-white shadow-lg">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src={photoOfDay(1).url} alt="" className="absolute inset-0 h-full w-full object-cover" />
-        <div className="absolute inset-0 bg-gradient-to-r from-navy/95 via-navy/80 to-navy/30" />
+        <div className="absolute inset-0 bg-gradient-to-r from-black/95 via-black/80 to-black/30" />
         <div className="relative flex flex-col gap-4 p-6 sm:flex-row sm:items-end sm:justify-between sm:p-8">
           <div>
             <p className="text-sm text-white/70">Task board</p>

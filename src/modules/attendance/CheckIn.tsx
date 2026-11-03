@@ -226,7 +226,7 @@ export function CheckIn() {
       <section className="relative overflow-hidden rounded-3xl text-white shadow-lg">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src={photoOfDay(4).url} alt="" className="absolute inset-0 h-full w-full object-cover" />
-        <div className="absolute inset-0 bg-gradient-to-b from-navy/70 via-navy/80 to-navy/95" />
+        <div className="absolute inset-0 bg-gradient-to-b from-black/70 via-black/80 to-black/95" />
         <div className="relative p-6 text-center sm:p-8">
           <p className="text-sm text-white/70">{now.toLocaleDateString("en-IN", { weekday: "long", day: "numeric", month: "long", year: "numeric" })}</p>
           <div className="mt-1 text-5xl font-bold tabular-nums sm:text-6xl">{now.toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit", second: "2-digit" })}</div>
