@@ -314,7 +314,7 @@ export function BookingForm({ id, prefill, onSaved, onCancel }: CustomFormProps)
                   ))}
                 </Select>
               </Field>
-              {(v.source === "Travel agent" || v.source === "Corporate" || v.agent_id) && (
+              {(v.source === "Travel agent" || v.source === "Corporate" || Boolean(v.agent_id)) && (
                 <Field label="Agent">
                   <Select value={String(v.agent_id ?? "")} onChange={(e) => set("agent_id", e.target.value || null)}>
                     <option value="">—</option>
