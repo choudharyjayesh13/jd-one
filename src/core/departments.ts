@@ -86,12 +86,12 @@ export const DEPARTMENTS: Department[] = [
     id: "housekeeping",
     label: "Housekeeping",
     modules: [
-      { key: "room-status", label: "Room status board", soon: true },
+      { key: "room-status", label: "Room status board", href: "/room-status/" },
       { key: "housekeeping-reports", label: "Housekeeping reports", entity: "housekeeping-reports" },
-      { key: "room-checklist", label: "Room checklist", soon: true },
-      { key: "linen", label: "Linen & laundry", soon: true },
-      { key: "amenities", label: "Amenities refill", soon: true },
-      { key: "lost-found", label: "Lost & found", soon: true },
+      { key: "room-checklist", label: "Room checklist", href: "/housekeeping-reports/new/" },
+      { key: "linen", label: "Linen & laundry", entity: "linen-logs" },
+      { key: "amenities", label: "Amenities refill", entity: "amenity-refills" },
+      { key: "lost-found", label: "Lost & found", entity: "lost-found" },
     ],
   },
   {
@@ -149,8 +149,9 @@ export const DEPARTMENTS: Department[] = [
     id: "activities",
     label: "Activities",
     modules: [
-      { key: "activity-bookings", label: "Activity bookings", soon: true },
-      { key: "activity-slots", label: "Slots & capacity", soon: true },
+      { key: "activity-bookings", label: "Activity bookings", entity: "activity-bookings" },
+      { key: "activity-slots", label: "Slots & capacity", href: "/activity-slots/" },
+      { key: "activity-rates", label: "Activity rates", entity: "add-ons" },
     ],
   },
   {
@@ -186,8 +187,8 @@ export const DEPARTMENTS: Department[] = [
     id: "security",
     label: "Security",
     modules: [
-      { key: "gate-register", label: "Gate register", soon: true },
-      { key: "vehicle-entry", label: "Vehicle entry", soon: true },
+      { key: "gate-register", label: "Gate register", entity: "gate-entries" },
+      { key: "vehicle-entry", label: "Vehicle entry", entity: "vehicle-entries" },
     ],
   },
   {
@@ -259,10 +260,16 @@ export const ROLE_TEMPLATES: Record<string, Record<string, Level | Record<string
     stores: { stock: 1, "stock-movements": 2 },
   },
   Storekeeper: { stores: { stock: 3, "stock-movements": 3, "indent-approvals": 3, purchases: 3, vendors: 2 }, "fb-production": { indents: 1 } },
-  "Housekeeping Attendant": { housekeeping: { "housekeeping-reports": 2 }, maintenance: { tickets: 2 } },
+  "Housekeeping Attendant": {
+    housekeeping: { "room-status": 2, "housekeeping-reports": 2, "room-checklist": 2, linen: 2, amenities: 2, "lost-found": 2 },
+    maintenance: { tickets: 2 },
+  },
+  "Housekeeping Supervisor": { housekeeping: 3, maintenance: { tickets: 2 }, stores: { stock: 1 }, "fb-production": { indents: 2 } },
+  "Activities In-charge": { activities: 3, reservations: { bookings: 1 }, "front-office": { customers: 1 } },
+  "Security Guard": { security: 2 },
   "Maintenance Technician": { maintenance: { tickets: 2, "property-assets": 1, "service-vendors": 1, "daily-filings": 2, "vehicle-logs": 2 } },
   Accountant: { accounts: { payments: 2, vouchers: 2, expenses: 2, "daily-reports": 2, "salary-payments": 2, reports: 1, performance: 1 }, stores: { vendors: 1, purchases: 1 } },
-  "General Manager": { "front-office": 3, reservations: 3, sales: 3, housekeeping: 3, "fb-service": 3, "fb-production": 3, stores: 3, maintenance: 3, accounts: 1, hr: 2 },
+  "General Manager": { "front-office": 3, reservations: 3, sales: 3, housekeeping: 3, "fb-service": 3, "fb-production": 3, stores: 3, activities: 3, security: 3, maintenance: 3, accounts: 1, hr: 2 },
   Custom: {},
 };
 

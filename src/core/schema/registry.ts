@@ -59,6 +59,11 @@ import { indents } from "@/modules/indents/entity";
 import { wastage } from "@/modules/wastage/entity";
 import { hygieneChecks } from "@/modules/hygiene/entity";
 import { gasLogs } from "@/modules/gas/entity";
+import { amenityRefills } from "@/modules/amenities/entity";
+import { linenLogs } from "@/modules/linen/entity";
+import { lostFound } from "@/modules/lost-found/entity";
+import { activityBookings } from "@/modules/activity-bookings/entity";
+import { gateEntries, vehicleEntries } from "@/modules/security/entity";
 
 export const entities: EntityDef[] = [
   businessUnits,
@@ -118,6 +123,12 @@ export const entities: EntityDef[] = [
   wastage,
   hygieneChecks,
   gasLogs,
+  amenityRefills,
+  linenLogs,
+  lostFound,
+  activityBookings,
+  gateEntries,
+  vehicleEntries,
 ];
 
 const byName = new Map(entities.map((e) => [e.name, e]));
