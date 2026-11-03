@@ -14,6 +14,7 @@ import { getSupabaseClient } from "@/core/data";
 import { useAuth } from "./AuthProvider";
 import { BRANDS, BRAND_STORAGE_KEY, JD_STAYS, STAYS_PROPERTIES, findBrand, type Brand } from "./brands";
 import { cn } from "@/core/ui/cn";
+import { InstallSheet } from "./InstallSheet";
 
 type Unit = { id: string; name: string; short_code: string | null; active: boolean };
 type Stage = "splash" | "group" | "stays" | "form";
@@ -139,6 +140,8 @@ export function LoginScreen() {
   const [done, setDone] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [installOpen, setInstallOpen] = useState(false);
 
   useEffect(() => {
     if (!loading && user) router.replace(next.startsWith("/") ? next : "/");
@@ -197,7 +200,49 @@ export function LoginScreen() {
 
   const setF = (k: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => setForm((f) => ({ ...f, [k]: e.target.value }));
 
-  const shell = (children: ReactNode) => <div className="jd-sans min-h-screen w-full bg-black text-white">{children}</div>;
+  const openInstall = () => {
+    setMenuOpen(false);
+    setInstallOpen(true);
+  };
+
+  // ⋮ menu (top right) with "Download app", on every screen after the loader.
+  const shell = (children: ReactNode, withMenu = true) => (
+    <div className="jd-sans relative min-h-screen w-full bg-black text-white">
+      {children}
+      {withMenu && (
+        <div className="absolute right-3 top-3 z-40 sm:right-6 sm:top-5">
+          <button
+            type="button"
+            aria-label="Menu"
+            aria-haspopup="menu"
+            aria-expanded={menuOpen}
+            onClick={() => setMenuOpen((o) => !o)}
+            className="flex h-11 w-11 items-center justify-center rounded-full text-white/80 hover:bg-white/10 hover:text-white"
+          >
+            <svg viewBox="0 0 24 24" className="h-6 w-6" fill="currentColor" aria-hidden="true">
+              <circle cx="12" cy="5" r="1.8" />
+              <circle cx="12" cy="12" r="1.8" />
+              <circle cx="12" cy="19" r="1.8" />
+            </svg>
+          </button>
+          {menuOpen && (
+            <>
+              <button type="button" aria-label="Close menu" className="fixed inset-0 cursor-default" onClick={() => setMenuOpen(false)} />
+              <div role="menu" className="jd-rise absolute right-0 mt-2 w-56 overflow-hidden rounded-[6px] border border-white/15 bg-[#0e0d0b] py-1 shadow-2xl">
+                <button type="button" role="menuitem" onClick={openInstall} className="flex min-h-12 w-full items-center gap-3 px-4 text-left text-sm hover:bg-white/5">
+                  <svg viewBox="0 0 24 24" className="h-5 w-5 text-[#d7aa60]" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true">
+                    <path d="M12 4v11M7 10l5 5 5-5M5 20h14" />
+                  </svg>
+                  Download app
+                </button>
+              </div>
+            </>
+          )}
+        </div>
+      )}
+      <InstallSheet open={installOpen} onClose={() => setInstallOpen(false)} />
+    </div>
+  );
 
   // 1. Loading: JD logo with the spinning orange ring (also covers the auth check).
   if (stage === "splash" || loading) {
@@ -220,7 +265,8 @@ export function LoginScreen() {
             Skip
           </button>
         )}
-      </div>
+      </div>,
+      false,
     );
   }
 
@@ -302,6 +348,17 @@ export function LoginScreen() {
             </span>
             <span className="mt-1 text-xs uppercase tracking-[0.24em] text-[#f4d390]">Open →</span>
           </span>
+        </button>
+
+        <button
+          type="button"
+          onClick={openInstall}
+          className="mx-auto flex min-h-[54px] items-center gap-3 rounded-[4px] border border-[#d7aa60]/70 px-7 text-xs uppercase tracking-[0.26em] text-[#f4d390] hover:border-[#d7aa60] hover:bg-white/5"
+        >
+          <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true">
+            <path d="M12 4v11M7 10l5 5 5-5M5 20h14" />
+          </svg>
+          Download the app · Android &amp; iPhone
         </button>
       </div>
     );
