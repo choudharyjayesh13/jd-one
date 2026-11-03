@@ -144,9 +144,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setPendingSignup(null);
         setUser(userFromStaff(su.id, email, staff));
       };
-      const { data } = await client.auth.getSession();
-      await resolve(data.session?.user);
-      if (!cancelled) setLoading(false);
+      try {
+        const { data } = await client.auth.getSession();
+        await resolve(data.session?.user);
+      } catch (e) {
+        // Never leave the app on "Opening JD One…" forever: fall back to the sign-in screen.
+        console.error("JD One: could not restore the session", e);
+        setUser(null);
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
       const { data: sub } = client.auth.onAuthStateChange((_event, session) => {
         void resolve(session?.user);
       });

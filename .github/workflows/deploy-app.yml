@@ -22,6 +22,8 @@ jobs:
     env:
       NEXT_PUBLIC_BASE_PATH: ""
       NEXT_PUBLIC_SUPABASE_URL: https://cyimbgjzxxxszjadxpgv.supabase.co
+      # JD One shares this Supabase project with another app; its tables live in the "jdone" schema.
+      NEXT_PUBLIC_SUPABASE_SCHEMA: jdone
       NEXT_PUBLIC_SUPABASE_ANON_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN5aW1iZ2p6eHh4c3pqYWR4cGd2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQyMTg2MDgsImV4cCI6MjA5OTc5NDYwOH0.R-8de9Ccqui113tBsAvdhHE04LZ6Hlz09bY1vymAcv4
     steps:
       - uses: actions/checkout@v4
