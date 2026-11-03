@@ -64,10 +64,11 @@ function Eyebrow({ children, className }: { children: ReactNode; className?: str
 }
 
 /** A logo on a round plate. */
-function LogoCircle({ brand, size }: { brand: Brand; size: number }) {
+function LogoCircle({ brand, size }: { brand: Brand; size: number | string }) {
+  const px = typeof size === "number" ? `${size}px` : size;
   const plate = brand.plate === "light" ? "bg-white" : brand.plate === "cover" ? "bg-[#ee8122]" : "border border-[#d7aa60]/45 bg-black";
   return (
-    <span className={cn("jd-plate flex shrink-0 items-center justify-center overflow-hidden rounded-full transition-shadow", plate)} style={{ width: size, height: size }}>
+    <span className={cn("jd-plate flex shrink-0 items-center justify-center overflow-hidden rounded-full transition-shadow", plate)} style={{ width: px, height: px }}>
       {brand.logo ? (
         // eslint-disable-next-line @next/next/no-img-element
         <img
@@ -76,7 +77,7 @@ function LogoCircle({ brand, size }: { brand: Brand; size: number }) {
           className={brand.plate === "cover" ? "h-full w-full object-cover" : "max-h-[68%] max-w-[68%] object-contain"}
         />
       ) : (
-        <span className="jd-serif font-semibold tracking-[0.1em] text-[#d7aa60]" style={{ fontSize: size * 0.26 }}>
+        <span className="jd-serif font-semibold tracking-[0.1em] text-[#d7aa60]" style={{ fontSize: `calc(${px} * 0.26)` }}>
           {brand.initials}
         </span>
       )}
@@ -335,9 +336,9 @@ export function LoginScreen() {
   // 4. Sign in under the chosen business's logo.
   return shell(
     <div className="flex min-h-screen flex-wrap">
-      <div className="flex min-h-[44vh] flex-[1_1_480px] flex-col items-center justify-center gap-6 border-white/10 bg-[#0e0d0b] px-8 py-14 text-center md:border-r">
+      <div className="flex flex-[1_1_480px] flex-col items-center justify-center gap-4 border-white/10 bg-[#0e0d0b] px-8 py-8 md:min-h-screen md:gap-6 md:py-14 text-center md:border-r">
         <span className="jd-pop">
-          <LogoCircle brand={brand} size={300} />
+          <LogoCircle brand={brand} size="clamp(150px, 26vw, 300px)" />
         </span>
         <span className="jd-serif text-[clamp(26px,3vw,34px)] font-semibold uppercase leading-tight tracking-[0.16em]">{brand.name}</span>
         <Eyebrow>{brand.tagline}</Eyebrow>
