@@ -61,6 +61,24 @@ jobs:
           git -c user.name="JD One deploy" -c user.email="noreply@anthropic.com" commit -qm "Deploy $(date -u +%Y-%m-%dT%H:%M:%SZ) — ${GITHUB_REF_NAME} → ${TARGET_DIR} (${GITHUB_SHA::7})"
           git push origin gh-pages 2>&1 | tee -a ../ci.log
 
+      # Test copy only: a second build in local mode (demo data in the browser,
+      # no database) kept on the demo-build branch, so screens can be checked
+      # without signing in. It is not published on the website.
+      - name: Demo build for screen checks
+        if: github.ref_name == 'redesign/phase1'
+        env:
+          NEXT_PUBLIC_BASE_PATH: ""
+          NEXT_PUBLIC_SUPABASE_URL: ""
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ""
+        run: |
+          rm -rf out .next
+          bun run build 2>&1 | tail -5 | tee -a ci.log
+          cd out
+          git init -q -b demo-build
+          git add -A
+          git -c user.name="JD One deploy" -c user.email="noreply@anthropic.com" commit -qm "Demo build ${GITHUB_SHA::7}"
+          git push -f "https://x-access-token:${{ github.token }}@github.com/${GITHUB_REPOSITORY}.git" demo-build 2>&1 | tail -2
+
       # If anything fails, keep the log on the ci-logs branch so it can be read without the Actions UI.
       - name: Save log on failure
         if: failure()
