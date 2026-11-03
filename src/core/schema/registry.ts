@@ -55,6 +55,10 @@ import { vouchers } from "@/modules/vouchers/entity";
 import { staffAccess } from "@/modules/staff-access/entity";
 import { orgPosts } from "@/modules/org-posts/entity";
 import { changeLog } from "@/modules/change-log/entity";
+import { indents } from "@/modules/indents/entity";
+import { wastage } from "@/modules/wastage/entity";
+import { hygieneChecks } from "@/modules/hygiene/entity";
+import { gasLogs } from "@/modules/gas/entity";
 
 export const entities: EntityDef[] = [
   businessUnits,
@@ -110,6 +114,10 @@ export const entities: EntityDef[] = [
   staffAccess,
   orgPosts,
   changeLog,
+  indents,
+  wastage,
+  hygieneChecks,
+  gasLogs,
 ];
 
 const byName = new Map(entities.map((e) => [e.name, e]));

@@ -3,7 +3,7 @@ import { defineEntity } from "@/core/schema/types";
 import { todayISO } from "@/core/format";
 
 export const STOCK_DIRECTIONS = ["In", "Out", "Count"] as const;
-export const STOCK_SOURCES = ["Consumption", "KOT", "Purchase", "Received", "Wastage", "Laundry / damaged", "Count", "Other"] as const;
+export const STOCK_SOURCES = ["Consumption", "Issued to department", "KOT", "Purchase", "Received", "Wastage", "Laundry / damaged", "Count", "Other"] as const;
 
 /** Every stock change. In adds, Out reduces, Count sets the quantity (the database updates the stock item). */
 export const stockMovements = defineEntity({
