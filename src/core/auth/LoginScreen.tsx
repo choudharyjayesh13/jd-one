@@ -349,17 +349,6 @@ export function LoginScreen() {
             <span className="mt-1 text-xs uppercase tracking-[0.24em] text-[#f4d390]">Open →</span>
           </span>
         </button>
-
-        <button
-          type="button"
-          onClick={openInstall}
-          className="mx-auto flex min-h-[54px] items-center gap-3 rounded-[4px] border border-[#d7aa60]/70 px-7 text-xs uppercase tracking-[0.26em] text-[#f4d390] hover:border-[#d7aa60] hover:bg-white/5"
-        >
-          <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true">
-            <path d="M12 4v11M7 10l5 5 5-5M5 20h14" />
-          </svg>
-          Download the app · Android &amp; iPhone
-        </button>
       </div>
     );
   }
