@@ -18,7 +18,7 @@ import { Loading, PageHeader, EmptyState } from "@/core/ui/misc";
 import { useToast } from "@/core/ui/Toast";
 import { cn } from "@/core/ui/cn";
 import type { Row } from "@/core/schema/types";
-import { bookingForRoom, dayList, isWeekend, occupiesNight, weekday } from "./occupancy";
+import { bookingForRoom, dayList, expandStays, isWeekend, occupiesNight, weekday, withRoomAssigned, type Stay } from "./occupancy";
 
 const WINDOW = 14;
 const statusTone: Record<string, string> = {
@@ -41,11 +41,17 @@ export function RoomChart() {
   const dates = useMemo(() => dayList(start, WINDOW), [start]);
   const today = todayISO();
 
-  const unassigned = useMemo(() => bookings.filter((b) => !b.room_id && dates.some((d) => occupiesNight(b, d))), [bookings, dates]);
+  // One row per booked room: a booking with several room categories needs one room per booked room.
+  const unassigned = useMemo(() => expandStays(bookings).filter((b) => !b.room_id && dates.some((d) => occupiesNight(b, d))), [bookings, dates]);
 
-  const assign = async (booking: Row, roomId: string) => {
+  const assign = async (stay: Stay, roomId: string) => {
     try {
-      await getStore().update("bookings", booking.id, { room_id: roomId || null });
+      const booking = bookings.find((b) => b.id === stay._bookingId);
+      if (!booking) throw new Error("Booking not found");
+      if (stay._line !== undefined && stay._slot !== undefined) {
+        const room_lines = withRoomAssigned(booking, stay._line, stay._slot, roomId || null);
+        await getStore().update("bookings", booking.id, { room_lines, ...(stay._line === 0 && stay._slot === 0 ? { room_id: roomId || null } : {}) });
+      } else await getStore().update("bookings", booking.id, { room_id: roomId || null });
       toast(roomId ? "Room assigned" : "Room cleared");
       await reload();
     } catch (e) {
@@ -167,7 +173,7 @@ export function RoomChart() {
           <div className="mb-2 text-sm font-semibold text-amber-900">Bookings without a room ({unassigned.length})</div>
           <ul className="space-y-1.5">
             {unassigned.map((b) => (
-              <li key={b.id} className="flex flex-wrap items-center gap-2 text-sm">
+              <li key={`${b.id}-${b._line ?? ""}-${b._slot ?? ""}`} className="flex flex-wrap items-center gap-2 text-sm">
                 <Link href={viewHref("bookings", b.id)} className="font-medium text-navy hover:underline">
                   {String(b.guest_name)}
                 </Link>

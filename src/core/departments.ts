@@ -43,7 +43,7 @@ export const DEPARTMENTS: Department[] = [
       { key: "room-chart", label: "Room chart", href: "/room-chart/" },
       { key: "checkins", label: "Check-in / Check-out", entity: "checkins" },
       { key: "customers", label: "Guests", entity: "customers" },
-      { key: "guest-bill", label: "Guest bill", soon: true },
+      { key: "guest-bill", label: "Guest bill", href: "/guest-bill/" },
       { key: "payment-requests", label: "Payment requests", entity: "payment-requests" },
       { key: "pay-qr", label: "Scan to pay (QR)", href: "/pay-qr/" },
       { key: "petty-cash", label: "Petty cash", entity: "petty-cash" },

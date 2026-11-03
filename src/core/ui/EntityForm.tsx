@@ -52,7 +52,14 @@ function initialValues(def: EntityDef, existing: Row | null, prefill: FieldValue
   return v;
 }
 
-export function EntityForm({ entity, id, prefill, locked = [], only, onSaved, onCancel, submitLabel, children }: Props) {
+/** The form for an entity: its own step-by-step form when it has one (bookings), else the generic one. */
+export function EntityForm(props: Props) {
+  const Custom = getEntity(props.entity).customForm;
+  if (Custom && !props.only) return <Custom entity={props.entity} id={props.id} prefill={props.prefill} onSaved={props.onSaved} onCancel={props.onCancel} />;
+  return <GenericEntityForm {...props} />;
+}
+
+function GenericEntityForm({ entity, id, prefill, locked = [], only, onSaved, onCancel, submitLabel, children }: Props) {
   const def = getEntity(entity);
   const user = useUser();
   const { toast } = useToast();

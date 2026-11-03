@@ -32,6 +32,7 @@ import {
 } from "./data";
 import Link from "next/link";
 import { medal } from "@/modules/scoreboard/compute";
+import { roomsLabel } from "@/modules/rooms/occupancy";
 
 const unitName = (d: DashboardData, id: unknown) => String(d.units.find((u) => u.id === id)?.name ?? "—");
 const staffName = (d: DashboardData, id: unknown) => String(d.staff.find((s) => s.id === id)?.name ?? "—");
@@ -65,10 +66,10 @@ export function PropertySection({ d }: { d: DashboardData }) {
       </div>
       <div className="grid gap-4 lg:grid-cols-2">
         <Section title="Today's check-ins" href="/room-chart/">
-          <RecordList entity="bookings" rows={arrivals} primary={(r) => String(r.guest_name)} secondary={(r) => `${r.unit_type} · ${r.meal_plan ?? ""} · balance ${formatMoney(r.balance)}`} badge={(r) => r.status} empty="No arrivals today" />
+          <RecordList entity="bookings" rows={arrivals} primary={(r) => String(r.guest_name)} secondary={(r) => `${roomsLabel(r)} · ${r.meal_plan ?? ""} · balance ${formatMoney(r.balance)}`} badge={(r) => r.status} empty="No arrivals today" />
         </Section>
         <Section title="Today's check-outs" href="/room-chart/">
-          <RecordList entity="bookings" rows={departures} primary={(r) => String(r.guest_name)} secondary={(r) => `${r.unit_type} · balance ${formatMoney(r.balance)}`} badge={(r) => r.status} empty="No departures today" />
+          <RecordList entity="bookings" rows={departures} primary={(r) => String(r.guest_name)} secondary={(r) => `${roomsLabel(r)} · balance ${formatMoney(r.balance)}`} badge={(r) => r.status} empty="No departures today" />
         </Section>
         <Section title="Housekeeping" href={listHref("rooms")}>
           <RecordList entity="rooms" rows={dirty} primary={(r) => String(r.name)} secondary={(r) => `${r.unit_type} · ${r.status}`} badge={(r) => r.hk_status} empty="All rooms clean" />
@@ -110,10 +111,10 @@ export function OperationsSection({ d }: { d: DashboardData }) {
       </Section>
       <div className="grid gap-4 lg:grid-cols-2">
         <Section title="Today's check-ins" href={listHref("bookings")}>
-          <RecordList entity="bookings" rows={arrivals} primary={(r) => String(r.guest_name)} secondary={(r) => `${r.unit_type} · ${unitName(d, r.business_unit_id)} · balance ${formatMoney(r.balance)}`} badge={(r) => r.status} empty="No arrivals today" />
+          <RecordList entity="bookings" rows={arrivals} primary={(r) => String(r.guest_name)} secondary={(r) => `${roomsLabel(r)} · ${unitName(d, r.business_unit_id)} · balance ${formatMoney(r.balance)}`} badge={(r) => r.status} empty="No arrivals today" />
         </Section>
         <Section title="Today's check-outs" href={listHref("bookings")}>
-          <RecordList entity="bookings" rows={departures} primary={(r) => String(r.guest_name)} secondary={(r) => `${r.unit_type} · balance ${formatMoney(r.balance)}`} badge={(r) => r.status} empty="No departures today" />
+          <RecordList entity="bookings" rows={departures} primary={(r) => String(r.guest_name)} secondary={(r) => `${roomsLabel(r)} · balance ${formatMoney(r.balance)}`} badge={(r) => r.status} empty="No departures today" />
         </Section>
         <Section title="Low stock" href={listHref("stock")}>
           <RecordList entity="stock" rows={low} primary={(r) => String(r.item)} secondary={(r) => `${r.quantity} ${r.unit} (min ${r.min_quantity}) · ${unitName(d, r.business_unit_id)}`} empty="All stock above minimum" />
@@ -313,7 +314,7 @@ export function OverviewSection({ d }: { d: DashboardData }) {
       <FinanceSection d={d} />
       <div className="grid gap-4 lg:grid-cols-2">
         <Section title="Today's check-ins" href={listHref("bookings")}>
-          <RecordList entity="bookings" rows={arrivalsToday(d)} primary={(r) => String(r.guest_name)} secondary={(r) => `${r.unit_type} · balance ${formatMoney(r.balance)}`} badge={(r) => r.status} empty="No arrivals today" />
+          <RecordList entity="bookings" rows={arrivalsToday(d)} primary={(r) => String(r.guest_name)} secondary={(r) => `${roomsLabel(r)} · balance ${formatMoney(r.balance)}`} badge={(r) => r.status} empty="No arrivals today" />
         </Section>
         <Section title="Overdue follow-ups" href={listHref("leads")}>
           <RecordList entity="leads" rows={overdueFollowUps(d)} primary={(r) => String(r.name)} secondary={(r) => `Due ${formatDate(r.next_follow_up)}`} badge={(r) => r.stage} empty="Nothing overdue" />

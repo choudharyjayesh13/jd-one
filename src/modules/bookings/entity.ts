@@ -1,10 +1,12 @@
-import { BedDouble, LogIn, LogOut, IndianRupee, ShieldCheck } from "lucide-react";
-import { defineEntity } from "@/core/schema/types";
+import { BedDouble, LogIn, LogOut, IndianRupee, ShieldCheck, ReceiptText } from "lucide-react";
+import { defineEntity, type Row } from "@/core/schema/types";
 import { normalizePhone } from "@/core/phone";
 import { newHref } from "@/core/routes";
 import { customerLiveHint, matchOrCreateCustomer } from "@/modules/customers/match";
 import { nightsBetween } from "@/modules/customers/stats";
 import { paidForBooking } from "./balance";
+import { roomLines } from "@/modules/rooms/occupancy";
+import { BookingForm } from "./BookingForm";
 
 export const UNIT_TYPES = ["Lake View Cottage", "Pool View Cottage", "Family Suite", "Camping", "Glass House", "Other"] as const;
 export const BOOKING_SOURCES = ["Website", "Direct", "MMT/Goibibo", "Booking.com", "Airbnb", "Agoda", "Expedia", "EaseMyTrip", "Cleartrip", "Google Hotels", "Travel agent", "Walk-in", "Corporate"] as const;
@@ -36,6 +38,18 @@ export const bookings = defineEntity({
     { name: "business_unit_id", label: "Business unit", type: "relation", entity: "business-units", required: true },
     { name: "check_in", label: "Check-in", type: "date", required: true },
     { name: "check_out", label: "Check-out", type: "date", required: true },
+    {
+      name: "rooms_summary",
+      label: "Rooms",
+      type: "text",
+      virtual: true,
+      computed: (v) => {
+        const ls = roomLines(v as Row);
+        if (!ls.length) return v.unit_type ? `${Number(v.units ?? 1) || 1} × ${String(v.unit_type)}${v.meal_plan ? ` · ${String(v.meal_plan)}` : ""}` : "";
+        return ls.map((l) => `${l.rooms} × ${l.unit_type} · ${l.meal_plan} @ ₹${l.rate.toLocaleString("en-IN")}`).join("; ");
+      },
+    },
+    { name: "room_lines", label: "Room categories", type: "multiselect", options: [], hidden: true },
     { name: "unit_type", label: "Unit type", type: "select", options: UNIT_TYPES, required: true },
     { name: "room_id", label: "Room / cottage", type: "relation", entity: "rooms", help: "Assign the exact room; shows on the room chart" },
     { name: "units", label: "Units", type: "number", min: 1, default: 1 },
@@ -65,7 +79,8 @@ export const bookings = defineEntity({
     { name: "payment_ref", label: "Online payment ID", type: "text", readOnly: true, help: "Razorpay payment id from the website" },
     { name: "payment_verified", label: "Payment verified in Razorpay", type: "boolean", default: false },
   ],
-  listColumns: ["guest_name", "status", "source", "check_in", "check_out", "unit_type", "total", "balance", "booking_ref"],
+  listColumns: ["guest_name", "status", "source", "check_in", "check_out", "rooms_summary", "total", "balance", "booking_ref"],
+  customForm: BookingForm,
   reverse: [
     { entity: "payments", field: "booking_id", label: "Payments" },
     { entity: "checkins", field: "booking_id", label: "Check-ins" },
@@ -76,11 +91,20 @@ export const bookings = defineEntity({
       const phone = normalizePhone(values.phone) || null;
       const customer_id = await matchOrCreateCustomer(ctx.store, { ...values, phone }, "guest_name", { source: "Direct", staffId: ctx.staffId });
       const nights = nightsBetween(values.check_in, values.check_out);
-      const total = values.total !== null && values.total !== undefined ? Number(values.total) : Number(values.rate ?? 0) * Number(values.units ?? 1) * nights;
+      // Several room categories: total = Σ rate × rooms × nights (+ GST already on website bookings).
+      const lines = roomLines(values as Row);
+      const total = lines.length
+        ? lines.reduce((s, l) => s + l.rate * l.rooms * nights, 0) + (values.booking_ref ? Number(values.tax_amount ?? 0) : 0)
+        : values.total !== null && values.total !== undefined
+          ? Number(values.total)
+          : Number(values.rate ?? 0) * Number(values.units ?? 1) * nights;
       // Paid = sum of Payments; bookings imported with a paid amount but no Payments rows keep that amount.
       const fromPayments = id ? await paidForBooking(ctx.store, id) : 0;
       const paid = fromPayments > 0 ? fromPayments : Number(values.paid ?? 0);
-      return { ...values, phone, customer_id, total, paid, balance: total - paid };
+      const out: Record<string, unknown> = { ...values, phone, customer_id, total, paid, balance: total - paid };
+      // Single-room bookings do not need room_lines (keeps saving working before the phase-2 SQL is run).
+      if (!lines.length) delete out.room_lines;
+      return out;
     },
     async afterCreate(record, ctx) {
       // A booking created from a lead closes that lead as Won.
@@ -91,6 +115,13 @@ export const bookings = defineEntity({
     },
   },
   actions: [
+    {
+      id: "guest-bill",
+      label: "Guest bill",
+      icon: ReceiptText,
+      visible: (r) => r.status !== "Cancelled" && r.status !== "Enquiry",
+      run: ({ record, navigate }) => navigate(`/guest-bill/?id=${record.id}`),
+    },
     {
       id: "verify-payment",
       label: "Payment verified (Razorpay)",

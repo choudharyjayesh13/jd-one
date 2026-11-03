@@ -169,6 +169,14 @@ export interface EntityAction {
   run?: (ctx: ActionContext) => Promise<void> | void;
 }
 
+export interface CustomFormProps {
+  entity: string;
+  id?: string;
+  prefill?: FieldValues;
+  onSaved: (row: Row) => void;
+  onCancel?: () => void;
+}
+
 export interface EntityDef {
   /** URL slug + registry key, e.g. "daily-reports". */
   name: string;
@@ -203,6 +211,8 @@ export interface EntityDef {
   unitField?: string;
   /** Replaces the generic detail page (e.g. the customer 360° view). */
   customDetail?: ComponentType<{ id: string }>;
+  /** Replaces the generic new/edit form (e.g. the step-by-step booking form). Action forms (`only`) stay generic. */
+  customForm?: ComponentType<CustomFormProps>;
   /** Rendered above the generic list page (e.g. pending sign-ups on Staff). */
   listExtra?: ComponentType;
   /** Live hint shown in the form whenever one of `watch` fields changes. */
