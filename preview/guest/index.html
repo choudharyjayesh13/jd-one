@@ -1,0 +1,348 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex">
+<title>The Udaisarovar · Guest App</title>
+<link rel="icon" href="/portal/jd-logo.svg">
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#f7f4ee;--card:#fff;--ink:#0b1f3a;--mut:#5b6b7f;--line:#e7e1d6;--jd:#ff7a1a;--gold:#c9a24b;--ok:#0f9d58;--bad:#d64545}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font-family:Manrope,system-ui,sans-serif}
+.wrap{max-width:720px;margin:0 auto;padding:16px 16px 60px}
+header{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 0 14px}
+.brand{display:flex;align-items:center;gap:10px;font-weight:800}.brand img{width:38px;height:38px}
+.hero{position:relative;border-radius:22px;overflow:hidden;color:#fff;min-height:190px;background:#0b1f3a url(/guest/photos/sunset.jpg) center/cover;transition:background-image .8s}
+.hero:after{content:"";position:absolute;inset:0;background:linear-gradient(90deg,rgba(11,31,58,.95),rgba(11,31,58,.6))}
+.hero>div{position:relative;z-index:1;padding:22px}.hero h1{margin:4px 0;font-size:1.6rem}.hero .no{font-size:1.5rem;font-weight:800;letter-spacing:.08em;color:#ffcf99}
+.card{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:18px;margin-top:14px;box-shadow:0 1px 2px rgba(0,0,0,.03)}
+h2{margin:0 0 10px;font-size:1.05rem;display:flex;align-items:center;gap:8px}
+label{display:block;font-size:.85rem;color:var(--mut);margin:12px 0 6px}
+input{width:100%;padding:13px 14px;border-radius:12px;border:1px solid var(--line);font-size:1rem;background:#fff}
+.btn{display:block;width:100%;margin-top:16px;padding:14px;border:0;border-radius:12px;background:var(--jd);color:#1a0d02;font-weight:800;font-size:1rem;cursor:pointer}
+.ghost{background:none;border:1px solid var(--line);border-radius:10px;padding:8px 12px;font-weight:600;cursor:pointer;color:var(--ink)}
+.msg{margin-top:12px;padding:10px 12px;border-radius:10px;font-size:.9rem;display:none}.msg.err{display:block;background:#fdecec;color:#9b1c1c}.msg.ok{display:block;background:#e8f6ee;color:#0b6b3a}
+.muted{color:var(--mut);font-size:.88rem}.hidden{display:none!important}
+.tabs{display:flex;gap:8px;overflow-x:auto;padding:12px 0 2px;scrollbar-width:none}.tabs button{flex:0 0 auto;border:1px solid var(--line);background:#fff;border-radius:999px;padding:9px 14px;font-weight:700;color:var(--mut);cursor:pointer}.tabs button.on{background:var(--ink);color:#fff;border-color:var(--ink)}
+.item{display:flex;gap:12px;padding:12px 0;border-bottom:1px solid var(--line)}.item:last-child{border:0}
+.item img{width:84px;height:84px;object-fit:cover;border-radius:12px;flex:0 0 auto}
+.item.multi{flex-direction:column;gap:8px}.strip{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;scroll-snap-type:x mandatory}.strip img{width:auto!important;height:170px!important;max-width:85%;flex:0 0 auto;scroll-snap-align:start}.credit{color:var(--mut);font-size:.7rem;margin-top:-4px}
+.item b{display:block}.price{display:inline-block;margin-top:6px;background:#fff3e8;color:#a34b00;border-radius:999px;padding:3px 10px;font-weight:700;font-size:.82rem}
+.combo{border:2px solid var(--jd);background:#fff8f1}
+.gallery{display:flex;gap:10px;overflow-x:auto;scroll-snap-type:x mandatory;padding:4px 0 6px;scrollbar-width:none}
+.gallery figure{margin:0;flex:0 0 78%;max-width:420px;scroll-snap-align:start;position:relative}
+.gallery img{width:100%;height:210px;object-fit:cover;border-radius:16px;display:block}
+.gallery figcaption{position:absolute;left:10px;bottom:10px;background:rgba(11,31,58,.75);color:#fff;font-size:.8rem;font-weight:700;padding:4px 10px;border-radius:999px}
+.glance{display:grid;grid-template-columns:auto 1fr;gap:6px 14px;font-size:.92rem}.glance b{white-space:nowrap;color:var(--ink)}
+.tl{position:relative;margin-left:8px;padding-left:22px;border-left:3px solid #f0e3cf}
+.tl .ev{position:relative;display:flex;gap:12px;align-items:center;padding:10px 12px;margin:10px 0;background:#fff;border:1px solid var(--line);border-radius:14px}
+.tl .ev:before{content:"";position:absolute;left:-31px;top:50%;width:14px;height:14px;margin-top:-7px;border-radius:50%;background:#f0e3cf;border:3px solid #fff;box-shadow:0 0 0 1px #e7d6bb}
+.tl .ev.now{border-color:var(--jd);background:#fff8f1}.tl .ev.now:before{background:var(--jd)}
+.tl .ev.done{opacity:.55}
+.tl .tm{min-width:92px;font-weight:800;color:var(--ink);font-size:.86rem;line-height:1.25}
+.tl .tm small{display:block;font-weight:600;color:var(--mut)}
+.tl .ev img{width:54px;height:54px;border-radius:10px;object-fit:cover;flex:0 0 auto;cursor:zoom-in}
+.tl .badge{display:inline-block;background:var(--jd);color:#fff;border-radius:999px;font-size:.7rem;font-weight:800;padding:2px 8px;margin-left:6px}
+.tl .ic{font-size:1.3rem;width:30px;text-align:center;flex:0 0 auto}
+.note{background:#fff3e8;border:1px dashed #f3b37a;border-radius:12px;padding:10px 12px;font-size:.9rem;margin-top:10px}
+#lb{position:fixed;inset:0;background:rgba(0,0,0,.92);display:none;align-items:center;justify-content:center;z-index:50;padding:14px}
+#lb img{max-width:100%;max-height:88vh;border-radius:12px}#lb span{position:absolute;top:14px;right:18px;color:#fff;font-size:2rem;cursor:pointer}
+img.zoom,.item img,.gallery img{cursor:zoom-in}
+.rsec{border-radius:18px;overflow:hidden;margin-top:14px;background:#fff;border:1px solid var(--line)}
+.rsec .rhead{position:relative;height:120px;background:#0b1f3a center/cover;display:flex;align-items:flex-end}
+.rsec .rhead:after{content:"";position:absolute;inset:0;background:linear-gradient(0deg,rgba(11,31,58,.9),rgba(11,31,58,.15))}
+.rsec .rhead h3{position:relative;z-index:1;color:#fff;margin:0;padding:14px 16px;font-size:1.15rem}
+.rsec .rhead.plain{height:auto;background:linear-gradient(135deg,#0b1f3a,#1f3d66)}
+.rgrid{display:grid;grid-template-columns:1fr;gap:10px;padding:14px}@media(min-width:560px){.rgrid{grid-template-columns:1fr 1fr}}
+.rcard{display:flex;gap:12px;align-items:flex-start;background:#faf7f1;border-radius:14px;padding:12px}
+.rcard .ri{flex:0 0 44px;height:44px;border-radius:12px;background:#fff;display:flex;align-items:center;justify-content:center;font-size:1.45rem;box-shadow:0 1px 3px rgba(0,0,0,.08)}
+.rcard b{display:block;font-size:.95rem;margin-bottom:2px}.rcard span{font-size:.86rem;color:var(--mut)}
+.price-tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;padding:14px}
+.ptile{background:#fff3e8;border-radius:14px;padding:12px;text-align:center}.ptile .big{font-size:1.35rem;font-weight:800;color:#a34b00}.ptile small{display:block;color:var(--mut);font-size:.8rem}
+.ehero{position:relative;border-radius:18px;overflow:hidden;min-height:200px;background:#0b1f3a center/cover;color:#fff;display:flex;align-items:flex-end;margin-top:14px}
+.ehero:after{content:"";position:absolute;inset:0;background:linear-gradient(0deg,rgba(11,31,58,.92),rgba(11,31,58,.2))}
+.ehero div{position:relative;z-index:1;padding:18px}.ehero h3{margin:0 0 4px;font-size:1.35rem}.ehero p{margin:0;opacity:.9;font-size:.9rem}
+.stats{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-top:12px}@media(min-width:560px){.stats{grid-template-columns:repeat(4,1fr)}}
+.stat{background:#fff;border:1px solid var(--line);border-radius:14px;padding:12px;text-align:center}.stat b{display:block;font-size:1.25rem;color:#a34b00}.stat span{font-size:.78rem;color:var(--mut)}
+.evcard{background:#fff;border:1px solid var(--line);border-radius:18px;overflow:hidden;margin-top:14px}
+.evcard .pics{display:flex;gap:4px;overflow-x:auto;scrollbar-width:none}.evcard .pics img{height:190px;flex:0 0 auto;max-width:85%;object-fit:cover}
+.evcard .txt{padding:14px 16px}.evcard h3{margin:0 0 4px;font-size:1.1rem}.evcard .tags{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}.evcard .tags span{background:#f4efe6;border-radius:999px;padding:3px 10px;font-size:.78rem;font-weight:600}
+.vids{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px}.vids video{width:100%;border-radius:14px;background:#000;max-height:360px}
+.mcat{margin-top:14px}.mcat h3{font-size:.8rem;letter-spacing:.12em;text-transform:uppercase;color:#a34b00;margin:0 0 6px}
+.mrow{display:flex;justify-content:space-between;gap:10px;padding:9px 0;border-bottom:1px dashed var(--line);font-size:.95rem}.mrow:last-child{border:0}.mrow small{display:block;color:var(--mut);font-size:.78rem}
+.mright{display:flex;flex-direction:column;align-items:flex-end;gap:4px}.qty{display:flex;align-items:center;gap:6px}.qty button{width:30px;height:30px;border-radius:9px;border:1px solid var(--line);background:#fff;font-weight:800;font-size:1rem;cursor:pointer}.qty button.add{background:#0b1f3a;color:#fff;border-color:#0b1f3a}.qty b{min-width:14px;text-align:center}
+.cartbar{position:sticky;bottom:10px;margin-top:14px;background:#0b1f3a;color:#fff;border-radius:16px;padding:14px;box-shadow:0 10px 30px rgba(0,0,0,.25)}.cartbar input,.cartbar textarea{width:100%;box-sizing:border-box;margin-top:8px;border-radius:10px;border:0;padding:10px;font:inherit}.cartbar .go{margin-top:10px;width:100%;border:0;border-radius:12px;padding:12px;background:#ff7a1a;color:#fff;font-weight:800;font-size:1rem;cursor:pointer}
+.veg{display:inline-block;width:10px;height:10px;border:1.5px solid #0f9d58;border-radius:2px;margin-right:6px;position:relative;top:1px}.veg:after{content:"";position:absolute;inset:2px;background:#0f9d58;border-radius:50%}
+.offer{background:linear-gradient(135deg,#ff7a1a,#c9a24b);color:#1a0d02;border-radius:18px;padding:16px;margin-top:14px;font-weight:600}
+.pay img{width:100%;max-width:340px;display:block;margin:8px auto;border-radius:14px}
+.wa{display:inline-block;margin-top:8px;background:#25d366;color:#fff;text-decoration:none;font-weight:700;border-radius:10px;padding:8px 12px;font-size:.88rem}
+footer{text-align:center;color:var(--mut);font-size:.75rem;margin-top:30px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="brand"><img src="/portal/jd-logo.svg" alt="">The Udaisarovar</div>
+    <button id="signout" class="ghost hidden">Sign out</button>
+  </header>
+
+  <!-- LOGIN -->
+  <section id="login" class="card">
+    <h2>🏝️ Guest login</h2>
+    <p class="muted">For in-house guests. Enter your mobile number and the password given at reception. First time? Also enter your name.</p>
+    <form id="f-login">
+      <label>Your name (first time only)</label><input name="name" autocomplete="name" placeholder="As on your booking">
+      <label>Mobile number</label><input name="phone" type="tel" inputmode="numeric" autocomplete="tel" required placeholder="10-digit mobile">
+      <label>Password</label><input name="password" type="password" autocomplete="current-password" required>
+      <button class="btn" type="submit">Open guest app</button>
+    </form>
+    <div id="login-msg" class="msg"></div>
+    <p class="muted" style="margin-top:14px">Forgot your password? Ask reception or WhatsApp <a href="https://wa.me/918829809555">+91 88298 09555</a>.</p>
+  </section>
+
+  <!-- CHANGE PASSWORD -->
+  <section id="newpass" class="card hidden">
+    <h2>🔐 Set your own password</h2>
+    <p class="muted">For your privacy, please choose your own password now. You will use it next time.</p>
+    <form id="f-newpass">
+      <label>New password (at least 6 characters)</label><input name="p1" type="password" minlength="6" required autocomplete="new-password">
+      <label>Type it again</label><input name="p2" type="password" minlength="6" required autocomplete="new-password">
+      <button class="btn" type="submit">Save and continue</button>
+    </form>
+    <div id="np-msg" class="msg"></div>
+  </section>
+
+  <!-- APP -->
+  <section id="app" class="hidden">
+    <div class="hero"><div>
+      <div class="muted" style="color:#ffd9b0">Welcome</div>
+      <h1 id="g-name">Guest</h1>
+      <div>Guest no. <span class="no" id="g-no">—</span></div>
+      <div id="g-stay" style="margin-top:6px;font-size:.92rem;opacity:.9"></div>
+    </div></div>
+    <div class="tabs" id="tabs"></div>
+    <div id="panel"></div>
+  </section>
+  <div id="lb" onclick="this.style.display='none'"><span>×</span><img alt=""></div>
+  <footer>The Udaisarovar · Managed by JD Stays &amp; Hospitality · a JD Group company<br><a href="https://www.theudaisarovar.com/">theudaisarovar.com</a> · <a href="/book/">Book your next stay</a> · <a href="https://www.theudaisarovar.com/#events">Events</a> · <a href="https://www.myjdgroup.com/">myjdgroup.com</a></footer>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script>
+const SUPABASE_URL = "https://cyimbgjzxxxszjadxpgv.supabase.co";
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN5aW1iZ2p6eHh4c3pqYWR4cGd2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQyMTg2MDgsImV4cCI6MjA5OTc5NDYwOH0.R-8de9Ccqui113tBsAvdhHE04LZ6Hlz09bY1vymAcv4";
+// The common first-time password printed on the guest QR card. Guests must change it after the first login.
+const START_PASSWORD = "jd1guest";
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, { db: { schema: "jdone" }, auth: { storageKey: "jd-guest-auth" } });
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const dt = (d) => d ? new Date(d).toLocaleDateString("en-IN", { day: "2-digit", month: "short" }) : "";
+const msg = (id, t, kind) => { const m = $(id); m.textContent = t; m.className = "msg " + (kind || "err"); };
+const phone10 = (p) => String(p || "").replace(/\D/g, "").slice(-10);
+const emailFor = (p) => `g${p}@guest.myjdgroup.com`;
+const show = (id) => ["login", "newpass", "app"].forEach((k) => $(k).classList.toggle("hidden", k !== id));
+
+$("f-login").onsubmit = async (e) => {
+  e.preventDefault();
+  const f = new FormData(e.target); const p = phone10(f.get("phone")); const pw = String(f.get("password")); const name = String(f.get("name") || "").trim();
+  if (p.length !== 10) return msg("login-msg", "Enter your 10-digit mobile number.");
+  msg("login-msg", "Opening…", "ok");
+  let { error } = await sb.auth.signInWithPassword({ email: emailFor(p), password: pw });
+  if (error && pw === START_PASSWORD) {
+    if (!name) return msg("login-msg", "First time here — please enter your name as on your booking.");
+    const r = await sb.auth.signUp({ email: emailFor(p), password: pw, options: { data: { kind: "guest", name, phone: p, must_change_password: true } } });
+    if (r.error) return msg("login-msg", /registered/i.test(r.error.message) ? "This mobile already has its own password. Use that password, or ask reception to reset it." : r.error.message);
+    error = (await sb.auth.signInWithPassword({ email: emailFor(p), password: pw })).error;
+  }
+  if (error) return msg("login-msg", "Wrong mobile number or password.");
+  route();
+};
+$("f-newpass").onsubmit = async (e) => {
+  e.preventDefault();
+  const f = new FormData(e.target); const a = String(f.get("p1")), b = String(f.get("p2"));
+  if (a !== b) return msg("np-msg", "The two passwords do not match.");
+  if (a === START_PASSWORD) return msg("np-msg", "Choose a new password, not the one from the card.");
+  const { error } = await sb.auth.updateUser({ password: a, data: { must_change_password: false } });
+  if (error) return msg("np-msg", error.message);
+  route();
+};
+$("signout").onclick = async () => { await sb.auth.signOut(); location.reload(); };
+
+async function route() {
+  const { data: { session } } = await sb.auth.getSession();
+  $("signout").classList.toggle("hidden", !session);
+  if (!session) return show("login");
+  if (session.user.user_metadata?.must_change_password) return show("newpass");
+  show("app"); loadApp(session);
+}
+
+const TABS = [
+  ["today", "🔥 Today"], ["menu", "🍽️ Menu"], ["events", "🎉 Events"], ["Experience", "🎯 Experiences"], ["Included", "✅ Included"], ["Timing", "⏰ Timings"],
+  ["Rule", "📜 House rules"], ["How-to", "⛺ How to"], ["Property", "🏨 Our properties"], ["pay", "💳 Pay"],
+];
+let INFO = [];
+let MENU = [];
+let CART = {}; // menu item id -> qty (Guest App food order)
+let STAY_ROOM = "";
+const PHOTOS = [["sunset","Stay for the sunset — lakeside evenings"],["pool-lake2","Infinity pool facing Udai Sagar lake"],["cottage-earth","Cottage 03 · Earth, at dusk"],["pool","Poolside by the hills"],["venue","Premium lakeside venue"],["aerial","Our 21,556 sq ft event lawn from above"],["bonfire","Bonfire nights"],["movienight","Movie under the stars"],["bbq","Live BBQ nights"]];
+let heroI = 0;
+setInterval(() => { const h = document.querySelector(".hero"); if (!h || $("app").classList.contains("hidden")) return; heroI = (heroI + 1) % PHOTOS.length; h.style.backgroundImage = `url(/guest/photos/${PHOTOS[heroI][0]}.jpg)`; }, 6000);
+const gallery = () => `<div class="gallery">${PHOTOS.map(([f, c]) => `<figure><img src="/guest/photos/${f}.jpg" alt="${c}" loading="lazy"><figcaption>${c}</figcaption></figure>`).join("")}</div>`;
+const TIMELINE = [
+  ["08:00","11:00","🏊","Morning swim","Swimming pool — morning session","pool"],
+  ["09:00","10:00","🍳","Breakfast","Any 2 dishes + tea or coffee","dining"],
+  ["10:00",null,"🧳","Check-out","Please check out by 10:00 AM",null],
+  ["12:00",null,"🔑","Check-in","Rooms ready from 12 noon",null],
+  ["16:30","19:30","🏊","Evening swim","Swimming pool — evening session","pool"],
+  ["17:00","19:00","🏸","Games: chess, ludo & badminton","Ask reception for the equipment (football too)","venue"],
+  ["19:30",null,"🛎️","Last call for dinner orders","Fresh food takes 45–60 min — order 60 min ahead",null],
+  ["20:30","22:30","🍽️","Dinner","Lakeside dinner","sunset"],
+  ["21:00","23:45","🎬","Movie under the stars","Open-air projector by the lake","movienight"],
+  ["24:00","07:00","🌙","Quiet hours","Midnight to 7:00 AM — keep voices & music low",null],
+];
+const fmt = (t) => { if (!t) return ""; let [h, m] = t.split(":").map(Number); if (h === 24) return "12:00 AM"; const ap = h >= 12 ? "PM" : "AM"; h = h % 12 || 12; return `${h}:${String(m).padStart(2, "0")} ${ap}`; };
+function timelineHtml() {
+  const n = new Date(Date.now() + 5.5 * 3600e3); const cur = n.getUTCHours() * 60 + n.getUTCMinutes();
+  const mins = (t) => { const [h, m] = t.split(":").map(Number); return h * 60 + m; };
+  let nextMarked = false;
+  return `<div class="tl">${TIMELINE.map(([a, b, ic, t, d, ph]) => {
+    const s0 = mins(a), e0 = b ? (mins(b) < s0 ? mins(b) + 1440 : mins(b)) : s0 + 30;
+    const now = (cur >= s0 && cur < e0) || (cur + 1440 >= s0 && cur + 1440 < e0), done = !now && cur >= e0 && s0 < 1440;
+    let tag = ""; if (now) tag = '<span class="badge">NOW</span>'; else if (!done && !nextMarked && cur < s0) { tag = '<span class="badge" style="background:#0b1f3a">NEXT</span>'; nextMarked = true; }
+    return `<div class="ev${now ? " now" : done ? " done" : ""}"><div class="tm">${fmt(a)}${b ? `<small>to ${fmt(b)}</small>` : ""}</div>${ph ? `<img src="/guest/photos/${ph}.jpg" alt="">` : `<div class="ic">${ic}</div>`}<div><b>${ph ? ic + " " : ""}${t}</b>${tag}<div class="muted">${d}</div></div></div>`;
+  }).join("")}</div>`;
+}
+const GLANCE = [["12:00 noon","Check-in"],["10:00 AM","Check-out"],["9 – 10 AM","Breakfast"],["8 – 11 AM · 4:30 – 7:30 PM","Swimming pool"],["5 – 7 PM","Sports & games (badminton, chess, ludo, football)"],["by 7:30 PM","Order dinner (food is cooked fresh — ~1 hour)"],["8:30 – 10:30 PM","Dinner"],["9 – 11:45 PM","Movie under the stars"],["12 – 7 AM","Quiet hours"]];
+async function loadApp(session) {
+  const md = session.user.user_metadata || {};
+  $("g-name").textContent = md.name || "Guest";
+  const [{ data: cust }, { data: info }] = await Promise.all([
+    sb.from("customers").select("id,customer_no,name").eq("auth_user_id", session.user.id).maybeSingle(),
+    sb.from("guest_info").select("*").eq("active", true).order("sort").order("title"),
+  ]);
+  INFO = info || [];
+  const { data: menu } = await sb.from("menu_items").select("id,name,category,price,description,veg,sort").eq("active", true).order("sort");
+  MENU = menu || [];
+  if (cust) {
+    $("g-no").textContent = cust.customer_no || "—"; $("g-name").textContent = cust.name || md.name || "Guest";
+    const today = new Date().toISOString().slice(0, 10);
+    const { data: bk } = await sb.from("bookings").select("check_in,check_out,unit_type,status").eq("customer_id", cust.id).in("status", ["Confirmed", "Checked-in"]).gte("check_out", today).order("check_in").limit(1);
+    if (bk && bk[0]) STAY_ROOM = bk[0].unit_type || "";
+    if (bk && bk[0]) $("g-stay").textContent = `${bk[0].unit_type || "Your stay"} · ${dt(bk[0].check_in)} → ${dt(bk[0].check_out)}`;
+  }
+  $("tabs").innerHTML = TABS.map(([k, l], i) => `<button data-k="${k}" class="${i ? "" : "on"}">${l}</button>`).join("");
+  $("tabs").querySelectorAll("button").forEach((b) => b.onclick = () => { $("tabs").querySelectorAll("button").forEach((x) => x.classList.toggle("on", x === b)); draw(b.dataset.k); });
+  draw("today");
+}
+// Guest App food order: + / − on the menu, then "Place order" → jdone.guest_order (server prices) → printed on the kitchen POS printer.
+function qtyHtml(id) { const n = CART[id] || 0; return n ? `<button data-q="${id}" data-d="-1">−</button><b>${n}</b><button class="add" data-q="${id}" data-d="1">+</button>` : `<button class="add" data-q="${id}" data-d="1">+</button>`; }
+function drawCart() {
+  const bar = $("cartbar"); if (!bar) return;
+  const ids = Object.keys(CART).filter((id) => CART[id] > 0);
+  if (!ids.length) { bar.classList.add("hidden"); return; }
+  const n = ids.reduce((t, id) => t + CART[id], 0), total = ids.reduce((t, id) => t + CART[id] * Number((MENU.find((m) => m.id === id) || {}).price || 0), 0);
+  const keep = { room: $("c-room")?.value ?? STAY_ROOM, note: $("c-note")?.value ?? "" };
+  bar.innerHTML = `<b>🛒 ${n} item${n > 1 ? "s" : ""} · ₹${total.toLocaleString("en-IN")}</b> <span style="opacity:.8;font-size:.85rem">+ 5% GST</span>
+    <div style="font-size:.85rem;opacity:.9;margin-top:4px">${ids.map((id) => `${CART[id]} × ${esc((MENU.find((m) => m.id === id) || {}).name || "")}`).join(" · ")}</div>
+    <input id="c-room" placeholder="Your cottage / room / tent (e.g. Earth cottage)" value="${esc(keep.room)}">
+    <textarea id="c-note" rows="2" placeholder="Notes for the chef: less spicy, Jain, no onion…">${esc(keep.note)}</textarea>
+    <button class="go" id="c-go">Place order · ready in 45–60 min</button><div id="c-msg" style="margin-top:8px;font-size:.9rem"></div>`;
+  bar.classList.remove("hidden");
+  $("c-go").onclick = placeOrder;
+}
+async function placeOrder() {
+  const lines = Object.keys(CART).filter((id) => CART[id] > 0).map((id) => ({ id, qty: CART[id] }));
+  $("c-go").disabled = true; $("c-go").textContent = "Sending to the kitchen…";
+  const { data, error } = await sb.rpc("guest_order", { p_lines: lines, p_room: $("c-room").value, p_notes: $("c-note").value });
+  if (error || !data?.ok) { $("c-go").disabled = false; $("c-go").textContent = "Place order · ready in 45–60 min"; $("c-msg").textContent = "⚠️ " + (error?.message || data.reason); return; }
+  CART = {}; document.querySelectorAll(".qty").forEach((q) => (q.innerHTML = qtyHtml(q.dataset.id)));
+  $("cartbar").innerHTML = `<b>✅ Order ${esc(data.kot_no)} sent to the kitchen</b><div style="margin-top:6px;font-size:.9rem">₹${Number(data.amount).toLocaleString("en-IN")} + 5% GST, added to your bill. Fresh food takes 45–60 minutes — we'll bring it to you. Need anything? Call reception.</div>`;
+}
+document.addEventListener("click", (e) => {
+  const b = e.target.closest && e.target.closest("button[data-q]"); if (!b) return;
+  const id = b.dataset.q; CART[id] = Math.max(0, Math.min(20, (CART[id] || 0) + Number(b.dataset.d)));
+  const q = document.querySelector(`.qty[data-id="${id}"]`); if (q) q.innerHTML = qtyHtml(id);
+  drawCart();
+});
+// Photo credits for pictures that are not our own (Wikimedia Commons, licence requires attribution).
+const CREDITS = { "x-horse1": "Photo: Vikas Rana, CC BY 2.0", "x-horse2": "Photo: Benoit Brummer, CC BY 4.0" };
+// guest_info.photo may hold several comma-separated pictures: the card then shows a swipeable strip.
+const pics = (r) => (r.photo || "").split(",").map((x) => x.trim()).filter(Boolean);
+const stripHtml = (r) => { const ps = pics(r); const cr = ps.map((x) => CREDITS[x.replace(/^.*\/|\.jpg$/g, "")]).filter(Boolean); return `<div class="strip">${ps.map((x) => `<img src="${esc(x)}" alt="${esc(r.title)}" loading="lazy">`).join("")}</div>${cr.length ? `<small class="credit">${esc(cr.join(" · "))}</small>` : ""}`; };
+const itemHtml = (r, cls = "") => pics(r).length > 1
+  ? `<div class="item multi ${cls}">${stripHtml(r)}<div><b>${esc(r.title)}</b>${r.body ? `<div class="muted">${esc(r.body).replace(/\n/g, "<br>").replace(/(youtube\.com\/[^\s<]+)/g, '<a href="https://$1" target="_blank" rel="noopener">▶ $1</a>')}</div>` : ""}${r.price ? `<span class="price">${esc(r.price)}</span>` : ""}</div></div>`
+  : `<div class="item ${cls}">${r.photo ? `<img src="${esc(r.photo)}" alt="">` : ""}<div><b>${esc(r.title)}</b>${r.body ? `<div class="muted">${esc(r.body).replace(/\n/g, "<br>").replace(/(youtube\.com\/[^\s<]+)/g, '<a href="https://$1" target="_blank" rel="noopener">▶ $1</a>')}</div>` : ""}${r.price ? `<span class="price">${esc(r.price)}</span>` : ""}</div></div>`;
+const ask = (what) => `<a class="wa" href="https://wa.me/918829809555?text=${encodeURIComponent("Hi, I am a guest (" + ($("g-no").textContent || "") + "). I would like to book: " + what)}">Book on WhatsApp</a>`;
+// Short headline + icon for each rule (matched on the rule text), so the House rules tab reads at a glance.
+const RULE_ICONS = [
+  [/photo ID/i, "🪪", "Photo ID for every adult"], [/overnight|visitors are welcome/i, "👥", "Visitors till 9 PM"], [/smoking/i, "🚭", "No smoking in rooms"],
+  [/drugs|weapons/i, "🚫", "Zero tolerance"], [/alcohol/i, "🍷", "Drink responsibly"], [/parties|pets/i, "🎉", "Parties & pets need approval"],
+  [/quiet hours/i, "🌙", "Quiet hours 12 – 7 AM"], [/switch off lights/i, "💡", "Save power & water"], [/early check-in/i, "🕐", "Early / late check-in"],
+  [/respect our staff/i, "🤝", "Respect for all"], [/swimming is at your own risk/i, "🏊", "Swim at your own risk"], [/children and non-swimmers/i, "👨‍👧", "Kids with an adult"],
+  [/diving or running/i, "⚠️", "No diving · no glass"], [/swimwear/i, "🩱", "Swimwear & shower"], [/Udaisagar Lake/i, "🚧", "Stay inside the property"],
+  [/sports and games/i, "🏸", "Games at own risk"],
+];
+const ruleCard = (r) => { const m = RULE_ICONS.find(([re]) => re.test(r.body || "")); return `<div class="rcard"><div class="ri">${m ? m[1] : "✅"}</div><div><b>${esc(m ? m[2] : r.title.replace(/^Terms: /, ""))}</b><span>${esc(r.body)}</span></div></div>`; };
+const TERM_ICONS = { "Personal risk": "🛡️", "Children": "👶", "Damage": "🔨", "Visitors": "👥", "Changes to services": "🌦️", "Payments": "💳", "Right of admission reserved": "🚪", "Jurisdiction": "⚖️" };
+function rulesHtml() {
+  const R = INFO.filter((r) => r.section === "Rule");
+  const house = R.filter((r) => /^House rule/.test(r.title)), safety = R.filter((r) => /^Pool, lake/.test(r.title)), terms = R.filter((r) => /^Terms: /.test(r.title));
+  const other = R.filter((r) => !house.includes(r) && !safety.includes(r) && !terms.includes(r) && r.title !== "Charges");
+  const sec = (title, photo, inner) => `<div class="rsec"><div class="rhead${photo ? "" : " plain"}" ${photo ? `style="background-image:url(/guest/photos/${photo}.jpg)"` : ""}><h3>${title}</h3></div>${inner}</div>`;
+  return sec("🏡 At the property", "cottage-earth", `<div class="rgrid">${house.map(ruleCard).join("")}</div>`)
+    + sec("🏊 Pool, lake & activity safety", "pool", `<div class="rgrid">${safety.map(ruleCard).join("")}</div>`)
+    + sec("💰 Good to know — charges", "pool-lake2", `<div class="price-tiles"><div class="ptile"><div class="big">₹300</div><small>Day-guest pool use<br>per person / hour</small></div><div class="ptile"><div class="big">₹500</div><small>Breakage — small item</small></div><div class="ptile"><div class="big">₹1,000</div><small>Breakage — large item<br>(major damage at actual cost)</small></div><div class="ptile"><div class="big">60 min</div><small>Fresh food — order ahead<br>(dinner orders by 7 PM)</small></div></div>`)
+    + sec("🔒 Your belongings", null, `<div class="rgrid">${other.map((r) => `<div class="rcard"><div class="ri">🔒</div><div><b>${esc(r.title)}</b><span>${esc(r.body)}</span></div></div>`).join("")}</div>`)
+    + sec("📋 Terms & conditions", null, `<div class="rgrid">${terms.map((r) => { const t = r.title.replace(/^Terms: /, ""); return `<div class="rcard"><div class="ri">${TERM_ICONS[t] || "📋"}</div><div><b>${esc(t)}</b><span>${esc(r.body)}</span></div></div>`; }).join("")}</div>`);
+}
+function draw(k) {
+  const today = new Date(Date.now() + 5.5 * 3600e3).toISOString().slice(0, 10); // India date
+  const live = (r) => (!r.valid_from || r.valid_from <= today) && (!r.valid_to || r.valid_to >= today);
+  const list = (sec, cls, withAsk) => INFO.filter((r) => r.section === sec && live(r)).map((r) => itemHtml(r, cls).replace(/<\/div><\/div>$/, (withAsk ? ask(r.title) : "") + "</div></div>")).join("") || '<p class="muted">Ask reception for details.</p>';
+  let html = "";
+  if (k === "today") {
+    html = `${gallery()}<div class="card"><h2>🔥 Value Added Combo</h2>${list("Combo", "combo", true)}</div>
+      <div class="card"><h2>☀️ Today's activities & timings</h2><p class="muted" style="margin-top:-4px">Free for in-house guests · morning to late night</p>${timelineHtml()}
+        <div class="note">🍲 <b>Food is cooked fresh for you — it takes 45–60 minutes.</b> Please place every food order at least <b>60 minutes</b> before you want to eat. Dinner orders by 7:30 PM.<br>🧾 Food prices are <b>excluding 5% GST</b> — the tax is added to your bill.</div></div>
+      <div class="offer">🎁 <b>Welcome back offer — 10% off</b><br>Your guest number is <b style="font-size:1.15rem;letter-spacing:.06em">${esc($("g-no").textContent)}</b>. Save it! Next time you stay, mention this number (or sign in to this app with the same mobile) and get <b>10% off</b>.</div>
+      <div class="card"><h2>🎯 Popular experiences</h2>${INFO.filter((r) => r.section === "Experience" && live(r)).slice(0, 3).map((r) => itemHtml(r)).join("") || '<p class="muted">Ask reception.</p>'}</div>`;
+  } else if (k === "menu") {
+    const cats = [...new Set(MENU.map((m) => m.category))];
+    html = `<div class="evcard"><div class="pics"><img src="/guest/photos/paneer-bowl.jpg" alt="Signature paneer rice bowl"><img src="/guest/photos/bbq.jpg" alt="Live BBQ"><img src="/guest/photos/dining.jpg" alt="Home-style food"><img src="/guest/photos/ev-dining.jpg" alt="Candle-lit lakeside dinner"></div>
+      <div class="txt"><h3>🍽️ Lake City Cafe — today's menu</h3><p class="muted" style="margin:0">Fresh, home-style vegetarian food · 8:30 AM – 10:30 PM. This menu is updated by our chef — only dishes available today are shown.</p>
+      <div class="note">🍲 Every dish is cooked fresh and takes <b>45–60 minutes</b>. Please order at least <b>60 minutes</b> ahead (dinner orders by 7:30 PM).<br>🧾 All prices are <b>excluding 5% GST</b>, which is added to your bill.</div>
+      <p><a class="wa" href="https://wa.me/918829809555?text=${encodeURIComponent("Hi, I am a guest (" + ($("g-no").textContent || "") + "). I would like to order: ")}">Order on WhatsApp</a> <span class="muted" style="font-size:.85rem">or tap <b>+</b> on dishes below to order right here.</span></p></div></div>
+      ${cats.length ? cats.map((c) => `<div class="card mcat"><h3>${esc(c)}</h3>${MENU.filter((m) => m.category === c).map((m) => `<div class="mrow"><div>${m.veg !== false ? '<span class="veg"></span>' : ""}${esc(m.name)}${m.description ? `<small>${esc(m.description)}</small>` : ""}</div><div class="mright"><b>₹${Number(m.price).toLocaleString("en-IN")}</b><span class="qty" data-id="${m.id}">${qtyHtml(m.id)}</span></div></div>`).join("")}</div>`).join("") : '<div class="card"><p class="muted">The menu is being updated — please call reception.</p></div>'}<div id="cartbar" class="cartbar hidden"></div>`;
+  } else if (k === "events") {
+    const ev = (pics, title, text, tags) => `<div class="evcard"><div class="pics">${pics.map((p) => `<img src="/guest/photos/${p}.jpg" alt="${esc(title)}" loading="lazy">`).join("")}</div><div class="txt"><h3>${title}</h3><p class="muted" style="margin:0">${text}</p><div class="tags">${tags.map((t) => `<span>${t}</span>`).join("")}</div></div></div>`;
+    html = `<div class="ehero" style="background-image:url(/guest/photos/aerial.jpg)"><div><h3>🎉 Events at The Udaisarovar</h3><p>Lakeside weddings, Holi and New Year parties — produced by JD Production & Entertainers and Pronite.</p></div></div>
+      <div class="stats"><div class="stat"><b>400 – 600</b><span>guests at every big event</span></div><div class="stat"><b>21,556 sq ft</b><span>open lakeside lawn</span></div><div class="stat"><b>3 spaces</b><span>garden lawn · lakefront shore · poolside deck</span></div><div class="stat"><b>On-site stay</b><span>cottages + family suite for your party</span></div></div>
+      ${ev(["holi-poster", "venue", "ev-holi"], "🌈 Udaipur's first lakeside Holi", "Our signature Holi by Pronite — colours, DJs, live artists, pool party and food by the lake. 400–600 guests every year.", ["Holi", "DJ & live artists", "Pool party", "400–600 guests"])}
+      ${ev(["ev-dj", "bbq", "ev-bonfire"], "🎆 New Year's Eve — 31st party", "Count down to the new year by the lake: DJ night, production-grade lights & sound, BBQ and bonfire. 400–600 guests.", ["31st December", "DJ night", "BBQ & bonfire", "400–600 guests"])}
+      ${ev(["mandap", "ev-stage", "ev-wedding", "ev-couple"], "💍 Lakeside weddings & phere", "Floral mandaps and white-floral stages with Udai Sagar lake as your backdrop; décor, sound and catering handled end to end.", ["Weddings", "Phere & haldi", "Décor & catering", "Stay for the wedding party"])}
+      ${ev(["ev-birthday", "ev-brunch", "ev-dining"], "🎂 Birthdays, brunches & private dinners", "Balloon arches, baby showers, garden brunches, candle-lit lakeside dinners and corporate offsites.", ["Birthdays", "Baby showers", "Corporate offsites", "Private dinners"])}
+      <div class="card"><h2>🎥 Event moments</h2><div class="vids"><video src="/guest/photos/event-video-1.mp4" controls preload="metadata" playsinline></video><video src="/guest/photos/event-video-2.mp4" controls preload="metadata" playsinline></video></div></div>
+      <div class="card"><h2>📐 Our event lawn</h2><img class="zoom" src="/guest/photos/lawn-map.jpg" alt="Event lawn measured on the map" style="width:100%;max-width:340px;display:block;margin:0 auto;border-radius:14px"><p class="muted" style="text-align:center">Lawn area about 21,556 sq ft (≈ 2,000 m²), perimeter 198 m — room for 400–600 guests.</p>
+      <a class="wa" style="display:block;text-align:center" href="https://wa.me/918829809555?text=${encodeURIComponent("Hi, I would like to plan an event at The Udaisarovar.")}">Plan your event on WhatsApp</a></div>`;
+  } else if (k === "Rule") {
+    html = `<div class="card" style="padding-bottom:10px"><h2>📜 House rules</h2><p class="muted" style="margin:0">To keep every stay safe and peaceful, please follow these simple rules. Thank you! 🙏</p><p><a class="wa" style="background:#0b1f3a" href="/guest/house-rules.pdf" target="_blank" rel="noreferrer">📄 Download the full guest card (PDF)</a></p></div>${rulesHtml()}`;
+  } else if (k === "pay") {
+    html = `<div class="card pay"><h2>💳 Scan to pay</h2><p class="muted">Pay for food, add-ons or your stay balance. Show the payment screenshot to reception.</p><img src="/pay/udaisarovar-scan-to-pay.png" alt="Scan to pay QR"></div>`;
+  } else {
+    const title = Object.fromEntries(TABS)[k];
+    const pdf = k === "Rule" ? '<p><a class="wa" style="background:#0b1f3a" href="/guest/house-rules.pdf" target="_blank" rel="noreferrer">📄 Download house rules & guest card (PDF)</a></p>' : "";
+    html = `<div class="card"><h2>${title}</h2>${pdf}${list(k, "", k === "Experience")}</div>`;
+  }
+  $("panel").innerHTML = html;
+  if (k === "menu") drawCart();
+}
+document.addEventListener("click", (e) => {
+  const img = e.target.closest && e.target.closest(".gallery img, .item img, .tl img, img.zoom");
+  if (!img) return;
+  const lb = $("lb"); lb.querySelector("img").src = img.src; lb.style.display = "flex";
+});
+route();
+</script>
+</body>
+</html>
