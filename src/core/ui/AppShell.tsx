@@ -259,7 +259,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         <div className="hidden items-center gap-3 md:flex">
           {property.logo && (
             // eslint-disable-next-line @next/next/no-img-element
-            <img src={`${BASE}/brands/${property.logo}`} alt="" className={cn("h-8 w-8 rounded-full", property.plate === "light" ? "bg-white object-contain p-1" : "object-cover")} />
+            <img src={`${BASE}/brands/${property.logo}`} alt="" className={cn("h-8 w-8 rounded-full", property.plate === "light" ? "bg-[#ffffff] object-contain p-1" : "object-cover")} />
           )}
           <span className="flex flex-col">
             <span className="jd-serif text-[15px] font-semibold uppercase leading-tight tracking-[0.16em] text-white">{property.name}</span>

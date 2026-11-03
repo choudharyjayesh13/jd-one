@@ -56,7 +56,7 @@ function LevelPicker({ value, onChange, label }: { value: Level; onChange: (l: L
             className={cn(
               "min-h-9 px-2 text-xs",
               i > 0 && "border-l border-white/15",
-              on ? (l.level === 3 ? "jd-gold-btn font-semibold" : l.level === 0 ? "bg-white/15 font-medium text-white" : "bg-white font-medium text-black") : "text-white/65 hover:bg-white/5",
+              on ? (l.level === 3 ? "jd-gold-btn font-semibold" : l.level === 0 ? "bg-white/15 font-medium text-white" : "bg-[#ffffff] font-medium text-black") : "text-white/65 hover:bg-white/5",
             )}
           >
             {l.label}

@@ -169,7 +169,6 @@ textarea {
   --line: rgba(255, 255, 255, 0.12);
   --background: #000000;
   --foreground: #ffffff;
-  --color-white: #121110;
   --color-slate-50: oklch(14.7% 0.004 49.25);
   --color-slate-100: oklch(21.6% 0.006 56.043);
   --color-slate-200: oklch(26.8% 0.007 34.298);
@@ -327,6 +326,23 @@ textarea {
   color-scheme: dark;
   background: #000000;
   color: #ffffff;
+}
+/* White cards/inputs become dark panels; navy chips/buttons become light ones. */
+.jd-dark .bg-white {
+  background-color: #121110;
+}
+.jd-dark .bg-navy {
+  background-color: #f4efe6;
+  color: #0b0a08;
+}
+.jd-dark .bg-navy .text-white,
+.jd-dark .bg-navy.text-white,
+.jd-dark .bg-navy-700 {
+  color: #0b0a08;
+}
+.jd-dark .hover\:bg-navy-700:hover {
+  background-color: #ffffff;
+  color: #0b0a08;
 }
 .jd-dark input,
 .jd-dark select,

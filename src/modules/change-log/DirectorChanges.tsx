@@ -152,7 +152,7 @@ export function DirectorChanges() {
             key={f}
             type="button"
             onClick={() => setFilter(f)}
-            className={cn("min-h-11 rounded-full border px-4 text-sm", filter === f ? "border-white bg-white font-medium text-black" : "border-white/20 text-white/80 hover:border-white/40")}
+            className={cn("min-h-11 rounded-full border px-4 text-sm", filter === f ? "border-white bg-[#ffffff] font-medium text-black" : "border-white/20 text-white/80 hover:border-white/40")}
           >
             {f === "Access" ? "Access changes" : f}
           </button>
