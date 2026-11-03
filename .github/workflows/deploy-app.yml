@@ -71,6 +71,7 @@ jobs:
           NEXT_PUBLIC_SUPABASE_URL: ""
           NEXT_PUBLIC_SUPABASE_ANON_KEY: ""
         run: |
+          git worktree remove --force pages || rm -rf pages
           rm -rf out .next
           bun run build 2>&1 | tail -5 | tee -a ci.log
           cd out
