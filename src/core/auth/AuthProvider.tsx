@@ -88,6 +88,9 @@ function userFromStaff(id: string, email: string | null, staff: Row | null, extr
  * role rules keep working. Until the Chairman's email is set, the owner account
  * that is not the Director counts as Chairman.
  */
+/** Director's login, used only until the database has the posts table (phase-1 SQL). */
+const DIRECTOR_EMAIL = "akshaychanchori@gmail.com";
+
 async function loadPostAndAccess(email: string | null, staff: Row): Promise<{ post: Post | null; access: Record<string, number> | null }> {
   const store = getStore();
   const em = (email ?? "").toLowerCase();
@@ -101,7 +104,9 @@ async function loadPostAndAccess(email: string | null, staff: Row): Promise<{ po
     if (em && directorEmail && em === directorEmail) post = "director";
     else if (chairmanEmail ? em === chairmanEmail : staff.role === "owner") post = "chairman";
   } catch {
-    /* phase-1 tables not created yet */
+    // Phase-1 tables not created yet: same rule as the database will use.
+    if (em && em === DIRECTOR_EMAIL) post = "director";
+    else if (staff.role === "owner") post = "chairman";
   }
   let access: Record<string, number> | null = null;
   try {

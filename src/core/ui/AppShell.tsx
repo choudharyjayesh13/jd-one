@@ -19,6 +19,7 @@ import { isOpenTicket } from "@/modules/tickets/entity";
 import { canSeePerformance } from "@/modules/performance/Performance";
 import { useList } from "./hooks";
 import { cn } from "./cn";
+import { DbUpdateStrip } from "./DbSetup";
 
 const BASE = process.env.NEXT_PUBLIC_BASE_PATH ?? "";
 
@@ -279,6 +280,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         </div>
       </header>
 
+      <DbUpdateStrip />
       {mode === "local" && <div className="bg-[#d7aa60]/15 px-4 py-1 text-center text-[11px] text-[#f4d390]">Local mode – single device. Data lives in this browser; export it from Settings.</div>}
 
       <div className="flex flex-1">

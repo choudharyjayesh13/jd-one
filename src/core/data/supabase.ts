@@ -76,17 +76,36 @@ export class SupabaseStore implements DataStore {
   async create(entity: string, data: FieldValues): Promise<Row> {
     const def = getEntity(entity);
     const values = await this.uploadFiles(entity, data);
-    const { data: row, error } = await this.client.from(def.table).insert(values).select("*").single();
-    if (error) throw new Error(error.message);
-    return row as Row;
+    return this.withoutMissingColumns(values, (v) => this.client.from(def.table).insert(v).select("*").single());
   }
 
   async update(entity: string, id: string, patch: FieldValues): Promise<Row> {
     const def = getEntity(entity);
     const values = await this.uploadFiles(entity, patch, id);
-    const { data: row, error } = await this.client.from(def.table).update(values).eq("id", id).select("*").single();
-    if (error) throw new Error(error.message);
-    return row as Row;
+    return this.withoutMissingColumns(values, (v) => this.client.from(def.table).update(v).eq("id", id).select("*").single());
+  }
+
+  /**
+   * A new app field whose database column is not there yet (the update SQL has
+   * not been run) would fail the whole save. Drop that field and save the rest,
+   * so everyday forms keep working; the field starts saving once the SQL is run.
+   */
+  private async withoutMissingColumns(
+    values: FieldValues,
+    run: (v: FieldValues) => PromiseLike<{ data: unknown; error: { message: string } | null }>,
+  ): Promise<Row> {
+    let v = { ...values };
+    for (let i = 0; i < 8; i++) {
+      const { data, error } = await run(v);
+      if (!error) return data as Row;
+      const col = /Could not find the '([^']+)' column/i.exec(error.message)?.[1] ?? /column "?([a-z_0-9]+)"? of relation .* does not exist/i.exec(error.message)?.[1];
+      if (!col || !(col in v)) throw new Error(error.message);
+      console.warn(`JD One: column "${col}" is not in the database yet (run the update SQL); saved without it.`);
+      const next = { ...v };
+      delete next[col];
+      v = next;
+    }
+    throw new Error("Could not save: the database needs the latest update SQL.");
   }
 
   async remove(entity: string, id: string): Promise<void> {
