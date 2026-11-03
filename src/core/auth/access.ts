@@ -75,6 +75,8 @@ export function canUpdate(role: Role, def: EntityDef): boolean {
 
 /** Deleting also needs the database's delete right (owner), whatever the level. */
 export function canDelete(role: Role, def: EntityDef): boolean {
+  // Chairman and Director have the same powers, deleting included (the Director's deletes are logged for the Chairman).
+  if (current.admin) return true;
   const lvl = entityLevel(def);
   const legacy = legacyRead(role, def) && def.permissions.delete.includes(role);
   return lvl === null ? legacy : lvl >= 3 && def.permissions.delete.includes(role);

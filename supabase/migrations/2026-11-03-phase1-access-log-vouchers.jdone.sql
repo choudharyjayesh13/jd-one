@@ -37,6 +37,12 @@ language sql stable security definer set search_path = jdone, public as $$
   )
 $$;
 
+-- The Director has the same rights as the owner (deleting included); everything the Director does is logged below.
+create or replace function jdone.is_owner() returns boolean
+language sql stable security definer set search_path = jdone, public as $$
+  select coalesce(jdone.current_staff_role() = 'owner', false) or jdone.is_director()
+$$;
+
 -- Until the Chairman's email is set, the owner account (that is not the Director) acts as Chairman.
 create or replace function jdone.is_chairman() returns boolean
 language sql stable security definer set search_path = jdone, public as $$
