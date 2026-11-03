@@ -90,7 +90,7 @@ export function InstallSheet({ open, onClose }: { open: boolean; onClose: () => 
       onClick={() => setPlatform(p)}
       className={cn(
         "flex min-h-[52px] flex-1 items-center justify-center gap-2.5 rounded-[4px] border text-sm tracking-[0.08em]",
-        platform === p ? "border-white bg-white font-medium text-black" : "border-white/25 text-white/80 hover:border-white/50",
+        platform === p ? "border-[#ffffff] bg-[#ffffff] font-medium text-[#000000]" : "border-white/25 text-white/80 hover:border-white/50",
       )}
     >
       {icon}
