@@ -1,12 +1,13 @@
 # Builds JD One and publishes it to the gh-pages branch (served at app.myjdgroup.com).
-# Runs on every push to redesign/login-flow, or by hand from the Actions tab.
+#   redesign/login-flow → the live app at app.myjdgroup.com
+#   redesign/phase1     → a test copy at app.myjdgroup.com/preview/ (live app untouched)
 # The Supabase URL and anon key are public values (they ship inside the app's
 # JavaScript anyway); the service-role key is never used here.
 name: Deploy app.myjdgroup.com
 
 on:
   push:
-    branches: [redesign/login-flow]
+    branches: [redesign/login-flow, redesign/phase1]
   workflow_dispatch:
 
 permissions:
@@ -20,7 +21,9 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     env:
-      NEXT_PUBLIC_BASE_PATH: ""
+      # Live at the site root; the phase-1 branch goes to /preview so it can be tested first.
+      NEXT_PUBLIC_BASE_PATH: ${{ github.ref_name == 'redesign/phase1' && '/preview' || '' }}
+      TARGET_DIR: ${{ github.ref_name == 'redesign/phase1' && 'preview' || '.' }}
       NEXT_PUBLIC_SUPABASE_URL: https://cyimbgjzxxxszjadxpgv.supabase.co
       # JD One shares this Supabase project with another app; its tables live in the "jdone" schema.
       NEXT_PUBLIC_SUPABASE_SCHEMA: jdone
@@ -40,18 +43,22 @@ jobs:
 
       - name: Publish to gh-pages
         run: |
-          echo app.myjdgroup.com > out/CNAME
-          touch out/.nojekyll
+          if [ "$TARGET_DIR" = "." ]; then echo app.myjdgroup.com > out/CNAME; touch out/.nojekyll; fi
           # New service-worker version so phones drop the old cached screens.
           sed -i -E "s/const VERSION = \"jd-one-[^\"]*\";/const VERSION = \"jd-one-$(date +%s)\";/" out/sw.js
           git fetch --depth 1 origin gh-pages
           git worktree add pages origin/gh-pages
           cd pages
           git checkout -B gh-pages
-          find . -mindepth 1 -maxdepth 1 ! -name .git -exec rm -rf {} +
-          cp -R ../out/. .
+          if [ "$TARGET_DIR" = "." ]; then
+            # Live deploy: replace everything except the test copy in preview/.
+            find . -mindepth 1 -maxdepth 1 ! -name .git ! -name preview -exec rm -rf {} +
+            cp -R ../out/. .
+          else
+            rm -rf "$TARGET_DIR" && mkdir -p "$TARGET_DIR" && cp -R ../out/. "$TARGET_DIR"/
+          fi
           git add -A
-          git -c user.name="JD One deploy" -c user.email="noreply@anthropic.com" commit -qm "Deploy $(date -u +%Y-%m-%dT%H:%M:%SZ) — sign-in flow redesign (${GITHUB_SHA::7})"
+          git -c user.name="JD One deploy" -c user.email="noreply@anthropic.com" commit -qm "Deploy $(date -u +%Y-%m-%dT%H:%M:%SZ) — ${GITHUB_REF_NAME} → ${TARGET_DIR} (${GITHUB_SHA::7})"
           git push origin gh-pages 2>&1 | tee -a ../ci.log
 
       # If anything fails, keep the log on the ci-logs branch so it can be read without the Actions UI.
