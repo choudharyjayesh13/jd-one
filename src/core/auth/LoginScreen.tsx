@@ -1,21 +1,25 @@
 "use client";
 /**
- * /login: PIN (local mode) or email + password (Supabase mode). Supabase mode
- * also offers "Create account" (self sign-up, approved by HR) and shows the
- * "Pending approval" screen for accounts that have no staff record yet.
+ * /login, in four steps:
+ *   1. JD logo with a spinning orange ring while the app loads,
+ *   2. JD Group: every business as a round logo (JD Stays & Hospitality last),
+ *   3. JD Stays & Hospitality: its properties pop in one by one,
+ *   4. sign in (or create an account) under the chosen business's logo.
+ * PIN (local mode) or email + password (Supabase mode) as before; Supabase mode
+ * also shows "Pending approval" for accounts that have no staff record yet.
  */
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { photoOfDay } from "@/core/ui/property";
-import { Clock, LockKeyhole, LogIn, LogOut, RefreshCw, UserRoundPlus } from "lucide-react";
 import { getSupabaseClient } from "@/core/data";
 import { useAuth } from "./AuthProvider";
-import { Button } from "@/core/ui/Button";
-import { Input, Field, Select } from "@/core/ui/Input";
-import { Loading } from "@/core/ui/misc";
+import { BRANDS, BRAND_STORAGE_KEY, JD_STAYS, STAYS_PROPERTIES, findBrand, type Brand } from "./brands";
 import { cn } from "@/core/ui/cn";
 
 type Unit = { id: string; name: string; short_code: string | null; active: boolean };
+type Stage = "splash" | "group" | "stays" | "form";
+
+const BASE = process.env.NEXT_PUBLIC_BASE_PATH ?? "";
+const SPLASH_MS = 2800;
 
 /** Business units for the sign-up form, read with the anon key (policy "anon read active units"). */
 async function loadUnitsAnon(): Promise<Unit[]> {
@@ -26,11 +30,103 @@ async function loadUnitsAnon(): Promise<Unit[]> {
   return (data ?? []) as Unit[];
 }
 
+function readBrand(): string | null {
+  try {
+    return window.localStorage.getItem(BRAND_STORAGE_KEY);
+  } catch {
+    return null;
+  }
+}
+function saveBrand(id: string) {
+  try {
+    window.localStorage.setItem(BRAND_STORAGE_KEY, id);
+  } catch {
+    /* private mode: just don't remember */
+  }
+}
+
+const isStaysProperty = (b: Brand | null) => !!b && STAYS_PROPERTIES.some((p) => p.id === b.id);
+
+/* ---------- small building blocks ---------- */
+
+function Diamond() {
+  return (
+    <span className="flex items-center gap-3" aria-hidden="true">
+      <span className="h-px w-20 bg-gradient-to-r from-transparent to-[#d7aa60]" />
+      <span className="h-[7px] w-[7px] rotate-45 bg-[#d7aa60]" />
+      <span className="h-px w-20 bg-gradient-to-r from-[#d7aa60] to-transparent" />
+    </span>
+  );
+}
+
+function Eyebrow({ children, className }: { children: ReactNode; className?: string }) {
+  return <span className={cn("text-[11px] uppercase tracking-[0.34em] text-[#d7aa60]", className)}>{children}</span>;
+}
+
+/** A logo on a round plate. */
+function LogoCircle({ brand, size }: { brand: Brand; size: number }) {
+  const plate = brand.plate === "light" ? "bg-white" : brand.plate === "cover" ? "bg-[#ee8122]" : "border border-[#d7aa60]/45 bg-black";
+  return (
+    <span className={cn("jd-plate flex shrink-0 items-center justify-center overflow-hidden rounded-full transition-shadow", plate)} style={{ width: size, height: size }}>
+      {brand.logo ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src={`${BASE}/brands/${brand.logo}`}
+          alt={`${brand.name} logo`}
+          className={brand.plate === "cover" ? "h-full w-full object-cover" : "max-h-[68%] max-w-[68%] object-contain"}
+        />
+      ) : (
+        <span className="jd-serif font-semibold tracking-[0.1em] text-[#d7aa60]" style={{ fontSize: size * 0.26 }}>
+          {brand.initials}
+        </span>
+      )}
+    </span>
+  );
+}
+
+function BrandButton({ brand, size, delay, onClick }: { brand: Brand; size: number; delay: number; onClick: () => void }) {
+  return (
+    <button type="button" onClick={onClick} className="jd-circ jd-pop flex flex-col items-center gap-3.5 text-center text-white outline-none" style={{ animationDelay: `${delay}s` }}>
+      <LogoCircle brand={brand} size={size} />
+      <span className="flex flex-col items-center gap-1">
+        <span className="jd-serif text-xl font-semibold tracking-[0.04em]">{brand.name}</span>
+        <span className="text-[10px] uppercase tracking-[0.22em] text-[#d7aa60]">{brand.tagline}</span>
+      </span>
+    </button>
+  );
+}
+
+function BackLink({ onClick, children }: { onClick: () => void; children: ReactNode }) {
+  return (
+    <button type="button" onClick={onClick} className="min-h-11 self-start text-xs uppercase tracking-[0.2em] text-[#d7aa60] hover:text-[#f4d390]">
+      {children}
+    </button>
+  );
+}
+
+const fieldLabel = "flex flex-col gap-2 text-[11px] uppercase tracking-[0.24em] text-white/70";
+const fieldInput =
+  "min-h-[52px] rounded-[4px] border border-white/25 bg-[#0e0d0b] px-4 text-base normal-case tracking-normal text-white placeholder:text-white/35 outline-none focus:border-[#d7aa60]";
+
+function DarkField({ label, children, help }: { label: string; children: ReactNode; help?: string }) {
+  return (
+    <label className={fieldLabel}>
+      {label}
+      {children}
+      {help && <span className="text-xs normal-case tracking-normal text-white/55">{help}</span>}
+    </label>
+  );
+}
+
+/* ---------- the screen ---------- */
+
 export function LoginScreen() {
   const { mode, loading, user, pinSet, pendingSignup, signInWithPassword, signUp, unlockWithPin, createPin, signOut } = useAuth();
   const router = useRouter();
   const params = useSearchParams();
   const next = params.get("next") || "/";
+  const [stage, setStage] = useState<Stage>("splash");
+  const [brandId, setBrandId] = useState<string | null>(null);
   const [tab, setTab] = useState<"signin" | "signup">("signin");
   const [pin, setPin] = useState("");
   const [pin2, setPin2] = useState("");
@@ -47,12 +143,30 @@ export function LoginScreen() {
     if (!loading && user) router.replace(next.startsWith("/") ? next : "/");
   }, [loading, user, router, next]);
 
+  // Loading screen, then the JD Group page.
+  useEffect(() => {
+    const t = window.setTimeout(() => setStage((s) => (s === "splash" ? "group" : s)), SPLASH_MS);
+    return () => window.clearTimeout(t);
+  }, []);
+
+  useEffect(() => {
+    setBrandId(readBrand());
+  }, []);
+
   useEffect(() => {
     if (mode !== "supabase" || tab !== "signup" || units.length) return;
     loadUnitsAnon().then(setUnits, (e: Error) => setUnitsError(e.message));
   }, [mode, tab, units.length]);
 
-  if (loading) return <Loading />;
+  const brand = findBrand(brandId) ?? JD_STAYS;
+
+  const choose = (b: Brand) => {
+    setBrandId(b.id);
+    saveBrand(b.id);
+    setError(null);
+    setDone(null);
+    setStage("form");
+  };
 
   const submit = async () => {
     setError(null);
@@ -82,145 +196,253 @@ export function LoginScreen() {
 
   const setF = (k: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => setForm((f) => ({ ...f, [k]: e.target.value }));
 
-  const header = (
-    <div className="mb-6 flex items-center gap-3">
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src={`${process.env.NEXT_PUBLIC_BASE_PATH ?? ""}/icons/icon-192.png`} alt="JD Group" className="h-12 w-12 shadow rounded-full" />
-      <div>
-        <h1 className="text-lg font-semibold text-navy">JD One</h1>
-        <p className="text-xs text-slate-500">JD Group staff app</p>
+  const shell = (children: ReactNode) => <div className="jd-sans min-h-screen w-full bg-black text-white">{children}</div>;
+
+  // 1. Loading: JD logo with the spinning orange ring (also covers the auth check).
+  if (stage === "splash" || loading) {
+    return shell(
+      <div className="flex min-h-screen flex-col items-center justify-center gap-10 px-6">
+        <div className="relative h-[150px] w-[150px]">
+          <span className="jd-ring" aria-hidden="true" />
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={`${BASE}/icons/icon-512.png`} alt="JD Group" className="block h-[150px] w-[150px] rounded-full" />
+        </div>
+        <div className="jd-rise flex flex-col items-center gap-3 text-center">
+          <span className="jd-serif pl-[0.24em] text-4xl font-semibold uppercase tracking-[0.24em]">JD Group</span>
+          <Eyebrow className="pl-[0.34em]">of companies · Udaipur · since 1995</Eyebrow>
+        </div>
+        <div className="h-0.5 w-56 overflow-hidden rounded bg-white/10">
+          <div className="jd-bar" />
+        </div>
+        {!loading && (
+          <button type="button" onClick={() => setStage("group")} className="min-h-11 px-4 text-xs uppercase tracking-[0.2em] text-white/60 hover:text-white">
+            Skip
+          </button>
+        )}
       </div>
-    </div>
-  );
+    );
+  }
 
   // Signed in, but not a staff member yet: waiting for HR.
   if (mode === "supabase" && pendingSignup) {
     const rejected = pendingSignup.status === "Rejected";
-    return (
-      <div className="relative flex min-h-screen items-center justify-center bg-navy px-4" style={{ backgroundImage: `linear-gradient(rgba(11,31,58,.55), rgba(11,31,58,.85)), url(${photoOfDay().url})`, backgroundSize: "cover", backgroundPosition: "center" }}>
-        <div className="w-full max-w-sm rounded-2xl bg-white p-6 shadow-xl">
-          {header}
-          <div className={cn("rounded-xl px-4 py-4 text-sm", rejected ? "bg-red-50 text-red-800" : "bg-amber-50 text-amber-900")}>
-            <div className="mb-1 flex items-center gap-2 text-base font-semibold">
-              <Clock className="h-4 w-4" /> {rejected ? "Sign-up not approved" : "Pending approval"}
-            </div>
-            <p>
-              Hi {pendingSignup.name.split(" ")[0]}. {rejected ? "JD Group did not approve this account." : "Your account is waiting for JD Group (HR) to approve it. We'll notify you — then just sign in again."}
-            </p>
-            {pendingSignup.note && <p className="mt-2 italic">“{pendingSignup.note}”</p>}
-            {pendingSignup.email && <p className="mt-2 text-xs opacity-80">Signed in as {pendingSignup.email}</p>}
+    return shell(
+      <div className="flex min-h-screen items-center justify-center px-6">
+        <div className="jd-rise flex w-full max-w-md flex-col gap-6 text-center">
+          <div className="mx-auto">
+            <LogoCircle brand={brand} size={120} />
           </div>
-          <div className="mt-4 flex gap-2">
-            <Button variant="secondary" icon={RefreshCw} className="flex-1" onClick={() => window.location.reload()}>
+          <div className="flex flex-col items-center gap-3">
+            <Eyebrow>{rejected ? "Sign-up not approved" : "Pending approval"}</Eyebrow>
+            <h1 className="jd-serif text-4xl font-medium">
+              Hi <em className="text-[#d7aa60]">{pendingSignup.name.split(" ")[0]}</em>
+            </h1>
+            <Diamond />
+          </div>
+          <p className="font-light text-white/75">
+            {rejected ? "JD Group did not approve this account." : "Your account is waiting for JD Group (HR) to approve it. We'll notify you — then just sign in again."}
+          </p>
+          {pendingSignup.note && <p className="italic text-white/70">“{pendingSignup.note}”</p>}
+          {pendingSignup.email && <p className="text-xs text-white/55">Signed in as {pendingSignup.email}</p>}
+          <div className="flex gap-3">
+            <button type="button" onClick={() => window.location.reload()} className="jd-gold-btn min-h-[52px] flex-1 rounded-[4px] text-xs font-medium uppercase tracking-[0.24em]">
               Check again
-            </Button>
-            <Button variant="ghost" icon={LogOut} onClick={() => void signOut()}>
+            </button>
+            <button type="button" onClick={() => void signOut()} className="min-h-[52px] rounded-[4px] border border-white/30 px-6 text-xs uppercase tracking-[0.24em] text-white">
               Sign out
-            </Button>
+            </button>
           </div>
         </div>
       </div>
     );
   }
 
-  return (
-    <div className="relative flex min-h-screen items-center justify-center bg-navy px-4" style={{ backgroundImage: `linear-gradient(rgba(11,31,58,.55), rgba(11,31,58,.85)), url(${photoOfDay().url})`, backgroundSize: "cover", backgroundPosition: "center" }}>
-      <form
-        className="w-full max-w-sm rounded-2xl bg-white p-6 shadow-xl"
-        onSubmit={(e) => {
-          e.preventDefault();
-          void submit();
-        }}
-      >
-        {header}
+  // 2. JD Group: every business, JD Stays & Hospitality last.
+  if (stage === "group") {
+    return shell(
+      <div className="mx-auto flex min-h-screen max-w-[1440px] flex-col gap-12 px-5 pb-16 pt-12 sm:px-10 lg:px-16">
+        <header className="jd-rise flex flex-col items-center gap-6 text-center">
+          <div className="relative h-28 w-28">
+            <span className="jd-orbit" aria-hidden="true" />
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={`${BASE}/icons/icon-512.png`} alt="JD Group" className="block h-28 w-28 rounded-full" />
+          </div>
+          <div className="flex flex-col items-center gap-3">
+            <h1 className="jd-serif pl-[0.24em] text-[clamp(34px,4vw,52px)] font-semibold uppercase leading-none tracking-[0.24em]">JD Group</h1>
+            <Diamond />
+            <Eyebrow className="pl-[0.34em]">Of companies · choose your business</Eyebrow>
+          </div>
+        </header>
 
-        {mode === "local" ? (
-          <>
-            <p className="mb-4 rounded-lg bg-gold/10 px-3 py-2 text-xs text-navy">
-              <LockKeyhole className="mr-1 inline h-3.5 w-3.5" />
-              Local mode – single device. {pinSet ? "Enter your 4-digit PIN." : "Set a 4-digit PIN to protect this device."}
-            </p>
-            <Field label={pinSet ? "PIN" : "New PIN"} required>
-              <Input type="password" inputMode="numeric" pattern="\d{4}" maxLength={4} value={pin} onChange={(e) => setPin(e.target.value.replace(/\D/g, ""))} autoFocus className="text-center tracking-[0.5em]" />
-            </Field>
-            {!pinSet && (
-              <div className="mt-3">
-                <Field label="Repeat PIN" required>
-                  <Input type="password" inputMode="numeric" maxLength={4} value={pin2} onChange={(e) => setPin2(e.target.value.replace(/\D/g, ""))} className="text-center tracking-[0.5em]" />
-                </Field>
-              </div>
-            )}
-          </>
-        ) : (
-          <>
-            <div className="mb-4 flex rounded-lg bg-slate-100 p-1 text-sm">
-              {(["signin", "signup"] as const).map((t) => (
-                <button
-                  key={t}
-                  type="button"
-                  onClick={() => {
-                    setTab(t);
-                    setError(null);
-                    setDone(null);
-                  }}
-                  className={cn("flex-1 rounded-md py-1.5 font-medium", tab === t ? "bg-white text-navy shadow-sm" : "text-slate-500")}
-                >
-                  {t === "signin" ? "Sign in" : "Create account"}
-                </button>
+        <div className="grid grid-cols-2 gap-x-5 gap-y-9 sm:grid-cols-[repeat(auto-fill,minmax(170px,1fr))]">
+          {BRANDS.map((b, i) => (
+            <BrandButton key={b.id} brand={b} size={140} delay={0.06 * i} onClick={() => choose(b)} />
+          ))}
+        </div>
+
+        <button
+          type="button"
+          onClick={() => setStage("stays")}
+          className="jd-circ flex flex-wrap items-center gap-9 rounded-[22px] border border-[#d7aa60]/45 bg-[#0e0d0b] p-8 text-left text-white hover:border-[#d7aa60]/80"
+        >
+          <span className="relative m-3 shrink-0">
+            <span className="jd-orbit gold" aria-hidden="true" />
+            <LogoCircle brand={JD_STAYS} size={200} />
+          </span>
+          <span className="flex min-w-[260px] flex-1 flex-col gap-3.5">
+            <Eyebrow>Hotels &amp; resorts</Eyebrow>
+            <span className="jd-serif text-[clamp(28px,3.4vw,44px)] font-semibold uppercase leading-tight tracking-[0.14em]">JD Stays &amp; Hospitality</span>
+            <span className="flex flex-wrap gap-2">
+              {STAYS_PROPERTIES.map((p) => (
+                <span key={p.id} className="rounded-full border border-white/20 px-3.5 py-1.5 text-[13px] text-white/85">
+                  {p.name}
+                </span>
               ))}
-            </div>
-            {done ? (
-              <div className="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-3 text-sm text-emerald-800">{done}</div>
-            ) : tab === "signin" ? (
-              <div className="space-y-3">
-                <Field label="Email" required>
-                  <Input type="email" autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} autoFocus />
-                </Field>
-                <Field label="Password" required>
-                  <Input type="password" autoComplete="current-password" value={password} onChange={(e) => setPassword(e.target.value)} />
-                </Field>
-              </div>
-            ) : (
-              <div className="space-y-3">
-                <Field label="Full name" required>
-                  <Input autoComplete="name" value={form.name} onChange={setF("name")} autoFocus />
-                </Field>
-                <Field label="Phone" required>
-                  <Input type="tel" inputMode="tel" autoComplete="tel" value={form.phone} onChange={setF("phone")} placeholder="98290 12345" />
-                </Field>
-                <Field label="Email" required>
-                  <Input type="email" autoComplete="email" value={form.email} onChange={setF("email")} />
-                </Field>
-                <Field label="Password" required help="At least 6 characters">
-                  <Input type="password" autoComplete="new-password" value={form.password} onChange={setF("password")} />
-                </Field>
-                <Field label="Designation" required>
-                  <Input value={form.designation} onChange={setF("designation")} placeholder="Front office, Chef, Housekeeping…" />
-                </Field>
-                <Field label="Business unit" required error={unitsError ?? undefined}>
-                  <Select value={form.business_unit_id} onChange={setF("business_unit_id")}>
-                    <option value="">{units.length ? "Select…" : "Loading…"}</option>
-                    {units.map((u) => (
-                      <option key={u.id} value={u.id}>
-                        {u.name}
-                        {u.short_code ? ` (${u.short_code})` : ""}
-                      </option>
-                    ))}
-                  </Select>
-                </Field>
-                <p className="text-xs text-slate-500">Your account is activated once JD Group (HR) approves it.</p>
-              </div>
-            )}
-          </>
-        )}
+            </span>
+            <span className="mt-1 text-xs uppercase tracking-[0.24em] text-[#f4d390]">Open →</span>
+          </span>
+        </button>
+      </div>
+    );
+  }
 
-        {error && <p className="mt-3 text-sm text-red-600">{error}</p>}
-        {!done && (
-          <Button type="submit" icon={mode !== "local" && tab === "signup" ? UserRoundPlus : LogIn} loading={busy} className="mt-5 w-full">
-            {mode === "local" ? (pinSet ? "Unlock" : "Set PIN & open") : tab === "signup" ? "Create account" : "Sign in"}
-          </Button>
-        )}
-      </form>
+  // 3. JD Stays & Hospitality: properties pop in one by one.
+  if (stage === "stays") {
+    return shell(
+      <div className="mx-auto flex min-h-screen max-w-[1440px] flex-col items-center gap-11 px-5 pb-16 pt-8 sm:px-10 lg:px-16">
+        <BackLink onClick={() => setStage("group")}>← JD Group</BackLink>
+        <header className="jd-pop flex flex-col items-center gap-5 text-center">
+          <div className="relative">
+            <span className="jd-orbit gold" aria-hidden="true" />
+            <span className="flex h-[150px] w-[150px] items-center justify-center rounded-full border border-[#d7aa60]/45 bg-black">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={`${BASE}/brands/jd-lotus.webp`} alt="" className="w-[62%]" />
+            </span>
+          </div>
+          <h1 className="jd-serif pl-[0.18em] text-[clamp(30px,3.6vw,48px)] font-semibold uppercase leading-tight tracking-[0.18em]">JD Stays &amp; Hospitality</h1>
+          <Diamond />
+          <Eyebrow className="pl-[0.34em]">Choose your property</Eyebrow>
+        </header>
+        <div className="flex max-w-[1180px] flex-wrap justify-center gap-x-9 gap-y-10">
+          {STAYS_PROPERTIES.map((p, i) => (
+            <BrandButton key={p.id} brand={p} size={180} delay={0.2 + 0.32 * i} onClick={() => choose(p)} />
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  // 4. Sign in under the chosen business's logo.
+  return shell(
+    <div className="flex min-h-screen flex-wrap">
+      <div className="flex min-h-[44vh] flex-[1_1_480px] flex-col items-center justify-center gap-6 border-white/10 bg-[#0e0d0b] px-8 py-14 text-center md:border-r">
+        <span className="jd-pop">
+          <LogoCircle brand={brand} size={300} />
+        </span>
+        <span className="jd-serif text-[clamp(26px,3vw,34px)] font-semibold uppercase leading-tight tracking-[0.16em]">{brand.name}</span>
+        <Eyebrow>{brand.tagline}</Eyebrow>
+      </div>
+
+      <div className="flex flex-[1_1_480px] items-center justify-center px-6 py-14">
+        <form
+          className="jd-rise flex w-full max-w-[400px] flex-col gap-6"
+          onSubmit={(e) => {
+            e.preventDefault();
+            void submit();
+          }}
+        >
+          <BackLink onClick={() => setStage(isStaysProperty(brand) ? "stays" : "group")}>{isStaysProperty(brand) ? "← JD Stays properties" : "← All businesses"}</BackLink>
+          <div className="flex flex-col gap-2">
+            <Eyebrow>{tab === "signup" ? "New staff" : "Staff sign in"}</Eyebrow>
+            <h1 className="jd-serif text-5xl font-medium leading-none">
+              {tab === "signup" ? (
+                <>
+                  Join <em className="text-[#d7aa60]">JD One</em>
+                </>
+              ) : (
+                <>
+                  Welcome <em className="text-[#d7aa60]">back</em>
+                </>
+              )}
+            </h1>
+            <p className="font-light text-white/70">{mode === "local" ? "Local mode – single device." : tab === "signup" ? "Your account is activated once JD Group (HR) approves it." : "Use the login your manager gave you."}</p>
+          </div>
+
+          {mode === "local" ? (
+            <>
+              <DarkField label={pinSet ? "PIN" : "New PIN"}>
+                <input type="password" inputMode="numeric" pattern="\d{4}" maxLength={4} value={pin} onChange={(e) => setPin(e.target.value.replace(/\D/g, ""))} autoFocus className={cn(fieldInput, "text-center tracking-[0.5em]")} />
+              </DarkField>
+              {!pinSet && (
+                <DarkField label="Repeat PIN">
+                  <input type="password" inputMode="numeric" maxLength={4} value={pin2} onChange={(e) => setPin2(e.target.value.replace(/\D/g, ""))} className={cn(fieldInput, "text-center tracking-[0.5em]")} />
+                </DarkField>
+              )}
+            </>
+          ) : done ? (
+            <div className="rounded-[4px] border border-[#d7aa60] px-4 py-4 text-sm text-white/85">{done}</div>
+          ) : tab === "signin" ? (
+            <>
+              <DarkField label="Email">
+                <input type="email" autoComplete="email" required value={email} onChange={(e) => setEmail(e.target.value)} autoFocus placeholder="name@myjdgroup.com" className={fieldInput} />
+              </DarkField>
+              <DarkField label="Password">
+                <input type="password" autoComplete="current-password" required value={password} onChange={(e) => setPassword(e.target.value)} className={fieldInput} />
+              </DarkField>
+            </>
+          ) : (
+            <>
+              <DarkField label="Full name">
+                <input autoComplete="name" value={form.name} onChange={setF("name")} autoFocus className={fieldInput} />
+              </DarkField>
+              <DarkField label="Phone">
+                <input type="tel" inputMode="tel" autoComplete="tel" value={form.phone} onChange={setF("phone")} placeholder="98290 12345" className={fieldInput} />
+              </DarkField>
+              <DarkField label="Email">
+                <input type="email" autoComplete="email" value={form.email} onChange={setF("email")} className={fieldInput} />
+              </DarkField>
+              <DarkField label="Password" help="At least 6 characters">
+                <input type="password" autoComplete="new-password" value={form.password} onChange={setF("password")} className={fieldInput} />
+              </DarkField>
+              <DarkField label="Designation">
+                <input value={form.designation} onChange={setF("designation")} placeholder="Front office, Chef, Housekeeping…" className={fieldInput} />
+              </DarkField>
+              <DarkField label="Business unit" help={unitsError ?? undefined}>
+                <select value={form.business_unit_id} onChange={setF("business_unit_id")} className={fieldInput}>
+                  <option value="">{units.length ? "Select…" : "Loading…"}</option>
+                  {units.map((u) => (
+                    <option key={u.id} value={u.id}>
+                      {u.name}
+                      {u.short_code ? ` (${u.short_code})` : ""}
+                    </option>
+                  ))}
+                </select>
+              </DarkField>
+            </>
+          )}
+
+          {error && <p className="text-sm text-[#ff9b85]">{error}</p>}
+          {!done && (
+            <button type="submit" disabled={busy} className="jd-gold-btn min-h-[54px] rounded-[4px] text-[13px] font-medium uppercase tracking-[0.26em] disabled:opacity-60">
+              {busy ? "Please wait…" : mode === "local" ? (pinSet ? "Unlock" : "Set PIN & open") : tab === "signup" ? "Create account" : "Sign in"}
+            </button>
+          )}
+
+          {mode === "supabase" && (
+            <button
+              type="button"
+              onClick={() => {
+                setTab(tab === "signin" ? "signup" : "signin");
+                setError(null);
+                setDone(null);
+              }}
+              className="min-h-11 self-center text-sm text-[#d7aa60] hover:text-[#f4d390]"
+            >
+              {tab === "signin" ? "New staff? Create an account" : "Already have an account? Sign in"}
+            </button>
+          )}
+        </form>
+      </div>
     </div>
   );
 }

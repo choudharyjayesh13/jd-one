@@ -1,0 +1,64 @@
+# Builds JD One and publishes it to the gh-pages branch (served at app.myjdgroup.com).
+# Runs on every push to redesign/login-flow, or by hand from the Actions tab.
+# The Supabase URL and anon key are public values (they ship inside the app's
+# JavaScript anyway); the service-role key is never used here.
+name: Deploy app.myjdgroup.com
+
+on:
+  push:
+    branches: [redesign/login-flow]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: deploy-app
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    env:
+      NEXT_PUBLIC_BASE_PATH: ""
+      NEXT_PUBLIC_SUPABASE_URL: https://cyimbgjzxxxszjadxpgv.supabase.co
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImN5aW1iZ2p6eHh4c3pqYWR4cGd2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQyMTg2MDgsImV4cCI6MjA5OTc5NDYwOH0.R-8de9Ccqui113tBsAvdhHE04LZ6Hlz09bY1vymAcv4
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.3.14
+
+      - name: Install
+        run: bun install --frozen-lockfile 2>&1 | tee -a ci.log
+
+      - name: Build
+        run: bun run build 2>&1 | tee -a ci.log
+
+      - name: Publish to gh-pages
+        run: |
+          echo app.myjdgroup.com > out/CNAME
+          touch out/.nojekyll
+          # New service-worker version so phones drop the old cached screens.
+          sed -i -E "s/const VERSION = \"jd-one-[^\"]*\";/const VERSION = \"jd-one-$(date +%s)\";/" out/sw.js
+          git fetch --depth 1 origin gh-pages
+          git worktree add pages origin/gh-pages
+          cd pages
+          git checkout -B gh-pages
+          find . -mindepth 1 -maxdepth 1 ! -name .git -exec rm -rf {} +
+          cp -R ../out/. .
+          git add -A
+          git -c user.name="JD One deploy" -c user.email="noreply@anthropic.com" commit -qm "Deploy $(date -u +%Y-%m-%dT%H:%M:%SZ) — sign-in flow redesign (${GITHUB_SHA::7})"
+          git push origin gh-pages 2>&1 | tee -a ../ci.log
+
+      # If anything fails, keep the log on the ci-logs branch so it can be read without the Actions UI.
+      - name: Save log on failure
+        if: failure()
+        run: |
+          mkdir -p /tmp/logs && cp ci.log /tmp/logs/${GITHUB_SHA::7}.log 2>/dev/null || echo "no log" > /tmp/logs/${GITHUB_SHA::7}.log
+          cd /tmp/logs
+          git init -q -b ci-logs
+          git add -A
+          git -c user.name="JD One deploy" -c user.email="noreply@anthropic.com" commit -qm "CI log ${GITHUB_SHA::7}"
+          git push -f "https://x-access-token:${{ github.token }}@github.com/${GITHUB_REPOSITORY}.git" ci-logs

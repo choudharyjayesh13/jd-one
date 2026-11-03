@@ -44,3 +44,113 @@ textarea {
     font-size: 14px;
   }
 }
+
+/* ---------- Sign-in flow (JD Group → business → property → login) ----------
+   Black and white with gold accents, type as on theudaisarovar.com:
+   Cormorant Garamond for names and titles, Jost for everything else. */
+.jd-serif {
+  font-family: "Cormorant Garamond", Georgia, "Times New Roman", serif;
+}
+.jd-sans {
+  font-family: "Jost", -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+}
+.jd-gold-btn {
+  background: linear-gradient(135deg, #c08a3a 0%, #d7aa60 28%, #f4d390 52%, #d7aa60 74%, #b98536 100%);
+  color: #1e1a14;
+}
+@keyframes jd-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@keyframes jd-fill {
+  from {
+    width: 0;
+  }
+  to {
+    width: 100%;
+  }
+}
+@keyframes jd-rise {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes jd-pop {
+  0% {
+    opacity: 0;
+    transform: scale(0.55);
+  }
+  70% {
+    opacity: 1;
+    transform: scale(1.06);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+/* Orange arc spinning round the JD logo while the app loads. */
+.jd-ring {
+  position: absolute;
+  inset: -14px;
+  border-radius: 50%;
+  background: conic-gradient(from 0deg, rgba(238, 129, 34, 0) 0deg, rgba(238, 129, 34, 0.15) 120deg, #ee8122 300deg, #ffb06a 360deg);
+  -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 5px), #000 calc(100% - 4px));
+  mask: radial-gradient(farthest-side, transparent calc(100% - 5px), #000 calc(100% - 4px));
+  animation: jd-spin 1.1s linear infinite;
+}
+.jd-bar {
+  height: 100%;
+  background: linear-gradient(90deg, #ee8122, #ffb06a);
+  animation: jd-fill 2.6s ease-out both;
+}
+.jd-rise {
+  animation: jd-rise 0.7s ease both;
+}
+.jd-pop {
+  animation: jd-pop 0.55s cubic-bezier(0.2, 0.8, 0.3, 1.2) both;
+}
+/* Thin circle with a dot travelling round it (orange on JD Group, gold on JD Stays). */
+.jd-orbit {
+  position: absolute;
+  inset: -12px;
+  border-radius: 50%;
+  border: 1px solid rgba(215, 170, 96, 0.35);
+  animation: jd-spin 6s linear infinite;
+  pointer-events: none;
+}
+.jd-orbit::before {
+  content: "";
+  position: absolute;
+  top: -5px;
+  left: 50%;
+  width: 9px;
+  height: 9px;
+  margin-left: -4.5px;
+  border-radius: 50%;
+  background: #ee8122;
+  box-shadow: 0 0 14px #ee8122;
+}
+.jd-orbit.gold::before {
+  background: #f4d390;
+  box-shadow: 0 0 14px #d7aa60;
+}
+.jd-circ:hover .jd-plate,
+.jd-circ:focus-visible .jd-plate {
+  box-shadow: 0 0 0 2px #d7aa60;
+}
+@media (prefers-reduced-motion: reduce) {
+  .jd-ring,
+  .jd-orbit,
+  .jd-bar,
+  .jd-rise,
+  .jd-pop {
+    animation: none;
+  }
+}
