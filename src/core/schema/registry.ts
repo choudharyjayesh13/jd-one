@@ -64,6 +64,8 @@ import { linenLogs } from "@/modules/linen/entity";
 import { lostFound } from "@/modules/lost-found/entity";
 import { activityBookings } from "@/modules/activity-bookings/entity";
 import { gateEntries, vehicleEntries } from "@/modules/security/entity";
+import { recipes } from "@/modules/recipes/entity";
+import { purchaseOrders } from "@/modules/purchase-orders/entity";
 
 export const entities: EntityDef[] = [
   businessUnits,
@@ -129,6 +131,8 @@ export const entities: EntityDef[] = [
   activityBookings,
   gateEntries,
   vehicleEntries,
+  recipes,
+  purchaseOrders,
 ];
 
 const byName = new Map(entities.map((e) => [e.name, e]));

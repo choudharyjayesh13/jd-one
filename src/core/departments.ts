@@ -111,8 +111,8 @@ export const DEPARTMENTS: Department[] = [
     modules: [
       { key: "kitchen-display", label: "Kitchen display (KOT)", href: "/kitchen/" },
       { key: "meal-counts", label: "Meal counts", href: "/meal-counts/" },
-      { key: "prep-list", label: "Prep list", soon: true },
-      { key: "recipes", label: "Recipes & costing", soon: true },
+      { key: "prep-list", label: "Prep list", href: "/prep-list/" },
+      { key: "recipes", label: "Recipes & costing", entity: "recipes" },
       { key: "indents", label: "Stock request (indent)", entity: "indents" },
       { key: "kitchen-stock", label: "Kitchen stock count", entity: "stock" },
       { key: "wastage", label: "Wastage", entity: "wastage" },
@@ -127,10 +127,10 @@ export const DEPARTMENTS: Department[] = [
       { key: "stock", label: "Stock levels", entity: "stock" },
       { key: "stock-movements", label: "Stock in / out", entity: "stock-movements" },
       { key: "indent-approvals", label: "Indent approvals", entity: "indents" },
-      { key: "purchase-orders", label: "Purchase orders", soon: true },
+      { key: "purchase-orders", label: "Purchase orders", entity: "purchase-orders" },
       { key: "purchases", label: "Goods received", entity: "purchases" },
       { key: "vendors", label: "Vendors", entity: "vendors" },
-      { key: "consumption", label: "Consumption report", soon: true },
+      { key: "consumption", label: "Consumption report", href: "/consumption/" },
     ],
   },
   {
@@ -255,11 +255,11 @@ export const ROLE_TEMPLATES: Record<string, Record<string, Level | Record<string
   },
   Steward: { "fb-service": { kots: 2, menu: 1 }, "fb-production": { "meal-counts": 1 } },
   Chef: {
-    "fb-production": { "kitchen-display": 3, "meal-counts": 3, indents: 2, "kitchen-stock": 2, wastage: 3, hygiene: 3, gas: 2 },
+    "fb-production": { "kitchen-display": 3, "meal-counts": 3, "prep-list": 3, recipes: 3, indents: 2, "kitchen-stock": 2, wastage: 3, hygiene: 3, gas: 2 },
     "fb-service": { kots: 1, menu: 2 },
     stores: { stock: 1, "stock-movements": 2 },
   },
-  Storekeeper: { stores: { stock: 3, "stock-movements": 3, "indent-approvals": 3, purchases: 3, vendors: 2 }, "fb-production": { indents: 1 } },
+  Storekeeper: { stores: { stock: 3, "stock-movements": 3, "indent-approvals": 3, "purchase-orders": 3, purchases: 3, vendors: 2, consumption: 1 }, "fb-production": { indents: 1 } },
   "Housekeeping Attendant": {
     housekeeping: { "room-status": 2, "housekeeping-reports": 2, "room-checklist": 2, linen: 2, amenities: 2, "lost-found": 2 },
     maintenance: { tickets: 2 },

@@ -30,7 +30,7 @@ interface Eater {
 }
 
 /** Guests (by room category) eating each meal on `day`. */
-function eatersOn(bookings: Row[], day: string): Record<Meal, Eater[]> {
+export function eatersOn(bookings: Row[], day: string): Record<Meal, Eater[]> {
   const out: Record<Meal, Eater[]> = { Breakfast: [], Lunch: [], Dinner: [] };
   for (const b of bookings) {
     if (!HOLDING_STATUSES.includes(String(b.status))) continue;

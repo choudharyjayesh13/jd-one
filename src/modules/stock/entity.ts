@@ -25,6 +25,7 @@ export const stock = defineEntity({
     { name: "quantity", label: "In stock now", type: "number", min: 0, help: "Count it and enter, or use Count / Add / Use below — purchases and consumption update it automatically" },
     { name: "unit", label: "Unit", type: "text", placeholder: "pkt, kg, g, bottle, pcs", default: "pcs" },
     { name: "pack_size", label: "Pack size", type: "text", placeholder: "100 g, 500 g, 1 kg" },
+    { name: "cost_per_unit", label: "Cost per unit (₹)", type: "money", min: 0, help: "Updated from the latest purchase rate; used for recipe costing" },
     { name: "min_quantity", label: "Re-order below", type: "number", min: 0, default: 0, help: "Flagged as low stock at or below this" },
     { name: "low_stock", label: "Low stock", type: "boolean", computed: (v) => v.quantity !== null && v.quantity !== undefined && v.quantity !== "" && Number(v.quantity) <= Number(v.min_quantity ?? 0) },
     { name: "business_unit_id", label: "Business unit", type: "relation", entity: "business-units", required: true },
