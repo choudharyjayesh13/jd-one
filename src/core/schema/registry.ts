@@ -51,6 +51,10 @@ import { vehicleLogs } from "@/modules/vehicle-logs/entity";
 import { shiftCloses } from "@/modules/shift-closes/entity";
 import { salesEod } from "@/modules/sales-eod/entity";
 import { leadStageHistory } from "@/modules/lead-stage-history/entity";
+import { vouchers } from "@/modules/vouchers/entity";
+import { staffAccess } from "@/modules/staff-access/entity";
+import { orgPosts } from "@/modules/org-posts/entity";
+import { changeLog } from "@/modules/change-log/entity";
 
 export const entities: EntityDef[] = [
   businessUnits,
@@ -101,6 +105,11 @@ export const entities: EntityDef[] = [
   shiftCloses,
   vehicleLogs,
   dailyFilings,
+  // phase 1, 3 Nov 2026: vouchers, Team access, posts, Director changes
+  vouchers,
+  staffAccess,
+  orgPosts,
+  changeLog,
 ];
 
 const byName = new Map(entities.map((e) => [e.name, e]));
