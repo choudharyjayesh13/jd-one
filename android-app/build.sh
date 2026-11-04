@@ -26,6 +26,26 @@ rm -rf android/app/src/main/res/mipmap-anydpi-v26
 RUN="${GITHUB_RUN_NUMBER:-1}"
 sed -i -E "s/versionCode [0-9]+/versionCode ${RUN}/; s/versionName \"[^\"]*\"/versionName \"1.${RUN}\"/" android/app/build.gradle
 
+# Signing key kept in the Actions cache (never in the repo), so every APK installs over the last.
+KS="${JDONE_KEYSTORE:-$HOME/jdone-keystore/jdone.jks}"
+mkdir -p "$(dirname "$KS")"
+if [ ! -f "$KS" ]; then
+  echo "Creating a new signing key"
+  keytool -genkeypair -keystore "$KS" -alias jdone -storepass jdone-key -keypass jdone-key -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=JD One, O=JD Group, L=Udaipur, C=IN"
+else
+  echo "Using the saved signing key"
+fi
+python3 - "$KS" <<'PY'
+import sys, re
+ks = sys.argv[1]
+p = "android/app/build.gradle"
+s = open(p).read()
+block = 'signingConfigs {\n        debug {\n            storeFile file("%s")\n            storePassword "jdone-key"\n            keyAlias "jdone"\n            keyPassword "jdone-key"\n        }\n    }\n    ' % ks
+s = s.replace("android {\n", "android {\n    " + block, 1)
+open(p, "w").write(s)
+PY
+grep -n "signingConfigs" -A6 android/app/build.gradle
+
 npx cap sync android
 
 cd android

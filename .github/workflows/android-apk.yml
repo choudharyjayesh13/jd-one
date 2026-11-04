@@ -34,8 +34,8 @@ jobs:
       # Same signing key every build, so a new APK installs over the old one.
       - uses: actions/cache@v4
         with:
-          path: ~/.android/debug.keystore
-          key: jd-one-android-signing-v1
+          path: ~/jdone-keystore
+          key: jd-one-android-signing-v2
 
       - name: Build APK
         working-directory: android-app
