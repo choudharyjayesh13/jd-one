@@ -77,8 +77,8 @@ export const HOME_CARDS: HomeCard[] = [
       return { value: o.pct === null ? "—" : `${o.pct}%`, hint: o.total ? `${o.occupied} of ${o.total} rooms` : "Add rooms to track", tone: o.pct !== null && o.pct >= 80 ? "good" : undefined };
     },
   },
-  { kind: "stat", id: "arrivals", title: "Arrivals today", depts: [FO, RES, HK, FBS, FBP], href: "/room-chart/", value: (d) => ({ value: arrivalsToday(d).length, hint: "to check in" }) },
-  { kind: "stat", id: "departures", title: "Departures today", depts: [FO, RES, HK, ACC], href: "/room-chart/", value: (d) => ({ value: departuresToday(d).length, hint: "to check out" }) },
+  { kind: "stat", id: "arrivals", title: "Arrivals today", depts: [FO, RES, HK, FBS, FBP], href: "/arrivals/", value: (d) => ({ value: arrivalsToday(d).length, hint: "to check in" }) },
+  { kind: "stat", id: "departures", title: "Departures today", depts: [FO, RES, HK, ACC], href: "/departures/", value: (d) => ({ value: departuresToday(d).length, hint: "to check out" }) },
   { kind: "stat", id: "in-house", title: "In house", depts: [FO, FBS, FBP, HK], value: (d) => ({ value: inHouse(d).length, hint: `${inHouse(d).reduce((s, b) => s + (Number(b.adults ?? 0) + Number(b.children ?? 0)), 0)} guests` }) },
   { kind: "stat", id: "rooms-to-clean", title: "Rooms to clean", depts: [HK, FO], href: "/room-status/", value: (d) => ({ value: dirtyRooms(d).length, hint: `${d.housekeepingToday.length} cleaned today`, tone: dirtyRooms(d).length ? "bad" : "good" }) },
   {
@@ -122,7 +122,7 @@ export const HOME_CARDS: HomeCard[] = [
     id: "list-checkins",
     title: "Today's check-ins",
     depts: [FO, RES, HK, FBS],
-    href: "/room-chart/",
+    href: "/arrivals/",
     entity: "bookings",
     rows: arrivalsToday,
     primary: (r) => String(r.guest_name),
@@ -135,7 +135,7 @@ export const HOME_CARDS: HomeCard[] = [
     id: "list-checkouts",
     title: "Today's check-outs",
     depts: [FO, RES, HK, ACC],
-    href: "/room-chart/",
+    href: "/departures/",
     entity: "bookings",
     rows: departuresToday,
     primary: (r) => String(r.guest_name),

@@ -38,6 +38,7 @@ export const rooms = defineEntity({
     { name: "extra_bed", label: "Extra bed possible", type: "boolean", default: false },
     { name: "status", label: "Status", type: "select", options: ROOM_STATUSES, default: "Available", required: true },
     { name: "hk_status", label: "Housekeeping", type: "select", options: HK_STATUSES, default: "Clean", help: "Updated automatically from housekeeping reports" },
+    { name: "dnd", label: "Do not disturb", type: "boolean", default: false, help: "Set from the Room chart while the guest asks not to be disturbed" },
     { name: "amenities", label: "Amenities", type: "multiselect", options: ROOM_AMENITIES, wide: true },
     { name: "sort_order", label: "Order on room chart", type: "number", default: 0 },
     { name: "active", label: "Active", type: "boolean", default: true, help: "Inactive rooms are not counted as inventory" },

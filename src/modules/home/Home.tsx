@@ -9,9 +9,7 @@ import Link from "next/link";
 import { ArrowUpRight, RefreshCw, Settings2 } from "lucide-react";
 import { getStore } from "@/core/data";
 import type { Row } from "@/core/schema/types";
-import { useUser, type AuthUser } from "@/core/auth/AuthProvider";
-import { moduleLevel } from "@/core/auth/access";
-import { DEPARTMENTS } from "@/core/departments";
+import { useUser } from "@/core/auth/AuthProvider";
 import { TIMEZONE } from "@/core/format";
 import { viewHref } from "@/core/routes";
 import { Badge } from "@/core/ui/Badge";
@@ -25,19 +23,8 @@ import { HOME_CARDS, cardDepartments, type HomeCard, type ListCard, type StatCar
 
 const TAB_KEY = "jdone.homeTab.v3";
 
-/** Departments this person works in (any module they can at least view). */
-export function myDepartments(user: AuthUser): string[] {
-  const all = REPORT_DEPARTMENTS.map((d) => d.id);
-  if (user.post) return all;
-  return all.filter((id) => {
-    const dept = DEPARTMENTS.find((d) => d.id === id);
-    if (!dept) return false;
-    return dept.modules.some((m) => {
-      const lvl = moduleLevel(m.key);
-      return lvl === null ? user.role === "owner" || user.role === "manager" : lvl >= 1;
-    });
-  });
-}
+export { myDepartments } from "./depts";
+import { myDepartments } from "./depts";
 
 export function Home() {
   const user = useUser();

@@ -41,6 +41,8 @@ export const DEPARTMENTS: Department[] = [
     label: "Front Office",
     modules: [
       { key: "room-chart", label: "Room chart", href: "/room-chart/" },
+      { key: "arrivals", label: "Arrivals", href: "/arrivals/" },
+      { key: "departures", label: "Departures", href: "/departures/" },
       { key: "checkins", label: "Check-in / Check-out", entity: "checkins" },
       { key: "customers", label: "Guests", entity: "customers" },
       { key: "guest-bill", label: "Guest bill", href: "/guest-bill/" },
@@ -59,6 +61,7 @@ export const DEPARTMENTS: Department[] = [
     label: "Reservations",
     modules: [
       { key: "bookings", label: "Bookings", entity: "bookings" },
+      { key: "booking-chart", label: "Booking chart", href: "/booking-chart/" },
       { key: "availability", label: "Availability calendar", href: "/availability/" },
       { key: "rates", label: "Rates", entity: "rates" },
       { key: "rates-calendar", label: "Rate calendar", href: "/rates-calendar/" },
@@ -222,7 +225,7 @@ export const ASSIGNABLE_DEPARTMENTS = DEPARTMENTS.filter((d) => !d.adminOnly && 
 export const HIDDEN_FOR_HOTEL = ["investors", "investments", "wallet-transactions", "business-units", "import-runs", "lead-stage-history", "attendance"];
 
 /** Modules whose pages decide access themselves (department reports follow the departments a person works in). */
-export const SELF_GUARDED_MODULES: readonly string[] = ["dept-reports", "night-audit", "report-duty", "home-cards", "roster"];
+export const SELF_GUARDED_MODULES: readonly string[] = ["dept-reports", "night-audit", "report-duty", "home-cards", "roster", "room-chart", "arrivals", "departures", "booking-chart"];
 
 export const moduleHref = (m: ModuleDef): string | null => (m.soon ? null : m.href ?? (m.entity ? `/${m.entity}/` : null));
 

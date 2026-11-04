@@ -21,6 +21,7 @@ import { useList } from "./hooks";
 import { cn } from "./cn";
 import { DbUpdateStrip } from "./DbSetup";
 import { canNightAudit, reportDepartments, useIsPropertySupervisor } from "@/modules/night-audit/access";
+import { SHARED_PAGES, useSharedPageDepts } from "@/modules/rooms/shared";
 import { Welcome } from "./Welcome";
 
 const BASE = process.env.NEXT_PUBLIC_BASE_PATH ?? "";
@@ -57,6 +58,14 @@ function legacyPageVisible(key: string, user: AuthUser): boolean {
 function moduleVisible(m: ModuleDef, user: AuthUser, supervisor = false): boolean {
   if (m.soon) return false;
   if (m.key === "report-duty") return !!user.post || supervisor;
+  if (m.key === "arrivals" || m.key === "departures") {
+    const lvl = Math.max(moduleLevel(m.key) ?? -1, moduleLevel("checkins") ?? -1, moduleLevel("room-chart") ?? -1);
+    return !!user.post || (moduleLevel("checkins") === null ? legacyPageVisible("room-chart", user) : lvl >= 1);
+  }
+  if (m.key === "booking-chart") {
+    const lvl = Math.max(moduleLevel(m.key) ?? -1, moduleLevel("bookings") ?? -1);
+    return !!user.post || (moduleLevel("bookings") === null ? legacyPageVisible("room-chart", user) : lvl >= 1);
+  }
   if (m.key === "roster") {
     const lvl = moduleLevel("attendance");
     return !!user.post || (lvl === null ? legacyPageVisible("attendance", user) : lvl >= 1);
@@ -83,13 +92,21 @@ function adminModuleVisible(m: ModuleDef, user: AuthUser): boolean {
 export function useMenu(): { dept: Department; modules: ModuleDef[] }[] {
   const user = useUser();
   const supervisor = useIsPropertySupervisor(user);
+  // Shared pages (Room chart) show in every department ticked in Home cards.
+  const roomChart = useSharedPageDepts("room-chart");
+  const rcKey = roomChart.depts.join(",");
   return useMemo(
     () =>
-      DEPARTMENTS.map((dept) => ({
-        dept,
-        modules: dept.modules.filter((m) => (dept.adminOnly ? adminModuleVisible(m, user) : moduleVisible(m, user, supervisor)) && moduleHref(m)),
-      })).filter((g) => g.modules.length > 0),
-    [user, supervisor],
+      DEPARTMENTS.map((dept) => {
+        const own = dept.modules.filter((m) => {
+          if (m.key === "room-chart") return roomChart.depts.includes(dept.id) || (!user.post && (moduleLevel("room-chart") ?? 0) >= 1);
+          return (dept.adminOnly ? adminModuleVisible(m, user) : moduleVisible(m, user, supervisor)) && moduleHref(m);
+        });
+        const shared = SHARED_PAGES.filter((p) => p.id === "room-chart" && roomChart.depts.includes(dept.id) && !dept.modules.some((m) => m.key === p.id)).map((p) => ({ key: p.id, label: p.title, href: p.href }) as ModuleDef);
+        return { dept, modules: [...shared, ...own] };
+      }).filter((g) => g.modules.length > 0),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [user, supervisor, rcKey],
   );
 }
 
