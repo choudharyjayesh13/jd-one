@@ -25,7 +25,7 @@ import { useUnitChoice } from "./unit";
 
 const VIEWS = [7, 14, 30] as const;
 const COL: Record<number, number> = { 7: 112, 14: 68, 30: 42 };
-const LEFT = 188;
+const LEFT = 212;
 const SHOWN = ["On hold", "Confirmed", "Checked-in", "Checked-out"];
 
 const BAR: Record<string, string> = {
@@ -103,7 +103,7 @@ export function BookingChart() {
     const l = Math.max(0, a);
     const r = Math.min(days, b);
     if (r <= l) return null;
-    return { left: `calc(${(l / days) * 100}% + 2px)`, width: `calc(${((r - l) / days) * 100}% - 4px)`, cutL: a < 0, cutR: b > days };
+    return { left: `calc(${(l / days) * 100}% + 2px)`, width: `calc(${((r - l) / days) * 100}% - 4px)`, cutL: a < 0, cutR: b > days, px: (r - l) * col };
   };
 
   return (
@@ -194,8 +194,10 @@ export function BookingChart() {
                 {/* Category line: rooms free per night */}
                 <div className="flex border-b border-line bg-[#f7f5f0]">
                   <div style={{ width: LEFT }} className="sticky left-0 z-10 shrink-0 border-r border-line bg-[#f7f5f0] px-4 py-1.5">
-                    <span className="text-[11px] font-semibold uppercase tracking-[0.12em] text-[#17140f]">{type}</span>
-                    <span className="ml-1.5 text-[11px] text-slate-500">· {list.length}</span>
+                    <div className="flex items-baseline gap-1.5 whitespace-nowrap">
+                      <span className="truncate text-[11px] font-semibold uppercase tracking-[0.1em] text-[#17140f]">{type}</span>
+                      <span className="text-[11px] text-slate-500">{list.length}</span>
+                    </div>
                   </div>
                   <div className="grid flex-1" style={grid}>
                     {dates.map((d) => {
@@ -253,10 +255,12 @@ export function BookingChart() {
                                 p.cutR ? "rounded-r-none" : "rounded-r-md",
                               )}
                             >
-                              <span className="truncate font-medium">{String(s.guest_name)}</span>
-                              <span className="hidden shrink-0 text-[11px] opacity-70 sm:inline">
-                                {n}N · {String(s.meal_plan ?? "")}
-                              </span>
+                              <span className="min-w-0 truncate font-medium">{String(s.guest_name)}</span>
+                              {p.px >= 190 && (
+                                <span className="shrink-0 text-[11px] opacity-70">
+                                  {n}N · {String(s.meal_plan ?? "")}
+                                </span>
+                              )}
                               {due && <span className="ml-auto h-1.5 w-1.5 shrink-0 rounded-full bg-red-600" title="Balance due" />}
                             </Link>
                           );

@@ -131,7 +131,7 @@ export function RatesCalendar() {
             <tbody>
               {types.map((t) => (
                 <tr key={t} className="border-t border-line">
-                  <td className="sticky left-0 z-10 bg-white px-3 py-1.5 font-medium text-navy">{t}</td>
+                  <td className="sticky left-0 z-10 whitespace-nowrap bg-white px-3 py-1.5 font-medium text-navy">{t}</td>
                   {dates.map((d) => {
                     const r = resolveRate(rates, t, plan, d);
                     const closed = isClosed(rates, t, d);
@@ -152,7 +152,7 @@ export function RatesCalendar() {
       {open && (
         <BulkUpdate
           unitId={unit || (units[0]?.id as string | undefined) || ""}
-          units={units}
+          units={user.unitId ? units.filter((u) => u.id === user.unitId) : units}
           defaultType={types[0]}
           defaultPlan={plan}
           month={month}
