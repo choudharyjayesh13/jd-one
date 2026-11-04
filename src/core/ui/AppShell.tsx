@@ -286,7 +286,7 @@ export function AppShell({ children }: { children: ReactNode }) {
       </header>
 
       <DbUpdateStrip />
-      {mode === "local" && <div className="border-b border-[#eadfc6] bg-[#faf5ea] px-4 py-1 text-center text-[11px] text-[#7a5a1f]">Local mode – single device. Data lives in this browser; export it from Settings.</div>}
+      {mode === "local" && <div className="print:hidden border-b border-[#eadfc6] bg-[#faf5ea] px-4 py-1 text-center text-[11px] text-[#7a5a1f]">Local mode – single device. Data lives in this browser; export it from Settings.</div>}
 
       <div className="flex flex-1">
         <aside className="sticky top-[61px] hidden print:!hidden h-[calc(100vh-61px)] w-64 shrink-0 overflow-y-auto border-r border-[#e7e1d5] lg:block">

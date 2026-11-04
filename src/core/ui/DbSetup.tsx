@@ -39,7 +39,7 @@ export function DbUpdateStrip() {
   const { needed } = useDbUpdateNeeded();
   if (!user.post || !needed) return null;
   return (
-    <Link href="/setup-database/" className="block border-b border-[#eadfc6] bg-[#faf5ea] px-4 py-2 text-center text-sm font-medium text-[#7a5a1f]">
+    <Link href="/setup-database/" className="block print:hidden border-b border-[#eadfc6] bg-[#faf5ea] px-4 py-2 text-center text-sm font-medium text-[#7a5a1f]">
       Database update pending — some departments will not save until it is done. Tap here (2 minutes).
     </Link>
   );
