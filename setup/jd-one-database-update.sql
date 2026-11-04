@@ -649,6 +649,8 @@ create trigger assign_po_no before insert on jdone.purchase_orders for each row 
 
 -- Served KOT → recipe ingredients off stock (once per KOT).
 alter table jdone.kots add column if not exists stock_deducted boolean not null default false;
+-- KOTs already served before recipes existed must never be deducted later.
+update jdone.kots set stock_deducted = true where status in ('Served', 'Billed', 'Cancelled') and not stock_deducted;
 create or replace function jdone.kot_recipe_stock() returns trigger
 language plpgsql security definer set search_path = jdone, public as $$
 declare
@@ -725,7 +727,7 @@ create table if not exists jdone.guest_requests (
 );
 create index if not exists guest_requests_status_idx on jdone.guest_requests (status, requested_at desc);
 
-create table if not exists jdone.guest_feedback (
+create table if not exists jdone.guest_reviews (
   id uuid primary key default gen_random_uuid(),
   date date not null default current_date,
   booking_id uuid references jdone.bookings(id) on delete set null,
@@ -793,7 +795,7 @@ create index if not exists service_schedules_due_idx on jdone.service_schedules 
 do $$
 declare t text;
 begin
-  foreach t in array array['guest_requests', 'guest_feedback', 'events', 'service_schedules'] loop
+  foreach t in array array['guest_requests', 'guest_reviews', 'events', 'service_schedules'] loop
     execute format('alter table jdone.%I enable row level security', t);
     execute format('drop policy if exists "staff read" on jdone.%I', t);
     execute format('create policy "staff read" on jdone.%I for select to authenticated using (jdone.is_staff())', t);
