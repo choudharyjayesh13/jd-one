@@ -17,7 +17,14 @@ const NAME_AT = WRITE_MS + 150;
 const SHOW_MS = NAME_AT + 1900;
 const FADE_MS = 700;
 
-function greeting(now: Date): string {
+/**
+ * By the clock in India:
+ *   4:00 am – 11:59 am  Good morning
+ *   12:00 pm – 4:59 pm  Good afternoon
+ *   5:00 pm – 9:59 pm   Good evening
+ *   10:00 pm – 3:59 am  Hello   (late night / night shift)
+ */
+export function greeting(now: Date): string {
   const h = Number(new Intl.DateTimeFormat("en-GB", { hour: "numeric", hour12: false, timeZone: TIMEZONE }).format(now)) % 24;
   if (h >= 4 && h < 12) return "Good morning";
   if (h >= 12 && h < 17) return "Good afternoon";
@@ -78,25 +85,25 @@ export function Welcome() {
       role="status"
       aria-live="polite"
       onClick={() => setPhase("hidden")}
-      className="fixed inset-0 z-[100] flex cursor-pointer flex-col items-center justify-center bg-white px-6 text-center text-[#1d1d1f] transition-opacity ease-out"
+      className="fixed inset-0 z-[100] flex cursor-pointer flex-col items-center justify-center overflow-hidden bg-white px-2 text-center text-[#1d1d1f] transition-opacity ease-out"
       style={{ opacity: phase === "fade" ? 0 : 1, transitionDuration: `${FADE_MS}ms` }}
     >
       <style>{fontFace}</style>
       <span
-        className="jd-write block whitespace-nowrap leading-[1.25]"
-        style={{ fontFamily: SCRIPT_FONT, fontSize: "clamp(52px, 13vw, 132px)", WebkitTextStroke: "1.4px #1d1d1f", animationDuration: `${WRITE_MS}ms` }}
+        className="jd-write block whitespace-nowrap leading-[1.3]"
+        style={{ fontFamily: SCRIPT_FONT, fontSize: "clamp(64px, 17vw, 156px)", padding: "0.28em 0.4em", WebkitTextStroke: "1.6px #1d1d1f", animationDuration: `${WRITE_MS}ms` }}
       >
         {greeting(new Date())}
       </span>
       <span
-        className="mt-4 block max-w-full leading-[1.15] transition-opacity duration-300"
-        style={{ fontFamily: SCRIPT_FONT, fontSize: "clamp(40px, 8.5vw, 84px)", WebkitTextStroke: "1px #1d1d1f", opacity: showName ? 1 : 0 }}
+        className="-mt-3 block max-w-full leading-[1.3] transition-opacity duration-300"
+        style={{ fontFamily: SCRIPT_FONT, fontSize: "clamp(42px, 10.5vw, 96px)", padding: "0.15em 0.3em", WebkitTextStroke: "1.1px #1d1d1f", opacity: showName ? 1 : 0 }}
       >
         {user.name}
       </span>
       {post && (
         <span
-          className="mt-4 block text-[clamp(15px,1.8vw,18px)] tracking-[-0.01em] text-[#86868b]"
+          className="mt-3 block text-[clamp(16px,2vw,20px)] tracking-[-0.01em] text-[#86868b]"
           style={{ fontFamily: SYSTEM_FONT, opacity: showName ? 1 : 0 }}
         >
           {post}
