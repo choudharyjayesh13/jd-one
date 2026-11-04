@@ -1,9 +1,10 @@
 "use client";
 /**
- * Reports → Create report (/reports/day/). Each person writes the day's report for
- * the department(s) they work in: the figures fill in from the day's entries,
- * they add a note and submit. Front Office (night audit access), the Chairman
- * and the Director can do every department.
+ * Reports → Department reports (/reports/day/). Nobody types a report: the system builds
+ * each department's operations report from everything entered that day by every ID in
+ * the department (check-ins, bookings, KOTs, cleaning, stock, payments…). At night the
+ * person on duty opens it, checks it and presses "Send report" (a remark is optional);
+ * the report is saved as it was and goes into the night audit.
  */
 import { useMemo, useState } from "react";
 import Link from "next/link";
@@ -64,11 +65,11 @@ export function DeptReports() {
       };
       if (open.existing) await getStore().update("dept-reports", open.existing.id, payload);
       else await getStore().create("dept-reports", payload);
-      toast(`${deptTitle(open.dept)} report submitted for ${formatDate(date)}.`, "success");
+      toast(`${deptTitle(open.dept)} report sent for ${formatDate(date)}.`, "success");
       setOpen(null);
       await reload();
     } catch (e) {
-      toast(`Could not submit: ${(e as Error).message}`, "error");
+      toast(`Could not send: ${(e as Error).message}`, "error");
     } finally {
       setBusy(false);
     }
@@ -81,7 +82,7 @@ export function DeptReports() {
     <div>
       <PageHeader
         title="Department reports"
-        subtitle={`End-of-day report for each department · ${done} of ${depts.length} submitted`}
+        subtitle={`Made by the system from the day's entries · ${done} of ${depts.length} sent`}
         actions={
           canNightAudit(user) ? (
             <Link href="/night-audit/">
@@ -105,21 +106,21 @@ export function DeptReports() {
                     <p className="jd-serif text-xl font-semibold text-navy">{d.title}</p>
                     {r ? (
                       <p className="mt-0.5 flex items-center gap-1 text-xs text-emerald-700">
-                        <CheckCircle2 className="h-3.5 w-3.5" /> Submitted by {staffName.get(String(r.submitted_by)) ?? "—"} · {formatDateTime(r.submitted_at)}
+                        <CheckCircle2 className="h-3.5 w-3.5" /> Sent by {staffName.get(String(r.submitted_by)) ?? "—"} · {formatDateTime(r.submitted_at)}
                       </p>
                     ) : (
-                      <p className="mt-0.5 text-xs text-amber-700">Not submitted yet</p>
+                      <p className="mt-0.5 text-xs text-amber-700">Not sent yet</p>
                     )}
                   </div>
                 </div>
                 <div className="flex gap-2">
                   {r && (
                     <Button size="sm" variant="secondary" icon={Eye} onClick={() => void start(d.id, true)}>
-                      View
+                      Sent report
                     </Button>
                   )}
                   <Button size="sm" icon={r ? RefreshCw : FilePlus2} onClick={() => void start(d.id, false)}>
-                    {r ? "Update report" : "Create report"}
+                    {r ? "Send again (latest)" : "Open & send report"}
                   </Button>
                 </div>
               </li>
@@ -137,15 +138,16 @@ export function DeptReports() {
               <SectionView s={open.section} note={open.view ? String(open.existing?.notes ?? "") || undefined : undefined} />
               {!open.view && (
                 <>
-                  <Field label="Your note for the day" help="Anything the next shift or the management should know.">
-                    <Textarea rows={3} value={note} onChange={(e) => setNote(e.target.value)} placeholder="e.g. Room 4 AC not cooling – ticket raised. 2 guests asked for late checkout." />
+                  <p className="text-xs text-slate-500">This report is made by the system from everything entered today in {deptTitle(open.dept)}. Check it and send.</p>
+                  <Field label="Remark (optional)">
+                    <Textarea rows={2} value={note} onChange={(e) => setNote(e.target.value)} placeholder="Only if something needs explaining, e.g. Room 4 AC not cooling – ticket raised." />
                   </Field>
                   <div className="flex justify-end gap-2">
                     <Button variant="secondary" onClick={() => setOpen(null)}>
                       Cancel
                     </Button>
                     <Button loading={busy} onClick={() => void submit()}>
-                      Submit report
+                      Send report
                     </Button>
                   </div>
                 </>

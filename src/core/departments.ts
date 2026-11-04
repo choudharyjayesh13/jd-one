@@ -195,7 +195,7 @@ export const DEPARTMENTS: Department[] = [
     id: "reports",
     label: "Reports",
     modules: [
-      { key: "dept-reports", label: "Create report", href: "/reports/day/" },
+      { key: "dept-reports", label: "Department reports", href: "/reports/day/" },
       { key: "night-audit", label: "Night audit", href: "/night-audit/" },
     ],
   },

@@ -120,7 +120,7 @@ export function NightAudit() {
                 return (
                   <li key={d.id} className={cn("flex items-center justify-between gap-2 rounded-lg border px-3 py-2 text-sm", r ? "border-emerald-200 bg-emerald-50/60" : "border-amber-200 bg-amber-50/60")}>
                     <span className="font-medium text-navy">{d.title}</span>
-                    <span className={cn("text-xs", r ? "text-emerald-700" : "text-amber-700")}>{r ? staffName.get(String(r.submitted_by)) ?? "Submitted" : "Not submitted"}</span>
+                    <span className={cn("text-xs", r ? "text-emerald-700" : "text-amber-700")}>{r ? `Sent · ${staffName.get(String(r.submitted_by)) ?? ""}`.replace(/ · $/, "") : "Not sent"}</span>
                   </li>
                 );
               })}
@@ -157,7 +157,7 @@ export function NightAudit() {
           </details>
 
           <section className="rounded-xl border border-line bg-white p-4">
-            <Field label="Night auditor's note" help="Summary of the day, cash handed over, anything for the morning team.">
+            <Field label="Remark (optional)" help="Only if something needs explaining, e.g. cash handed over to whom.">
               <Textarea rows={3} value={note} onChange={(e) => setNote(e.target.value)} />
             </Field>
             <div className="mt-3 flex justify-end">

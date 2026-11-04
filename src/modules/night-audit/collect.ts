@@ -117,7 +117,8 @@ export async function collectDay(date: string, unitId: string | null): Promise<D
     petty,
     vouchers,
     attendance,
-    staff,
+    staffAll,
+    checkins,
     rest,
     gate,
     vehicles,
@@ -155,14 +156,32 @@ export async function collectDay(date: string, unitId: string | null): Promise<D
     list("petty-cash", onDate()),
     list("vouchers", onDate()),
     list("attendance", { range: { date: { gte: date, lte: date } } }),
-    list("staff", { filter: { active: true } }),
+    list("staff"),
+    list("checkins", around("created_at")),
     list("rest-periods", { range: { date: { gte: date, lte: date } } }),
     list("gate-entries", around("time_in")),
     list("vehicle-entries", around("time_in")),
   ]);
 
   const out: DayData = {};
-  const put = (dept: string, s: Omit<Section, "dept" | "title">) => (out[dept] = { dept, title: deptTitle(dept), ...s });
+  const staff = staffAll.filter((x) => x.active !== false);
+  const nameOf = new Map(staffAll.map((x) => [String(x.id), String(x.name)]));
+  /** Section plus "who entered what today" for the department, from the entries' created_by. */
+  const put = (dept: string, sec: Omit<Section, "dept" | "title">, entries: Row[] = []) => {
+    const byPerson = new Map<string, number>();
+    for (const r of entries) {
+      const who = nameOf.get(String(r.created_by)) ?? "Guest app / system";
+      byPerson.set(who, (byPerson.get(who) ?? 0) + 1);
+    }
+    const team: Table = {
+      title: "Entries made today, by person",
+      columns: ["Person", "Entries"],
+      rows: Array.from(byPerson.entries())
+        .sort((a, b) => b[1] - a[1])
+        .map(([k, v]) => [k, String(v)]),
+    };
+    out[dept] = { dept, title: deptTitle(dept), ...sec, stats: [...sec.stats, { label: "Entries made today", value: String(entries.length) }], tables: [...sec.tables, team] };
+  };
 
   // ---------------- Front Office
   {
@@ -177,6 +196,7 @@ export async function collectDay(date: string, unitId: string | null): Promise<D
     const dueInHouse = inHouse.filter((b) => num(b.balance) > 0);
     const reqs = today(guestRequests, "requested_at");
     const reqOpen = guestRequests.filter((r) => String(r.status) !== "Done");
+    const ciToday = today(checkins, "created_at");
     const alerts: string[] = [];
     for (const b of arrivals.filter((b) => !arrived.includes(b))) alerts.push(`Arrival not checked in: ${String(b.guest_name)} (${roomsLabel(b)})`);
     for (const b of departures.filter((b) => !departed.includes(b))) alerts.push(`Departure not checked out: ${String(b.guest_name)}${num(b.balance) > 0 ? ` · balance ${money(num(b.balance))}` : ""}`);
@@ -198,7 +218,7 @@ export async function collectDay(date: string, unitId: string | null): Promise<D
         { title: "In-house tonight", columns: ["Guest", "Rooms", "Till"], rows: inHouse.map((b) => [String(b.guest_name), roomsLabel(b), String(b.check_out)]) },
       ],
       alerts,
-    });
+    }, [...ciToday, ...shiftCloses, ...reqs]);
   }
 
   // ---------------- Reservations
@@ -219,9 +239,13 @@ export async function collectDay(date: string, unitId: string | null): Promise<D
         { label: "Arrivals next 7 days", value: count(next7.length, "booking") },
         { label: "On hold", value: String(holds.length) },
       ],
-      tables: [{ title: "Bookings made today", columns: ["Guest", "Stay", "Source", "Total"], rows: made.map((b) => [String(b.guest_name), `${String(b.check_in)} → ${String(b.check_out)}`, String(b.source ?? ""), money(num(b.total))]) }],
+      tables: [
+        { title: "Bookings made today", columns: ["Guest", "Stay", "Source", "Total"], rows: made.map((b) => [String(b.guest_name), `${String(b.check_in)} → ${String(b.check_out)}`, String(b.source ?? ""), money(num(b.total))]) },
+        { title: "Arriving in the next 7 days", columns: ["Arrival", "Guest", "Rooms", "Balance"], rows: next7.sort((a, b) => String(a.check_in).localeCompare(String(b.check_in))).map((b) => [String(b.check_in), String(b.guest_name), roomsLabel(b), money(num(b.balance))]) },
+        { title: "Cancelled today", columns: ["Guest", "Stay", "Source"], rows: cancelled.map((b) => [String(b.guest_name), `${String(b.check_in)} → ${String(b.check_out)}`, String(b.source ?? "")]) },
+      ],
       alerts: holds.filter((b) => b.hold_until && String(b.hold_until) < new Date().toISOString()).map((b) => `Hold expired: ${String(b.guest_name)}`),
-    });
+    }, made);
   }
 
   // ---------------- Sales & Marketing
@@ -248,7 +272,7 @@ export async function collectDay(date: string, unitId: string | null): Promise<D
         { title: "Overdue follow-ups", columns: ["Name", "Due", "Stage"], rows: overdue.slice(0, 25).map((l) => [String(l.name), String(l.next_follow_up), String(l.stage ?? "")]) },
       ],
       alerts: overdue.length ? [`${count(overdue.length, "follow-up")} overdue`] : [],
-    });
+    }, [...newLeads, ...acts, ...evNew]);
   }
 
   // ---------------- Housekeeping
@@ -269,7 +293,7 @@ export async function collectDay(date: string, unitId: string | null): Promise<D
       ],
       tables: [{ title: "Cleaning reports", columns: ["Room status", "Task", "Issues"], rows: hkReports.map((r) => [String(r.status ?? ""), String(r.task ?? ""), String(r.issues ?? "")]) }],
       alerts: hk("Dirty") ? [`${count(hk("Dirty"), "room")} still dirty`] : [],
-    });
+    }, [...hkReports, ...linen, ...amenities, ...lostFound]);
   }
 
   // ---------------- F&B Service
@@ -278,13 +302,15 @@ export async function collectDay(date: string, unitId: string | null): Promise<D
     const live = k.filter((x) => String(x.status) !== "Cancelled");
     const unbilled = live.filter((x) => String(x.status) !== "Billed");
     const room = live.filter((x) => /room/i.test(String(x.order_type)));
+    const dine = live.filter((x) => !room.includes(x));
     const app = live.filter((x) => String(x.source) === "Guest app");
     const avg = reviews.length ? (sum(reviews, "average") / reviews.length).toFixed(1) : "—";
     put("fb-service", {
       stats: [
         { label: "Orders (KOT)", value: `${live.length} · ${money(sum(live, "amount"))}` },
-        { label: "Covers", value: String(sum(live, "pax")) },
-        { label: "Room service", value: `${room.length} · ${money(sum(room, "amount"))}` },
+        { label: "Guests served (covers)", value: String(sum(live, "pax")) },
+        { label: "Dine-in", value: `${dine.length} orders · ${sum(dine, "pax")} guests · ${money(sum(dine, "amount"))}` },
+        { label: "Room service", value: `${room.length} orders · ${sum(room, "pax")} guests · ${money(sum(room, "amount"))}` },
         { label: "From guest app", value: String(app.length) },
         { label: "Not billed yet", value: `${unbilled.length} · ${money(sum(unbilled, "amount"))}`, tone: unbilled.length ? "bad" : "good" },
         { label: "Cancelled", value: String(k.length - live.length) },
@@ -292,7 +318,7 @@ export async function collectDay(date: string, unitId: string | null): Promise<D
       ],
       tables: [{ title: "Orders", columns: ["KOT", "For", "Time", "Status", "Amount"], rows: k.map((x) => [String(x.kot_no ?? ""), `${String(x.order_type ?? "")} ${String(x.table_or_room ?? "")}`.trim(), timeOf(x.created_at), String(x.status), money(num(x.amount))]) }],
       alerts: unbilled.map((x) => `KOT ${String(x.kot_no ?? "")} not billed (${String(x.status)}, ${money(num(x.amount))})`),
-    });
+    }, [...k, ...reviews]);
   }
 
   // ---------------- F&B Production
@@ -310,7 +336,7 @@ export async function collectDay(date: string, unitId: string | null): Promise<D
       ],
       tables: [{ title: "Wastage", columns: ["Item", "Qty", "Reason", "Value"], rows: wastage.map((w) => [String(w.item), `${num(w.quantity)} ${String(w.unit ?? "")}`, String(w.reason ?? ""), money(num(w.value))]) }],
       alerts: hygiene.length < 2 ? ["Hygiene checklist not done for both shifts"] : [],
-    });
+    }, [...hygiene, ...wastage, ...gas, ...indents]);
   }
 
   // ---------------- Stores
@@ -332,7 +358,7 @@ export async function collectDay(date: string, unitId: string | null): Promise<D
         { title: "Purchases", columns: ["Item", "Qty", "Vendor", "Amount"], rows: purchases.map((p) => [String(p.item ?? ""), `${num(p.quantity)} ${String(p.unit ?? "")}`, String(p.vendor ?? ""), money(num(p.amount))]) },
       ],
       alerts: low.length ? [`${count(low.length, "item")} below minimum stock`] : [],
-    });
+    }, [...moves, ...purchases, ...poToday]);
   }
 
   // ---------------- Maintenance
@@ -351,7 +377,7 @@ export async function collectDay(date: string, unitId: string | null): Promise<D
       ],
       tables: [{ title: "Open issues", columns: ["Issue", "Where", "Priority", "Status"], rows: open.slice(0, 30).map((t) => [String(t.title), String(t.location ?? ""), String(t.priority ?? ""), String(t.status)]) }],
       alerts: urgent.map((t) => `Urgent issue open: ${String(t.title)}`).concat(dueSvc.map((p) => `Service due: ${String(p.what)} ${String(p.asset_name ?? "")}`.trim())),
-    });
+    }, opened);
   }
 
   // ---------------- Activities
@@ -367,7 +393,7 @@ export async function collectDay(date: string, unitId: string | null): Promise<D
       ],
       tables: [{ title: "Activities", columns: ["Time", "Guest", "People", "Status", "Amount"], rows: actBookings.map((a) => [String(a.time ?? ""), String(a.guest_name), String(num(a.people)), String(a.status), money(num(a.amount))]) }],
       alerts: live.filter((a) => String(a.status) === "Booked").map((a) => `Activity not marked done: ${String(a.guest_name)} ${String(a.time ?? "")}`.trim()),
-    });
+    }, actBookings);
   }
 
   // ---------------- Accounts
@@ -393,7 +419,7 @@ export async function collectDay(date: string, unitId: string | null): Promise<D
         { title: "Expenses", columns: ["Head", "Paid to", "Mode", "Amount"], rows: expenses.map((e) => [String(e.category ?? ""), String(e.vendor ?? ""), String(e.mode ?? ""), money(num(e.amount))]) },
       ],
       alerts: [],
-    });
+    }, [...payments, ...expenses, ...petty]);
   }
 
   // ---------------- HR
@@ -414,7 +440,7 @@ export async function collectDay(date: string, unitId: string | null): Promise<D
       ],
       tables: [{ title: "Attendance not marked", columns: ["Name", "Post"], rows: missing.map((s) => [String(s.name), String(s.designation ?? "")]) }],
       alerts: missing.length ? [`Attendance not marked for ${count(missing.length, "person", "people")}`] : [],
-    });
+    }, rest);
   }
 
   // ---------------- Security
@@ -432,7 +458,7 @@ export async function collectDay(date: string, unitId: string | null): Promise<D
       ],
       tables: [{ title: "Gate register", columns: ["Time", "Visitor", "Purpose", "Out"], rows: g.map((x) => [timeOf(x.time_in), String(x.visitor_name), String(x.purpose ?? ""), x.time_out ? timeOf(x.time_out) : "Inside"]) }],
       alerts: gIn.map((x) => `Visitor not signed out: ${String(x.visitor_name)}`),
-    });
+    }, [...g, ...v]);
   }
 
   return out;

@@ -101,7 +101,7 @@ export function NightAuditView() {
             </div>
           ))}
         </dl>
-        {a.notes ? <p className="mt-4 whitespace-pre-line rounded-lg border border-[#e7dcc4] bg-[#faf5ea] px-3 py-2 text-sm text-navy"><b className="font-medium">Night auditor: </b>{String(a.notes)}</p> : null}
+        {a.notes ? <p className="mt-4 whitespace-pre-line rounded-lg border border-[#e7dcc4] bg-[#faf5ea] px-3 py-2 text-sm text-navy"><b className="font-medium">Night auditor's remark: </b>{String(a.notes)}</p> : null}
         {warnings.length > 0 && (
           <div className="mt-4">
             <p className="mb-1 text-xs uppercase tracking-[0.14em] text-slate-500">Open at closing ({warnings.length})</p>
@@ -115,14 +115,14 @@ export function NightAuditView() {
             </ul>
           </div>
         )}
-        {payload.missing && payload.missing.length > 0 && <p className="mt-3 text-sm text-slate-500">No department report from: {payload.missing.join(", ")}.</p>}
+        {payload.missing && payload.missing.length > 0 && <p className="mt-3 text-sm text-slate-500">Department report not sent: {payload.missing.join(", ")}. Their figures are still included below.</p>}
       </section>
 
       {REPORT_DEPARTMENTS.map((d) => {
         const s = sections[d.id];
         if (!s) return null;
         const n = notes[d.id];
-        return <SectionView key={d.id} s={s} note={n?.notes || undefined} by={n ? (n.by ? `Report by ${n.by}` : "Department report submitted") : "No department report"} />;
+        return <SectionView key={d.id} s={s} note={n?.notes || undefined} by={n ? (n.by ? `Sent by ${n.by}` : "Report sent") : "Report not sent"} />;
       })}
     </div>
   );
