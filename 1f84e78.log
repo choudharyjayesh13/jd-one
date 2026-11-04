@@ -1,0 +1,39 @@
+bun install v1.3.14 (0d9b296a)
+
++ @tailwindcss/postcss@4.3.3
++ @types/bun@1.4.2
++ @types/node@20.19.43
++ @types/react@19.3.0
++ @types/react-dom@19.3.0
++ eslint@9.39.5
++ eslint-config-next@16.3.6
++ sharp@0.35.4
++ tailwindcss@4.3.3
++ typescript@5.9.3
++ @supabase/supabase-js@2.117.2
++ idb@8.0.3
++ lucide-react@1.48.0
++ next@16.3.6
++ react@19.2.8
++ react-dom@19.2.8
+
+372 packages installed [2.44s]
+$ next build
+▲ Next.js 16.3.6 (Turbopack)
+✓ Running next.config.ts took 38ms
+⚠ No build cache found. Please configure build caching for faster rebuilds. Read more: https://nextjs.org/docs/messages/no-cache
+Attention: Next.js now collects completely anonymous telemetry regarding usage.
+This information is used to shape Next.js' roadmap and prioritize features.
+You can learn more, including how to opt-out if you'd not like to participate in this anonymous program, by visiting the following URL:
+https://nextjs.org/telemetry
+
+
+  Creating an optimized production build ...
+✓ Compiled successfully in 8.4s
+  Running TypeScript ...
+src/modules/home/Roster.tsx(139,40): error TS2345: Argument of type 'Row[]' is not assignable to parameter of type '{ staff_id?: unknown; status?: unknown; date_from?: unknown; date_to?: unknown; kind?: unknown; }[]'.
+  Type 'Row' has no properties in common with type '{ staff_id?: unknown; status?: unknown; date_from?: unknown; date_to?: unknown; kind?: unknown; }'.
+src/modules/home/Roster.tsx(143,50): error TS2339: Property 'reason' does not exist on type '{ staff_id?: unknown; status?: unknown; date_from?: unknown; date_to?: unknown; kind?: unknown; }'.
+Failed to type check.
+
+error: script "build" exited with code 1
