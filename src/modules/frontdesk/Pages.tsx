@@ -144,7 +144,7 @@ export function CheckInPage() {
         <EmptyState title="No check-ins in these dates" hint="Use New check-in when a guest arrives." />
       ) : (
         <div className="overflow-x-auto rounded-xl border border-line bg-white">
-          <table className="w-full min-w-[720px] text-sm">
+          <table className="w-full min-w-[900px] text-sm">
             <thead className="border-b border-line bg-slate-50">
               <tr>
                 <th className={th}>Guest</th>
@@ -340,7 +340,7 @@ export function CheckedOutPage() {
         <EmptyState title="No check-outs in these dates" />
       ) : (
         <div className="overflow-x-auto rounded-xl border border-line bg-white">
-          <table className="w-full min-w-[720px] text-sm">
+          <table className="w-full min-w-[900px] text-sm">
             <thead className="border-b border-line bg-slate-50">
               <tr>
                 <th className={th}>Guest</th>
@@ -363,10 +363,10 @@ export function CheckedOutPage() {
                       <div className="text-xs text-slate-500">{String(b.phone ?? "")}</div>
                     </td>
                     <td className={td}>{roomsOf(b, c)}</td>
-                    <td className={td}>
+                    <td className={cn(td, "whitespace-nowrap")}>
                       {formatDate(b.check_in)} → {formatDate(b.check_out)}
                     </td>
-                    <td className={td}>{formatDateTime(c.actual_out)}</td>
+                    <td className={cn(td, "whitespace-nowrap")}>{formatDateTime(c.actual_out)}</td>
                     <td className={cn(td, "text-right")}>{formatMoney(b.total)}</td>
                     <td className={cn(td, "text-right", Number(b.balance ?? 0) > 0 ? "font-medium text-red-700" : "text-slate-500")}>{formatMoney(b.balance)}</td>
                     <td className={td}>{sName.get(String(c.handled_by)) ?? "—"}</td>
