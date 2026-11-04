@@ -6,9 +6,9 @@
  */
 import { useMemo, useState } from "react";
 import Link from "next/link";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight, Printer } from "lucide-react";
 import type { Row } from "@/core/schema/types";
-import { addDays, formatDate, formatMoney, todayISO } from "@/core/format";
+import { addDays, formatDate, formatDateTime, formatMoney, todayISO } from "@/core/format";
 import { viewHref } from "@/core/routes";
 import { Badge } from "@/core/ui/Badge";
 import { Button } from "@/core/ui/Button";
@@ -56,8 +56,32 @@ export function Movements({ kind }: { kind: Kind }) {
 
   return (
     <div>
-      <PageHeader title={title} subtitle={`${unitName} · ${formatDate(from)} to ${formatDate(to)} · ${list.length} ${list.length === 1 ? "booking" : "bookings"}`} />
-      <div className="mb-5 flex flex-wrap items-end gap-2">
+      <div className="print:hidden">
+        <PageHeader
+          title={title}
+          subtitle={`${unitName} · ${formatDate(from)} to ${formatDate(to)} · ${list.length} ${list.length === 1 ? "booking" : "bookings"}`}
+          actions={
+            <Button icon={Printer} onClick={() => window.print()} disabled={!list.length}>
+              Print / Save as PDF
+            </Button>
+          }
+        />
+      </div>
+      {/* Report header: only on paper / PDF */}
+      <header className="mb-4 hidden items-center gap-4 border-b border-slate-300 pb-3 print:flex">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src={`${process.env.NEXT_PUBLIC_BASE_PATH ?? ""}/brands/udaisarovar.webp`} alt="" className="h-14 w-14 rounded-full" />
+        <div className="flex-1">
+          <p className="text-[10px] uppercase tracking-[0.3em] text-slate-500">{title} report</p>
+          <h1 className="jd-serif text-2xl font-semibold text-black">
+            {unitName} · {formatDate(from)} to {formatDate(to)}
+          </h1>
+          <p className="text-xs text-slate-600">
+            {list.length} {list.length === 1 ? "booking" : "bookings"} · {list.filter(done).length} {kind === "arrivals" ? "checked in" : "checked out"} · balance due {formatMoney(list.reduce((s, b) => s + Number(b.balance ?? 0), 0))} · printed {formatDateTime(new Date().toISOString())}
+          </p>
+        </div>
+      </header>
+      <div className="mb-5 flex flex-wrap items-end gap-2 print:hidden">
         <Button variant="secondary" size="sm" aria-label="Earlier" onClick={() => (setFrom(addDays(from, -7)), setTo(addDays(to, -7)))}>
           <ChevronLeft className="h-4 w-4" />
         </Button>
@@ -91,7 +115,7 @@ export function Movements({ kind }: { kind: Kind }) {
           </Select>
         )}
       </div>
-      <p className="mb-3 text-xs uppercase tracking-[0.14em] text-slate-500">{nights} days</p>
+      <p className="mb-3 text-xs uppercase tracking-[0.14em] text-slate-500 print:hidden">{nights} days</p>
 
       {loading ? (
         <Loading />
@@ -100,7 +124,7 @@ export function Movements({ kind }: { kind: Kind }) {
       ) : (
         <div className="space-y-5">
           {byDay.map(([day, items]) => (
-            <section key={day} className="overflow-hidden rounded-xl border border-line bg-white">
+            <section key={day} className="break-inside-avoid-page overflow-hidden rounded-xl border border-line bg-white print:rounded-none print:border-slate-300">
               <header className={cn("flex items-baseline justify-between gap-3 border-b border-line px-4 py-3 sm:px-5", day === today && "bg-[#faf5ea]")}>
                 <h2 className="jd-serif text-xl font-semibold text-navy">
                   {day === today ? "Today" : day === addDays(today, 1) ? "Tomorrow" : weekday(day)} <span className="font-sans text-sm font-normal text-slate-500">· {formatDate(day)}</span>
