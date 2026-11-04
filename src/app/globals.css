@@ -162,12 +162,33 @@ textarea {
   display: block;
   animation: jd-hello 0.9s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
+/* Handwriting reveal: the greeting is "written" left to right behind a soft-edged mask. */
+@keyframes jd-write {
+  from {
+    -webkit-mask-position: 100% 0;
+    mask-position: 100% 0;
+  }
+  to {
+    -webkit-mask-position: 0 0;
+    mask-position: 0 0;
+  }
+}
+.jd-write {
+  -webkit-mask-image: linear-gradient(90deg, #000 0 46%, transparent 54% 100%);
+  mask-image: linear-gradient(90deg, #000 0 46%, transparent 54% 100%);
+  -webkit-mask-size: 220% 100%;
+  mask-size: 220% 100%;
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  animation: jd-write 1.7s cubic-bezier(0.45, 0.05, 0.35, 1) both;
+}
 @media (prefers-reduced-motion: reduce) {
   .jd-ring,
   .jd-orbit,
   .jd-bar,
   .jd-rise,
   .jd-hello,
+  .jd-write,
   .jd-pop {
     animation: none;
   }

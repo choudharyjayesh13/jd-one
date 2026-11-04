@@ -1,10 +1,9 @@
 "use client";
 /**
  * Greeting after every sign-in, in the style of the iPhone "hello" screen:
- * clean white, system font, the words drift in from a soft blur.
- *   Good morning
- *   Harish Bairwa
- *   General Manager
+ *   "Good morning" is written out in a handwriting script, stroke by stroke,
+ *   then the person's name appears at once in the same script,
+ *   then their post, plain and straight away.
  * Shown after each sign-in and once each time the app is opened; fades into the app.
  * Tap anywhere to skip.
  */
@@ -12,7 +11,10 @@ import { useEffect, useState } from "react";
 import { useUser } from "@/core/auth/AuthProvider";
 import { TIMEZONE } from "@/core/format";
 
-const SHOW_MS = 2600;
+const BASE = process.env.NEXT_PUBLIC_BASE_PATH ?? "";
+const WRITE_MS = 1700; // greeting being written
+const NAME_AT = WRITE_MS + 150;
+const SHOW_MS = NAME_AT + 1900;
 const FADE_MS = 700;
 
 function greeting(now: Date): string {
@@ -23,11 +25,14 @@ function greeting(now: Date): string {
   return "Hello";
 }
 
-const SYSTEM_FONT = '-apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", "Segoe UI", Roboto, Arial, sans-serif';
+const SYSTEM_FONT = '-apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", "Segoe UI", Roboto, Arial, sans-serif';
+const SCRIPT_FONT = '"JD Hello", "Snell Roundhand", "Segoe Script", cursive';
+
+const fontFace = `@font-face{font-family:"JD Hello";src:url("${BASE}/fonts/sacramento.woff") format("woff");font-display:block;}`;
 
 export function Welcome() {
   const user = useUser();
-  const [phase, setPhase] = useState<"hidden" | "show" | "fade">("hidden");
+  const [phase, setPhase] = useState<"hidden" | "write" | "name" | "fade">("hidden");
 
   useEffect(() => {
     const key = `jdone.greeted.${user.id}`;
@@ -37,32 +42,63 @@ export function Welcome() {
     } catch {
       /* storage blocked: still greet */
     }
-    setPhase("show");
-    const t1 = window.setTimeout(() => setPhase("fade"), SHOW_MS);
-    const t2 = window.setTimeout(() => setPhase("hidden"), SHOW_MS + FADE_MS);
+    let cancelled = false;
+    const timers: number[] = [];
+    const start = () => {
+      if (cancelled) return;
+      setPhase("write");
+      timers.push(window.setTimeout(() => setPhase("name"), NAME_AT));
+      timers.push(window.setTimeout(() => setPhase("fade"), SHOW_MS));
+      timers.push(window.setTimeout(() => setPhase("hidden"), SHOW_MS + FADE_MS));
+    };
+    // Wait (briefly) for the script font so the greeting is never written in a fallback face.
+    const fonts = (document as Document & { fonts?: FontFaceSet }).fonts;
+    if (fonts?.load) {
+      const guard = window.setTimeout(start, 900);
+      fonts
+        .load(`64px "JD Hello"`)
+        .catch(() => undefined)
+        .then(() => {
+          window.clearTimeout(guard);
+          start();
+        });
+    } else start();
     return () => {
-      window.clearTimeout(t1);
-      window.clearTimeout(t2);
+      cancelled = true;
+      timers.forEach((t) => window.clearTimeout(t));
     };
   }, [user.id]);
 
   if (phase === "hidden") return null;
   const post = user.post === "chairman" ? "Chairman" : user.post === "director" ? "Director" : String(user.staff?.designation ?? "");
+  const showName = phase === "name" || phase === "fade";
 
   return (
     <div
       role="status"
       aria-live="polite"
       onClick={() => setPhase("hidden")}
-      className="fixed inset-0 z-[100] flex cursor-pointer flex-col items-center justify-center bg-white px-8 text-center text-[#1d1d1f] transition-opacity ease-out"
-      style={{ opacity: phase === "fade" ? 0 : 1, transitionDuration: `${FADE_MS}ms`, fontFamily: SYSTEM_FONT }}
+      className="fixed inset-0 z-[100] flex cursor-pointer flex-col items-center justify-center bg-white px-6 text-center text-[#1d1d1f] transition-opacity ease-out"
+      style={{ opacity: phase === "fade" ? 0 : 1, transitionDuration: `${FADE_MS}ms` }}
     >
-      <span className="jd-hello text-[clamp(40px,7vw,68px)] font-semibold leading-[1.05] tracking-[-0.03em]">{greeting(new Date())}</span>
-      <span className="jd-hello mt-3 text-[clamp(24px,3.6vw,34px)] font-medium leading-tight tracking-[-0.02em]" style={{ animationDelay: "0.25s" }}>
+      <style>{fontFace}</style>
+      <span
+        className="jd-write block whitespace-nowrap leading-[1.25]"
+        style={{ fontFamily: SCRIPT_FONT, fontSize: "clamp(52px, 13vw, 132px)", WebkitTextStroke: "1.4px #1d1d1f", animationDuration: `${WRITE_MS}ms` }}
+      >
+        {greeting(new Date())}
+      </span>
+      <span
+        className="mt-4 block max-w-full leading-[1.15] transition-opacity duration-300"
+        style={{ fontFamily: SCRIPT_FONT, fontSize: "clamp(40px, 8.5vw, 84px)", WebkitTextStroke: "1px #1d1d1f", opacity: showName ? 1 : 0 }}
+      >
         {user.name}
       </span>
       {post && (
-        <span className="jd-hello mt-2 text-[clamp(15px,1.8vw,18px)] font-normal tracking-[-0.01em] text-[#86868b]" style={{ animationDelay: "0.45s" }}>
+        <span
+          className="mt-4 block text-[clamp(15px,1.8vw,18px)] tracking-[-0.01em] text-[#86868b]"
+          style={{ fontFamily: SYSTEM_FONT, opacity: showName ? 1 : 0 }}
+        >
           {post}
         </span>
       )}
