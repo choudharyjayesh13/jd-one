@@ -1040,3 +1040,7 @@ begin
     execute format('grant all on jdone.%I to authenticated, service_role', t);
   end loop;
 end $$;
+
+-- ================================================================ 2026-11-04-rooms-dnd.jdone.sql
+-- JD One (4 Nov 2026): Room chart — "Do not disturb" on a room. Safe to run again.
+alter table jdone.rooms add column if not exists dnd boolean not null default false;
