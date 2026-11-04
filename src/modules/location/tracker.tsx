@@ -21,8 +21,8 @@ type Watcher = {
   openSettings(): Promise<void>;
 };
 
-const SAVE_EVERY_MS = 3 * 60 * 1000; // at most one point every 3 minutes…
-const SAVE_IF_MOVED_M = 150; // …unless they moved this far
+const SAVE_EVERY_MS = 30 * 1000; // a point every 30 seconds…
+const SAVE_IF_MOVED_M = 30; // …or sooner after moving 30 m
 
 function plugin(): Watcher | null {
   if (typeof window === "undefined") return null;
@@ -57,6 +57,7 @@ async function save(loc: Loc) {
   if (!staffId) return;
   const now = Date.now();
   if (last && now - last.at < SAVE_EVERY_MS && metres(last.loc, loc) < SAVE_IF_MOVED_M) return;
+  if (last && now - last.at < 5000) return; // never more than one every 5 seconds
   last = { loc, at: now };
   try {
     await getStore().create("location-pings", {
@@ -79,7 +80,7 @@ async function start(id: string) {
   starting = true;
   try {
     watcherId = await p.addWatcher(
-      { backgroundTitle: "JD One · duty location on", backgroundMessage: "Shared with JD Group until you check out.", requestPermissions: true, stale: false, distanceFilter: 30 },
+      { backgroundTitle: "JD One · duty location on", backgroundMessage: "Shared with JD Group until you check out.", requestPermissions: true, stale: false, distanceFilter: 10 },
       (loc, err) => {
         if (err) {
           if (err.code === "NOT_AUTHORIZED") setStatus("denied");

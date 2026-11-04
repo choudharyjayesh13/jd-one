@@ -93,7 +93,7 @@ export function LiveLocation() {
   const { rows: tracked, loading } = useList("staff", { filter: { track_location: true, active: true }, sort: { field: "name", dir: "asc" } });
   const [who, setWho] = useState("");
   const person = tracked.find((s) => s.id === who) ?? tracked[0];
-  const { rows: pings } = useList(person ? "location-pings" : null, { filter: { staff_id: person?.id }, range: { at: { gte: `${date}T00:00:00+05:30`, lte: `${date}T23:59:59+05:30` } }, sort: { field: "at", dir: "asc" }, limit: 1000 });
+  const { rows: pings } = useList(person ? "location-pings" : null, { filter: { staff_id: person?.id }, range: { at: { gte: `${date}T00:00:00+05:30`, lte: `${date}T23:59:59+05:30` } }, sort: { field: "at", dir: "asc" }, limit: 3000 });
   const { rows: latestRows } = useList(person ? "location-pings" : null, { filter: { staff_id: person?.id }, sort: { field: "at", dir: "desc" }, limit: 1 });
   const latest = latestRows[0];
   const points = useMemo(() => pings, [pings]);
