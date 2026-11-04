@@ -194,15 +194,33 @@ function SideMenu({ onNavigate, pathname }: { onNavigate: () => void; pathname: 
             </button>
             {isOpen && (
               <div className="mb-2 ml-3 flex flex-col border-l border-[#d7aa60]/30 pl-2">
-                {modules.map((m) => {
+                {modules.map((m, idx) => {
                   const href = moduleHref(m)!;
                   const lvl = moduleLevel(m.key);
-                  return (
+                  const groupItems = m.group ? modules.filter((x) => x.group === m.group) : [];
+                  const groupKey = `${dept.id}:${m.group ?? ""}`;
+                  const groupOpen = !!m.group && (open[groupKey] ?? groupItems.some((x) => isActive(moduleHref(x) ?? "#")));
+                  const heading =
+                    m.group && modules.findIndex((x) => x.group === m.group) === idx ? (
+                      <button
+                        key={`g-${m.group}`}
+                        type="button"
+                        aria-expanded={groupOpen}
+                        onClick={() => setOpen((o) => ({ ...o, [groupKey]: !groupOpen }))}
+                        className="flex min-h-9 w-full items-center justify-between gap-2 rounded px-3 text-left text-[13px] text-[#3a332a] hover:bg-[#17140f]/[0.04] hover:text-[#17140f]"
+                      >
+                        <span>{m.group}</span>
+                        <ChevronDown className={cn("h-3.5 w-3.5 text-[#6b6255] transition-transform", groupOpen && "rotate-180")} />
+                      </button>
+                    ) : null;
+                  if (m.group && !groupOpen) return heading;
+                  return [
+                    heading,
                     <Link
                       key={m.key}
                       href={href}
                       onClick={onNavigate}
-                      className={cn("flex min-h-9 items-center justify-between gap-2 rounded px-3 text-[13px]", isActive(href) ? "bg-[#d7aa60]/15 font-medium text-[#9a7128]" : "text-[#3a332a] hover:bg-[#17140f]/[0.04] hover:text-[#17140f]")}
+                      className={cn("flex min-h-9 items-center justify-between gap-2 rounded px-3 text-[13px]", m.group && "ml-3 border-l border-[#d7aa60]/30 pl-3", isActive(href) ? "bg-[#d7aa60]/15 font-medium text-[#9a7128]" : "text-[#3a332a] hover:bg-[#17140f]/[0.04] hover:text-[#17140f]")}
                     >
                       <span className="truncate">{m.label}</span>
                       {badges[m.key] ? (
@@ -210,8 +228,8 @@ function SideMenu({ onNavigate, pathname }: { onNavigate: () => void; pathname: 
                       ) : lvl === 1 ? (
                         <span className="text-[9px] uppercase tracking-[0.14em] text-[#9a917f]">View</span>
                       ) : null}
-                    </Link>
-                  );
+                    </Link>,
+                  ];
                 })}
               </div>
             )}

@@ -9,7 +9,7 @@ import { useMemo, useState } from "react";
 import Link from "next/link";
 import { ClipboardCopy, Plus } from "lucide-react";
 import { getStore } from "@/core/data";
-import { currentMonth, formatMoney, formatMonth, monthRange, todayISO } from "@/core/format";
+import { addDays, currentMonth, formatMoney, formatMonth, monthRange, todayISO } from "@/core/format";
 import { useUser } from "@/core/auth/AuthProvider";
 import { canCreate } from "@/core/auth/access";
 import { getEntity } from "@/core/schema/registry";
@@ -72,7 +72,7 @@ export function RatesCalendar() {
   return (
     <div>
       <PageHeader
-        title="Rates calendar"
+        title="Bulk rates"
         subtitle={
           <>
             {formatMonth(month)} · {MEAL_PLAN_LABELS[plan]} rate per night, excl. GST.{" "}
@@ -105,8 +105,8 @@ export function RatesCalendar() {
               Copy sheet
             </Button>
             {mayEdit && (
-              <Button size="sm" icon={Plus} onClick={() => setOpen(true)}>
-                Bulk update
+              <Button icon={Plus} onClick={() => setOpen(true)}>
+                Set rates in bulk
               </Button>
             )}
           </>
@@ -181,6 +181,9 @@ function BulkUpdate({ unitId, units, defaultType, defaultPlan, month, onClose, o
   const [closed, setClosed] = useState(false);
   const [note, setNote] = useState("");
   const [saving, setSaving] = useState(false);
+  // 0 = Sunday … 6 = Saturday. All days = one rate row for the whole range.
+  const [weekdays, setWeekdays] = useState<number[]>([0, 1, 2, 3, 4, 5, 6]);
+  const toggleDay = (d: number) => setWeekdays((cur) => (cur.includes(d) ? cur.filter((x) => x !== d) : [...cur, d]));
 
   const togglePlan = (p: string) => setPlans((cur) => (cur.includes(p) ? cur.filter((x) => x !== p) : [...cur, p]));
 
@@ -189,11 +192,25 @@ function BulkUpdate({ unitId, units, defaultType, defaultPlan, month, onClose, o
     if (!closed && !(Number(rate) > 0)) return toast("Enter a rate", "error");
     if (plans.length === 0) return toast("Pick at least one meal plan", "error");
     if (to < from) return toast("'To' must be on or after 'From'", "error");
+    if (weekdays.length === 0) return toast("Pick at least one day of the week", "error");
+    // Runs of consecutive chosen days become one rate row each.
+    const runs: [string, string][] = [];
+    const n = Math.round((Date.parse(to) - Date.parse(from)) / 86400000) + 1;
+    if (n > 400) return toast("Choose at most about a year at a time", "error");
+    for (const d of dayList(from, n)) {
+      if (!weekdays.includes(new Date(`${d}T00:00:00Z`).getUTCDay())) continue;
+      const last = runs[runs.length - 1];
+      if (last && addDays(last[1], 1) === d) last[1] = d;
+      else runs.push([d, d]);
+    }
+    if (!runs.length) return toast("No date in this range falls on the chosen days", "error");
     setSaving(true);
     try {
       const store = getStore();
       for (const p of plans) {
-        await store.create("rates", { business_unit_id: unit, unit_type: type, meal_plan: p, date_from: from, date_to: to, rate: closed ? Number(rate) || 0 : Number(rate), channel, closed, note: note || null, min_nights: 1, created_by: (user.staff?.id as string) ?? null });
+        for (const [a, b] of runs) {
+          await store.create("rates", { business_unit_id: unit, unit_type: type, meal_plan: p, date_from: a, date_to: b, rate: closed ? Number(rate) || 0 : Number(rate), channel, closed, note: note || null, min_nights: 1, created_by: (user.staff?.id as string) ?? null });
+        }
       }
       toast(`${closed ? "Closed" : "Rate set"} for ${type} · ${plans.join("/")} · ${from} → ${to}`);
       await onSaved();
@@ -205,7 +222,7 @@ function BulkUpdate({ unitId, units, defaultType, defaultPlan, month, onClose, o
   };
 
   return (
-    <Dialog open onClose={onClose} title="Bulk update rates">
+    <Dialog open onClose={onClose} title="Set rates in bulk">
       <div className="grid gap-3 sm:grid-cols-2">
         <Field label="Property" required>
           <Select value={unit} onChange={(e) => setUnit(e.target.value)}>
@@ -239,6 +256,15 @@ function BulkUpdate({ unitId, units, defaultType, defaultPlan, month, onClose, o
         </Field>
         <Field label="To" required>
           <Input type="date" value={to} onChange={(e) => setTo(e.target.value)} />
+        </Field>
+        <Field label="Days of the week" plain wide help="E.g. only Friday and Saturday for a weekend rate">
+          <div className="flex flex-wrap gap-1.5">
+            {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((l, i) => (
+              <button key={l} type="button" onClick={() => toggleDay(i)} className={cn("h-8 w-12 rounded-md border text-sm", weekdays.includes(i) ? "border-navy bg-navy text-white" : "border-line bg-white text-slate-600")}>
+                {l}
+              </button>
+            ))}
+          </div>
         </Field>
         <Field label="Rate / night (excl. GST)" required={!closed}>
           <Input type="number" inputMode="numeric" min={0} value={rate} onChange={(e) => setRate(e.target.value)} placeholder="4500" />

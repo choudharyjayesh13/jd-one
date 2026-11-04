@@ -16,6 +16,8 @@ export interface ModuleDef {
   /** Custom page path (with trailing slash). */
   href?: string;
   soon?: boolean;
+  /** Menu sub-group: items with the same group sit under one heading that opens (e.g. Rates). */
+  group?: string;
 }
 
 export interface Department {
@@ -60,8 +62,8 @@ export const DEPARTMENTS: Department[] = [
       { key: "payment-requests", label: "Payment requests", entity: "payment-requests" },
       { key: "pay-qr", label: "Scan to pay (QR)", href: "/pay-qr/" },
       { key: "availability", label: "Availability calendar", href: "/availability/" },
-      { key: "rates", label: "Rates", entity: "rates" },
-      { key: "rates-calendar", label: "Rate calendar", href: "/rates-calendar/" },
+      { key: "rates", label: "Today's rates", entity: "rates", href: "/todays-rates/", group: "Rates" },
+      { key: "rates-calendar", label: "Bulk rates", href: "/rates-calendar/", group: "Rates" },
       { key: "add-ons", label: "Add-on services", entity: "add-ons" },
       { key: "ota-bookings", label: "OTA bookings", href: "/ota-bookings/" },
       { key: "agents", label: "Agents", entity: "agents" },
