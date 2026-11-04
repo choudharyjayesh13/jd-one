@@ -20,12 +20,13 @@ export const REPORT_DEPARTMENTS: { id: string; title: string }[] = [
 ];
 export const deptTitle = (id: string) => REPORT_DEPARTMENTS.find((d) => d.id === id)?.title ?? id;
 
-/** Night audit (and every department's report): Chairman, Director, and whoever has "Night audit" (Front Office). */
+/** Night audit (and every department's report): Chairman, Director, Front Office staff, and anyone ticked for "Night audit". */
 export function canNightAudit(user: AuthUser): boolean {
   if (user.post) return true;
   const lvl = moduleLevel("night-audit");
   if (lvl === null) return user.role === "owner" || user.role === "manager";
-  return lvl >= 2;
+  // Front Office staff (check-in / check-out duty) run the night audit.
+  return lvl >= 2 || (moduleLevel("checkins") ?? 0) >= 2;
 }
 
 /** Departments this person can write the daily report for: the ones they work in (Edit or Manage on any module). */
