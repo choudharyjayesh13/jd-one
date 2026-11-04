@@ -172,7 +172,7 @@ export const DEPARTMENTS: Department[] = [
     id: "hr",
     label: "HR",
     modules: [
-      { key: "staff", label: "Staff", entity: "staff" },
+      { key: "staff", label: "Employees", entity: "staff", href: "/employees/" },
       { key: "attendance", label: "Attendance", href: "/attendance/grid/" },
       { key: "rest-periods", label: "Leave & rest days", entity: "rest-periods" },
       { key: "staff-pay", label: "Salaries & pay", entity: "staff-pay" },
