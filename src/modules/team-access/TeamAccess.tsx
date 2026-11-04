@@ -12,6 +12,7 @@ import { Search } from "lucide-react";
 import { getStore } from "@/core/data";
 import type { Row } from "@/core/schema/types";
 import { useUser } from "@/core/auth/AuthProvider";
+import { isDutyKey } from "@/core/auth/access";
 import { ASSIGNABLE_DEPARTMENTS, LEVELS, ROLE_TEMPLATES, levelsFromTemplate, type Level } from "@/core/departments";
 import { useList } from "@/core/ui/hooks";
 import { useToast } from "@/core/ui/Toast";
@@ -112,6 +113,7 @@ export function TeamAccess() {
   const accessByStaff = useMemo(() => {
     const m = new Map<string, Row[]>();
     for (const r of allAccess) {
+      if (isDutyKey(String(r.module))) continue; // report duty lives in Reports → Report duty
       const k = String(r.staff_id);
       if (!m.has(k)) m.set(k, []);
       m.get(k)!.push(r);
@@ -156,6 +158,7 @@ export function TeamAccess() {
       want.set(MARKER, 0);
       const have = new Map(selectedRows.map((r) => [String(r.module), r]));
       for (const [mod, row] of have) {
+        if (isDutyKey(mod)) continue; // report duty is set in Reports → Report duty
         if (!want.has(mod)) await store.remove("staff-access", row.id);
         else if (Number(row.level) !== want.get(mod)) await store.update("staff-access", row.id, { level: want.get(mod) });
       }

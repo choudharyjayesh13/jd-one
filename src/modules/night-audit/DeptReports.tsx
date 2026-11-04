@@ -22,6 +22,7 @@ import { Loading, PageHeader } from "@/core/ui/misc";
 import { NoAccess } from "@/core/ui/AuthGate";
 import { REPORT_DEPARTMENTS, collectDay, deptTitle, type Section } from "./collect";
 import { SectionView, canNightAudit, reportDepartments } from "./ReportView";
+import { useCanAssignReports } from "./access";
 
 export function DeptReports() {
   const user = useUser();
@@ -31,11 +32,22 @@ export function DeptReports() {
   const { rows: staff } = useList("staff");
   const staffName = useMemo(() => new Map(staff.map((s) => [s.id, String(s.name)])), [staff]);
   const mine = reportDepartments(user);
+  const canAssign = useCanAssignReports(user);
   const [open, setOpen] = useState<{ dept: string; section: Section | null; existing: Row | null; view: boolean } | null>(null);
   const [note, setNote] = useState("");
   const [busy, setBusy] = useState(false);
 
-  if (!mine.length) return <NoAccess />;
+  if (!mine.length)
+    return canAssign ? (
+      <div className="mx-auto mt-16 max-w-md text-center">
+        <p className="mb-4 text-sm text-slate-600">No report duty is set for you. Assign who sends which report in Report duty.</p>
+        <Link href="/reports/duty/">
+          <Button>Open Report duty</Button>
+        </Link>
+      </div>
+    ) : (
+      <NoAccess />
+    );
   const byDept = new Map(reports.map((r) => [String(r.department), r]));
 
   const start = async (dept: string, view: boolean) => {
@@ -84,11 +96,18 @@ export function DeptReports() {
         title="Department reports"
         subtitle={`Made by the system from the day's entries · ${done} of ${depts.length} sent`}
         actions={
-          canNightAudit(user) ? (
-            <Link href="/night-audit/">
-              <Button variant="secondary">Night audit</Button>
-            </Link>
-          ) : undefined
+          <div className="flex gap-2">
+            {canAssign && (
+              <Link href="/reports/duty/">
+                <Button variant="secondary">Report duty</Button>
+              </Link>
+            )}
+            {canNightAudit(user) && (
+              <Link href="/night-audit/">
+                <Button variant="secondary">Night audit</Button>
+              </Link>
+            )}
+          </div>
         }
       />
       <DateBar date={date} setDate={setDate} />

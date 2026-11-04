@@ -1,7 +1,7 @@
 import { ShieldCheck } from "lucide-react";
 import { defineEntity } from "@/core/schema/types";
 
-/** The two posts that run Team access: Chairman and Director (access follows the post, not the person). */
+/** Posts: Chairman and Director run Team access; the Property Supervisor assigns report duty. Access follows the post, not the person. */
 export const orgPosts = defineEntity({
   name: "org-posts",
   label: "Posts",
@@ -14,7 +14,7 @@ export const orgPosts = defineEntity({
   searchFields: ["post", "holder_name", "email"],
   defaultSort: { field: "post", dir: "asc" },
   fields: [
-    { name: "post", label: "Post", type: "select", options: ["chairman", "director"], required: true },
+    { name: "post", label: "Post", type: "select", options: ["chairman", "director", "property_supervisor"], required: true },
     { name: "holder_name", label: "Name", type: "text" },
     { name: "email", label: "Login email", type: "email" },
   ],

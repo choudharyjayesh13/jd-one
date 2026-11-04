@@ -21,10 +21,20 @@ interface CurrentAccess {
 }
 
 let current: CurrentAccess = { admin: false, levels: null };
+/** Report duty (Reports → Report duty): "night-audit" and "report-<department>". Kept apart from the menu levels. */
+let duties: Record<string, number> = {};
+export const isDutyKey = (k: string) => k === "night-audit" || k.startsWith("report-");
 
 /** Set by AuthProvider whenever the signed-in user (or their access) changes. */
 export function setCurrentAccess(next: CurrentAccess) {
-  current = next;
+  duties = {};
+  let levels: Record<string, number> | null = null;
+  for (const [k, v] of Object.entries(next.levels ?? {})) {
+    if (isDutyKey(k)) duties[k] = v;
+    else (levels ??= {})[k] = v;
+  }
+  // Someone with only a report duty (no Team access set yet) keeps the old menu rules.
+  current = { admin: next.admin, levels };
 }
 
 export function getCurrentAccess(): CurrentAccess {
@@ -34,6 +44,7 @@ export function getCurrentAccess(): CurrentAccess {
 /** Level of a menu module for the signed-in user; null = no Team access set (use the old rules). */
 export function moduleLevel(key: string): number | null {
   if (current.admin) return 3;
+  if (isDutyKey(key)) return duties[key] ?? (current.levels ? 0 : null);
   if (!current.levels) return null;
   return current.levels[key] ?? 0;
 }

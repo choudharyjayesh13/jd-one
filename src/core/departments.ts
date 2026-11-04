@@ -197,6 +197,7 @@ export const DEPARTMENTS: Department[] = [
     modules: [
       { key: "dept-reports", label: "Department reports", href: "/reports/day/" },
       { key: "night-audit", label: "Night audit", href: "/night-audit/" },
+      { key: "report-duty", label: "Report duty", href: "/reports/duty/" },
     ],
   },
   {
@@ -212,13 +213,14 @@ export const DEPARTMENTS: Department[] = [
 ];
 
 /** Departments staff can be given (Administration is tied to the posts). */
-export const ASSIGNABLE_DEPARTMENTS = DEPARTMENTS.filter((d) => !d.adminOnly);
+/** Departments in Team access (Reports is assigned separately, in Reports → Report duty). */
+export const ASSIGNABLE_DEPARTMENTS = DEPARTMENTS.filter((d) => !d.adminOnly && d.id !== "reports");
 
 /** Not used by The Udaisarovar: kept in the data, left out of the menu. */
 export const HIDDEN_FOR_HOTEL = ["investors", "investments", "wallet-transactions", "business-units", "import-runs", "lead-stage-history", "attendance"];
 
 /** Modules whose pages decide access themselves (department reports follow the departments a person works in). */
-export const SELF_GUARDED_MODULES: readonly string[] = ["dept-reports", "night-audit"];
+export const SELF_GUARDED_MODULES: readonly string[] = ["dept-reports", "night-audit", "report-duty"];
 
 export const moduleHref = (m: ModuleDef): string | null => (m.soon ? null : m.href ?? (m.entity ? `/${m.entity}/` : null));
 
@@ -246,12 +248,10 @@ export function modulesForEntity(entity: string): string[] {
  */
 export const ROLE_TEMPLATES: Record<string, Record<string, Level | Record<string, Level>>> = {
   "Front Office Executive": {
-    reports: { "dept-reports": 2, "night-audit": 2 },
     "front-office": { "room-chart": 1, checkins: 2, customers: 1, "guest-bill": 2, "payment-requests": 2, "pay-qr": 2, "guest-requests": 2, "shift-closes": 2, "guest-info": 1 },
     reservations: { bookings: 2, availability: 1, "add-ons": 1 },
   },
   "Front Office Manager": {
-    reports: 3,
     "front-office": 3,
     reservations: 3,
     sales: { leads: 2, pipeline: 1 },
@@ -282,7 +282,7 @@ export const ROLE_TEMPLATES: Record<string, Record<string, Level | Record<string
   "Security Guard": { security: 2 },
   "Maintenance Technician": { maintenance: { tickets: 2, "property-assets": 1, preventive: 2, "service-vendors": 1, "daily-filings": 2, "vehicle-logs": 2 } },
   Accountant: { accounts: { payments: 2, vouchers: 2, "vendor-dues": 2, expenses: 2, "daily-reports": 2, "salary-payments": 2, reports: 1, performance: 1 }, stores: { vendors: 1, purchases: 1 } },
-  "General Manager": { reports: 3, "front-office": 3, reservations: 3, sales: 3, housekeeping: 3, "fb-service": 3, "fb-production": 3, stores: 3, activities: 3, security: 3, maintenance: 3, accounts: 1, hr: 2 },
+  "General Manager": { "front-office": 3, reservations: 3, sales: 3, housekeeping: 3, "fb-service": 3, "fb-production": 3, stores: 3, activities: 3, security: 3, maintenance: 3, accounts: 1, hr: 2 },
   Custom: {},
 };
 

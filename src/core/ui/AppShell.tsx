@@ -20,7 +20,7 @@ import { canSeePerformance } from "@/modules/performance/Performance";
 import { useList } from "./hooks";
 import { cn } from "./cn";
 import { DbUpdateStrip } from "./DbSetup";
-import { canNightAudit, reportDepartments } from "@/modules/night-audit/access";
+import { canNightAudit, reportDepartments, useIsPropertySupervisor } from "@/modules/night-audit/access";
 import { Welcome } from "./Welcome";
 
 const BASE = process.env.NEXT_PUBLIC_BASE_PATH ?? "";
@@ -54,8 +54,9 @@ function legacyPageVisible(key: string, user: AuthUser): boolean {
   }
 }
 
-function moduleVisible(m: ModuleDef, user: AuthUser): boolean {
+function moduleVisible(m: ModuleDef, user: AuthUser, supervisor = false): boolean {
   if (m.soon) return false;
+  if (m.key === "report-duty") return !!user.post || supervisor;
   if (m.key === "night-audit") return canNightAudit(user);
   if (m.key === "dept-reports") return reportDepartments(user).length > 0;
   const lvl = moduleLevel(m.key);
@@ -76,13 +77,14 @@ function adminModuleVisible(m: ModuleDef, user: AuthUser): boolean {
 /** Menu for this person: departments with at least one module they may open. */
 export function useMenu(): { dept: Department; modules: ModuleDef[] }[] {
   const user = useUser();
+  const supervisor = useIsPropertySupervisor(user);
   return useMemo(
     () =>
       DEPARTMENTS.map((dept) => ({
         dept,
-        modules: dept.modules.filter((m) => (dept.adminOnly ? adminModuleVisible(m, user) : moduleVisible(m, user)) && moduleHref(m)),
+        modules: dept.modules.filter((m) => (dept.adminOnly ? adminModuleVisible(m, user) : moduleVisible(m, user, supervisor)) && moduleHref(m)),
       })).filter((g) => g.modules.length > 0),
-    [user],
+    [user, supervisor],
   );
 }
 
