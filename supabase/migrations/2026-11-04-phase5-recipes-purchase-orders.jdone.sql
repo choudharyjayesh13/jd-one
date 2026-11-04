@@ -66,6 +66,8 @@ create trigger assign_po_no before insert on jdone.purchase_orders for each row 
 
 -- Served KOT → recipe ingredients off stock (once per KOT).
 alter table jdone.kots add column if not exists stock_deducted boolean not null default false;
+-- KOTs already served before recipes existed must never be deducted later.
+update jdone.kots set stock_deducted = true where status in ('Served', 'Billed', 'Cancelled') and not stock_deducted;
 create or replace function jdone.kot_recipe_stock() returns trigger
 language plpgsql security definer set search_path = jdone, public as $$
 declare

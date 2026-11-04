@@ -14,7 +14,7 @@ export const guestFeedback = defineEntity({
   label: "Guest feedback",
   labelSingular: "Guest feedback",
   icon: Star,
-  table: "guest_feedback",
+  table: "guest_reviews",
   teams: ["property", "operations", "marketing"],
   unitField: "business_unit_id",
   titleField: "guest_name",
