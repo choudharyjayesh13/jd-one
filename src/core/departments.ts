@@ -52,7 +52,6 @@ export const DEPARTMENTS: Department[] = [
       { key: "shift-closes", label: "Shift close", entity: "shift-closes" },
       { key: "guest-info", label: "Guest app content", entity: "guest-info" },
       { key: "rooms", label: "Rooms", entity: "rooms" },
-      { key: "hotel-details", label: "Hotel details", href: "/hotel-details/" },
     ],
   },
   {
@@ -196,6 +195,11 @@ export const DEPARTMENTS: Department[] = [
       { key: "gate-register", label: "Gate register", entity: "gate-entries" },
       { key: "vehicle-entry", label: "Vehicle entry", entity: "vehicle-entries" },
     ],
+  },
+  {
+    id: "company-policy",
+    label: "Company policy",
+    modules: [{ key: "hotel-details", label: "Hotel details", href: "/hotel-details/" }],
   },
   {
     id: "reports",
