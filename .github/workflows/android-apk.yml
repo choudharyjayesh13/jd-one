@@ -4,7 +4,8 @@ name: Android app (APK)
 
 on:
   push:
-    branches: [redesign/login-flow, redesign/phase1]
+    # Live branch only: its build cache holds the signing key, so every APK installs over the last.
+    branches: [redesign/login-flow]
     paths: ["android-app/**", ".github/workflows/android-apk.yml"]
   workflow_dispatch:
 
