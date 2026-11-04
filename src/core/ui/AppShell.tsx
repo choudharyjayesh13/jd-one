@@ -20,6 +20,7 @@ import { canSeePerformance } from "@/modules/performance/Performance";
 import { useList } from "./hooks";
 import { cn } from "./cn";
 import { DbUpdateStrip } from "./DbSetup";
+import { Welcome } from "./Welcome";
 
 const BASE = process.env.NEXT_PUBLIC_BASE_PATH ?? "";
 
@@ -250,6 +251,7 @@ export function AppShell({ children }: { children: ReactNode }) {
 
   return (
     <div className="jd-light jd-sans flex min-h-screen flex-col">
+      <Welcome />
       <header className="sticky top-0 z-40 flex print:hidden items-center justify-between gap-3 border-b border-[#e7e1d5] bg-white px-3 py-2.5 sm:px-6" style={{ paddingTop: "max(0.625rem, env(safe-area-inset-top))" }}>
         <div className="flex items-center gap-2">
           <button type="button" onClick={() => setDrawer(true)} className="flex h-11 w-11 items-center justify-center rounded-full text-[#3a332a] hover:bg-[#17140f]/[0.06] lg:hidden" aria-label="Open menu">

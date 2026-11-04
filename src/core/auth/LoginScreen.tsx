@@ -53,9 +53,9 @@ const isStaysProperty = (b: Brand | null) => !!b && STAYS_PROPERTIES.some((p) =>
 function Diamond() {
   return (
     <span className="flex items-center gap-3" aria-hidden="true">
-      <span className="h-px w-20 bg-gradient-to-r from-transparent to-[#17140f]" />
-      <span className="h-[7px] w-[7px] rotate-45 bg-[#17140f]" />
-      <span className="h-px w-20 bg-gradient-to-r from-[#17140f] to-transparent" />
+      <span className="h-px w-20 bg-gradient-to-r from-transparent to-[#d7aa60]" />
+      <span className="h-[7px] w-[7px] rotate-45 bg-[#d7aa60]" />
+      <span className="h-px w-20 bg-gradient-to-r from-[#d7aa60] to-transparent" />
     </span>
   );
 }
