@@ -1,6 +1,6 @@
 import { Banknote } from "lucide-react";
 import { defineEntity, type Role } from "@/core/schema/types";
-import { todayISO, currentMonth } from "@/core/format";
+import { calendarTodayISO, currentMonth } from "@/core/format";
 
 /** Roles that may see money: expenses, salaries paid, vendor payments (mirrors jdone.is_money_admin()). */
 export const MONEY_ROLES: Role[] = ["owner", "manager", "accounts", "finance"];
@@ -18,7 +18,7 @@ export const salaryPayments = defineEntity({
   defaultSort: { field: "date", dir: "desc" },
   permissions: { read: MONEY_ROLES, create: MONEY_ROLES, update: MONEY_ROLES, delete: ["owner"] },
   fields: [
-    { name: "date", label: "Paid on", type: "date", required: true, default: todayISO },
+    { name: "date", label: "Paid on", type: "date", required: true, default: calendarTodayISO },
     { name: "staff_name", label: "Paid to", type: "text", required: true },
     { name: "staff_id", label: "Staff record", type: "relation", entity: "staff" },
     { name: "salary_month", label: "For month (yyyy-mm)", type: "text", default: currentMonth, placeholder: "2026-09" },

@@ -8,7 +8,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Camera, MapPin, RefreshCw, X, Coffee, Send, CheckCircle2, Sun, Moon } from "lucide-react";
 import { getStore } from "@/core/data";
 import { useUser } from "@/core/auth/AuthProvider";
-import { todayISO, formatDateTime } from "@/core/format";
+import { calendarTodayISO, formatDateTime } from "@/core/format";
 import { Button } from "@/core/ui/Button";
 import { cn } from "@/core/ui/cn";
 import { photoOfDay } from "@/core/ui/property";
@@ -128,19 +128,19 @@ export function CheckIn() {
     });
   }, [store, staffId]);
   useEffect(() => {
-    const q = staffId ? store.list("attendance", { filter: { date: todayISO(), staff_id: staffId } }) : Promise.resolve([] as Row[]);
+    const q = staffId ? store.list("attendance", { filter: { date: calendarTodayISO(), staff_id: staffId } }) : Promise.resolve([] as Row[]);
     void q.then((rows) => setToday(rows[0] ?? null));
   }, [store, staffId, saving]);
-  const loadRests = useCallback(() => store.list("rest-periods", { filter: { date: todayISO() } }).then(setRests).catch(() => undefined), [store]);
+  const loadRests = useCallback(() => store.list("rest-periods", { filter: { date: calendarTodayISO() } }).then(setRests).catch(() => undefined), [store]);
   const [teamAtt, setTeamAtt] = useState<Row[]>([]);
   const [teamTasks, setTeamTasks] = useState<Row[]>([]);
   useEffect(() => {
     if (!leader) return;
-    void Promise.all([store.list("attendance", { filter: { date: todayISO() } }), store.list("tasks", { filter: { due: todayISO() } })])
+    void Promise.all([store.list("attendance", { filter: { date: calendarTodayISO() } }), store.list("tasks", { filter: { due: calendarTodayISO() } })])
       .then(([a, t]) => { setTeamAtt(a); setTeamTasks(t); })
       .catch(() => undefined);
   }, [store, leader, rests]);
-  const review = (s: Row) => shift1Review(s, teamAtt.find((a) => a.staff_id === s.id) ?? null, teamTasks, todayISO(), istTime, onTimeLimit);
+  const review = (s: Row) => shift1Review(s, teamAtt.find((a) => a.staff_id === s.id) ?? null, teamTasks, calendarTodayISO(), istTime, onTimeLimit);
   useEffect(() => {
     void loadRests();
   }, [loadRests]);
@@ -187,7 +187,7 @@ export function CheckIn() {
       const common = { latitude: pos.lat, longitude: pos.lng, accuracy_m: pos.accuracy, distance_m: distance, location_ok: locationOk, device };
       const values = { [punch.field]: at, [punch.selfie]: photo, ...common };
       if (today) await store.update("attendance", today.id, values);
-      else await store.create("attendance", { date: todayISO(), staff_id: staffId, status: "P", ...values });
+      else await store.create("attendance", { date: calendarTodayISO(), staff_id: staffId, status: "P", ...values });
       toast(`${punch.label} · ${formatDateTime(at).slice(-8)}${distance != null ? ` · ${distance} m from ${unit?.name}` : ""}`, "success");
       setPhoto(null);
     } catch (e) {
@@ -203,7 +203,7 @@ export function CheckIn() {
     const r = who ? review(who) : null;
     if (r && !r.ok) return toast(`No rest — Shift 1 not done well: ${r.reasons.join(", ")}`, "error");
     try {
-      await store.create("rest-periods", { staff_id: f.staff_id, date: todayISO(), start_time: f.start_time, end_time: f.end_time, note: f.note || null, assigned_by: user.staff?.id ?? null });
+      await store.create("rest-periods", { staff_id: f.staff_id, date: calendarTodayISO(), start_time: f.start_time, end_time: f.end_time, note: f.note || null, assigned_by: user.staff?.id ?? null });
       toast(`Rest time given to ${String(staff.find((x) => x.id === f.staff_id)?.name ?? "")} — they see it in the app`);
       setRestForm({ staff_id: "", start_time: "", end_time: "", note: "" });
       await loadRests();

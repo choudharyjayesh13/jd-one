@@ -88,7 +88,6 @@ export async function collectDay(date: string, unitId: string | null): Promise<D
     bookingsLive,
     bookingsMade,
     rooms,
-    shiftCloses,
     guestRequests,
     leadsMade,
     leadsOpen,
@@ -128,7 +127,6 @@ export async function collectDay(date: string, unitId: string | null): Promise<D
     list("bookings", { filter: stayFilter, range: { check_out: { gte: date } } }),
     list("bookings", around("created_at")),
     list("rooms", { filter: unit }),
-    list("shift-closes", onDate()),
     list("guest-requests", around("requested_at")),
     list("leads", around("created_at")),
     list("leads", { filter: unit, range: { next_follow_up: { lte: date } } }),
@@ -206,7 +204,6 @@ export async function collectDay(date: string, unitId: string | null): Promise<D
     const inHouseIds = new Set(inHouse.map((b) => String(b.id)));
     const payLater = new Set(openStays.filter((c) => !c.actual_out && String(c.notes ?? "").startsWith(PAY_LATER_TAG) && inHouseIds.has(String(c.booking_id))).map((c) => String(c.booking_id)));
     for (const b of inHouse.filter((b) => payLater.has(String(b.id)))) alerts.push(`Pays at check-out (approved): ${String(b.guest_name)} · balance ${money(num(b.balance))}`);
-    if (!shiftCloses.length) alerts.push("Shift close not filled today");
     if (reqOpen.length) alerts.push(`${count(reqOpen.length, "guest request")} still open`);
     put("front-office", {
       stats: [
@@ -216,7 +213,6 @@ export async function collectDay(date: string, unitId: string | null): Promise<D
         { label: "Occupancy tonight", value: activeRooms ? `${occ} / ${activeRooms} rooms · ${Math.round((occ / activeRooms) * 100)}%` : count(occ, "room") },
         { label: "Balance due (in-house)", value: money(sum(dueInHouse, "balance")), tone: dueInHouse.length ? "bad" : undefined },
         { label: "Guest requests today", value: `${reqs.length} · ${reqs.filter((r) => r.status === "Done").length} done` },
-        { label: "Shift close", value: shiftCloses.length ? `Done · cash in hand ${money(sum(shiftCloses, "cash_in_hand"))}` : "Not done", tone: shiftCloses.length ? "good" : "bad" },
       ],
       tables: [
         { title: "Arrivals", columns: ["Guest", "Rooms", "Status"], rows: arrivals.map((b) => [String(b.guest_name), roomsLabel(b), String(b.status)]) },
@@ -224,7 +220,7 @@ export async function collectDay(date: string, unitId: string | null): Promise<D
         { title: "In-house tonight", columns: ["Guest", "Rooms", "Till", "Balance"], rows: inHouse.map((b) => [String(b.guest_name), roomsLabel(b), String(b.check_out), `${money(num(b.balance))}${payLater.has(String(b.id)) ? " · pays at check-out" : ""}`]) },
       ],
       alerts,
-    }, [...ciToday, ...shiftCloses, ...reqs]);
+    }, [...ciToday, ...reqs]);
   }
 
   // ---------------- Reservations

@@ -10,7 +10,7 @@ import { getStore } from "@/core/data";
 import type { Row } from "@/core/schema/types";
 import { useUser } from "@/core/auth/AuthProvider";
 import { moduleLevel } from "@/core/auth/access";
-import { addDays, todayISO } from "@/core/format";
+import { addDays, calendarTodayISO } from "@/core/format";
 import { useList } from "@/core/ui/hooks";
 import { useToast } from "@/core/ui/Toast";
 import { Button } from "@/core/ui/Button";
@@ -40,7 +40,7 @@ export function shiftsForDay(staff: Row | null | undefined, roster: Row | null |
 export function Roster() {
   const user = useUser();
   const { toast } = useToast();
-  const [start, setStart] = useState(weekStart(todayISO()));
+  const [start, setStart] = useState(weekStart(calendarTodayISO()));
   const days = useMemo(() => Array.from({ length: 7 }, (_, i) => addDays(start, i)), [start]);
   const { rows: staffRows, loading } = useList("staff", { filter: { active: true }, sort: { field: "name", dir: "asc" } });
   const { rows: roster, error, reload } = useList("shift-roster", { range: { date: { gte: days[0], lte: days[6] } } });
@@ -103,8 +103,8 @@ export function Roster() {
         <Button variant="secondary" size="sm" aria-label="Next week" onClick={() => setStart(addDays(start, 7))}>
           <ChevronRight className="h-4 w-4" />
         </Button>
-        {start !== weekStart(todayISO()) && (
-          <Button variant="ghost" size="sm" onClick={() => setStart(weekStart(todayISO()))}>
+        {start !== weekStart(calendarTodayISO()) && (
+          <Button variant="ghost" size="sm" onClick={() => setStart(weekStart(calendarTodayISO()))}>
             This week
           </Button>
         )}
@@ -119,7 +119,7 @@ export function Roster() {
               <tr className="border-b border-line bg-slate-50 text-left text-xs text-slate-500">
                 <th className="sticky left-0 z-10 bg-slate-50 px-3 py-2 font-medium">Staff</th>
                 {days.map((d) => (
-                  <th key={d} className={cn("px-2 py-2 text-center font-medium", d === todayISO() && "text-navy")}>
+                  <th key={d} className={cn("px-2 py-2 text-center font-medium", d === calendarTodayISO() && "text-navy")}>
                     {dayName(d)}
                   </th>
                 ))}

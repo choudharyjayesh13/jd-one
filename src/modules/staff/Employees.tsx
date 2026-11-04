@@ -18,7 +18,7 @@ import { getStore } from "@/core/data";
 import type { Row } from "@/core/schema/types";
 import { useUser } from "@/core/auth/AuthProvider";
 import { moduleLevel } from "@/core/auth/access";
-import { addDays, formatDate, todayISO } from "@/core/format";
+import { addDays, formatDate, calendarTodayISO } from "@/core/format";
 import { newHref, viewHref } from "@/core/routes";
 import { useList } from "@/core/ui/hooks";
 import { useToast } from "@/core/ui/Toast";
@@ -57,7 +57,7 @@ function initials(name: unknown) {
 export function Employees() {
   const user = useUser();
   const { toast, confirm } = useToast();
-  const today = todayISO();
+  const today = calendarTodayISO();
   const { rows, loading, error, reload } = useList("staff");
   const [tab, setTab] = useState<Status>("working");
   const [q, setQ] = useState("");
@@ -359,7 +359,7 @@ function names(people: Row[]) {
 }
 
 function ResignDialog({ people, busy, onClose, onSave }: { people: Row[]; busy: boolean; onClose: () => void; onSave: (v: { resignedOn: string; days: number; reason: string; note: string }) => void }) {
-  const today = todayISO();
+  const today = calendarTodayISO();
   const [resignedOn, setResignedOn] = useState(today);
   const [days, setDays] = useState(30);
   const [reason, setReason] = useState(REASONS[0]!);

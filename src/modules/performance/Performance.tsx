@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { TrendingUp, BedDouble, IndianRupee, Target, CalendarClock, Lock } from "lucide-react";
 import { useUser } from "@/core/auth/AuthProvider";
-import { formatMoney, formatMonth, currentMonth, todayISO } from "@/core/format";
+import { formatMoney, formatMonth, currentMonth, calendarTodayISO } from "@/core/format";
 import { Select } from "@/core/ui/Input";
 import { Table, Th, Td } from "@/core/ui/Table";
 import { useList } from "@/core/ui/hooks";
@@ -67,7 +67,7 @@ export function Performance() {
   if (!unit) return <div className="p-6 text-slate-600">Set the number of rooms on a business unit (Business units → Rooms) to see occupancy.</div>;
 
   const cur = stats.find((s) => s.month === currentMonth()) ?? stats[stats.length - 1];
-  const pace = cur ? paceFor(cur, todayISO(), rooms) : null;
+  const pace = cur ? paceFor(cur, calendarTodayISO(), rooms) : null;
   const past = stats.filter((s) => s.month <= currentMonth()).reverse();
   const ahead = stats.filter((s) => s.month > currentMonth());
   const best = [...past].sort((a, b) => b.revenue - a.revenue)[0];

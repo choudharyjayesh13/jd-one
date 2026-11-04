@@ -4,6 +4,11 @@
  * closes the day: checks what still needs attention, sees which departments have
  * submitted their report, adds a note and presses "Close day". The whole day is
  * saved as one report (summary + every department) to print / save as PDF / share.
+ *
+ * Rules: only the open working day can be closed, one day at a time. Front Office can close
+ * it only after every department has sent its report. The Chairman, the Director and the
+ * Property Supervisor have one button that sends the missing department reports from the
+ * system figures and closes the day. The working day moves on only when the day is closed.
  */
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
@@ -11,7 +16,8 @@ import { AlertTriangle, CheckCircle2, FileText, MoonStar } from "lucide-react";
 import { getStore } from "@/core/data";
 import type { Row } from "@/core/schema/types";
 import { useUser } from "@/core/auth/AuthProvider";
-import { formatDate, formatDateTime, todayISO } from "@/core/format";
+import { calendarTodayISO, formatDate, formatDateTime, todayISO } from "@/core/format";
+import { loadBusinessDay } from "@/core/businessDate";
 import { useList } from "@/core/ui/hooks";
 import { useToast } from "@/core/ui/Toast";
 import { Button } from "@/core/ui/Button";
@@ -21,6 +27,7 @@ import { NoAccess } from "@/core/ui/AuthGate";
 import { cn } from "@/core/ui/cn";
 import { REPORT_DEPARTMENTS, collectDay, type DayData } from "./collect";
 import { SectionView, canNightAudit } from "./ReportView";
+import { useCanAssignReports } from "./access";
 import { DateBar } from "./DeptReports";
 
 export function NightAudit() {
@@ -35,6 +42,8 @@ export function NightAudit() {
   const [note, setNote] = useState("");
   const [busy, setBusy] = useState(false);
   const closed = audits.find((a) => String(a.date) === date) ?? null;
+  const canForce = useCanAssignReports(user); // Chairman, Director, Property Supervisor
+  const openDay = todayISO();
 
   useEffect(() => {
     setData(null);
@@ -46,32 +55,59 @@ export function NightAudit() {
     };
   }, [date, closed, user.unitId]);
 
-  if (!canNightAudit(user)) return <NoAccess />;
+  if (!canNightAudit(user) && !canForce) return <NoAccess />;
 
   const byDept = new Map(reports.map((r) => [String(r.department), r]));
   const missing = REPORT_DEPARTMENTS.filter((d) => !byDept.has(d.id));
   const warnings = data ? REPORT_DEPARTMENTS.flatMap((d) => (data[d.id]?.alerts ?? []).map((a) => ({ dept: d.title, text: a }))) : [];
 
+  const notOpenDay = date !== openDay;
+  const notOver = date > calendarTodayISO();
+  const blockedByReports = missing.length > 0 && !canForce;
+
   const close = async () => {
-    if (!data) return;
-    const issues = warnings.length + missing.length;
-    if (issues && !(await confirm(`${issues} item${issues === 1 ? "" : "s"} still need attention (see the list). Close the day anyway? The report keeps these warnings.`, "Close day"))) return;
+    if (!data || notOpenDay || notOver || blockedByReports) return;
+    const issues = warnings.length;
+    const auto = missing.length;
+    const ask = [
+      auto ? `${auto} department report${auto === 1 ? "" : "s"} not sent – they will be sent now from the system figures.` : "",
+      issues ? `${issues} warning${issues === 1 ? "" : "s"} still need attention; the report keeps them.` : "",
+    ].filter(Boolean).join(" ");
+    if (ask && !(await confirm(`${ask} Close ${formatDate(date)}?`, "Close day"))) return;
     setBusy(true);
     try {
+      const now = new Date().toISOString();
+      const sent = [...reports];
+      for (const d of missing) {
+        sent.push(
+          await getStore().create("dept-reports", {
+            date,
+            department: d.id,
+            data: data[d.id] ?? null,
+            notes: `Sent by ${user.name} while closing the day.`,
+            submitted_by: user.staff?.id ?? null,
+            submitted_at: now,
+            business_unit_id: user.unitId,
+          }),
+        );
+      }
       // Department notes go into the audit as they were when the day was closed.
       const notes: Record<string, { notes: string; by: string; at: string }> = {};
-      for (const r of reports) notes[String(r.department)] = { notes: String(r.notes ?? ""), by: staffName.get(String(r.submitted_by)) ?? "", at: String(r.submitted_at ?? "") };
+      for (const r of sent) notes[String(r.department)] = { notes: String(r.notes ?? ""), by: staffName.get(String(r.submitted_by)) ?? user.name, at: String(r.submitted_at ?? "") };
       await getStore().create("night-audits", {
         date,
-        data: { sections: data, deptNotes: notes, missing: missing.map((d) => d.title) },
+        data: { sections: data, deptNotes: notes, missing: [], autoSent: missing.map((d) => d.title) },
         warnings: warnings.map((w) => `${w.dept}: ${w.text}`),
         notes: note.trim() || null,
         closed_by: user.staff?.id ?? null,
         closed_at: new Date().toISOString(),
         business_unit_id: user.unitId,
       });
-      toast(`Night audit closed for ${formatDate(date)}.`, "success");
+      toast(`Night audit closed for ${formatDate(date)}. The next working day is open.`, "success");
       await reload();
+      await loadBusinessDay();
+      // Fresh start on the new working day, showing the report just made.
+      window.location.assign(`${process.env.NEXT_PUBLIC_BASE_PATH ?? ""}/night-audit/view/?date=${date}`);
     } catch (e) {
       toast(`Could not close the day: ${(e as Error).message}`, "error");
     } finally {
@@ -160,8 +196,24 @@ export function NightAudit() {
             <Field label="Remark (optional)" help="Only if something needs explaining, e.g. cash handed over to whom.">
               <Textarea rows={3} value={note} onChange={(e) => setNote(e.target.value)} />
             </Field>
-            <div className="mt-3 flex justify-end">
-              <Button icon={MoonStar} loading={busy} onClick={() => void close()}>
+            <div className="mt-3 flex flex-wrap items-center justify-end gap-3">
+              {notOver ? (
+                <p className="mr-auto text-sm text-amber-800">This day is not over yet.</p>
+              ) : notOpenDay ? (
+                <p className="mr-auto text-sm text-amber-800">
+                  Close days in order. The open working day is {formatDate(openDay)}.{" "}
+                  <button type="button" className="font-medium underline" onClick={() => setDate(openDay)}>
+                    Go to it
+                  </button>
+                </p>
+              ) : blockedByReports ? (
+                <p className="mr-auto text-sm text-amber-800">
+                  Waiting for {missing.length} department report{missing.length === 1 ? "" : "s"}: {missing.map((d) => d.title).join(", ")}. The day can be closed once every department has sent its report.
+                </p>
+              ) : missing.length > 0 ? (
+                <p className="mr-auto text-sm text-slate-600">One click: the {missing.length} missing report{missing.length === 1 ? "" : "s"} will be sent from the system figures, then the day closes.</p>
+              ) : null}
+              <Button icon={MoonStar} loading={busy} disabled={notOver || notOpenDay || blockedByReports} onClick={() => void close()}>
                 Close day &amp; create night audit
               </Button>
             </div>

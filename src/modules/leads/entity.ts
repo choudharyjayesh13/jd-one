@@ -1,5 +1,5 @@
 import { Target, BedDouble, MessageSquarePlus, PhoneOff, PhoneCall, Trophy, ShieldCheck } from "lucide-react";
-import { addDays, todayISO } from "@/core/format";
+import { addDays, calendarTodayISO } from "@/core/format";
 import { defineEntity } from "@/core/schema/types";
 import { normalizePhone } from "@/core/phone";
 import { newHref } from "@/core/routes";
@@ -80,8 +80,8 @@ export const leads = defineEntity({
       async run({ record, store, toast, refresh }) {
         await store.update("leads", record.id, {
           call_attempts: Number(record.call_attempts ?? 0) + 1,
-          last_contact: todayISO(),
-          next_follow_up: addDays(todayISO(), 1),
+          last_contact: calendarTodayISO(),
+          next_follow_up: addDays(calendarTodayISO(), 1),
           stage: record.stage === "New" ? "Contact attempted" : record.stage,
         });
         toast("Logged — follow-up set for tomorrow");
@@ -108,7 +108,7 @@ export const leads = defineEntity({
       icon: Trophy,
       visible: (r) => r.stage !== "Won",
       async run({ record, store, toast, refresh }) {
-        await store.update("leads", record.id, { stage: "Won", last_contact: todayISO() });
+        await store.update("leads", record.id, { stage: "Won", last_contact: calendarTodayISO() });
         toast("Converted — saved as a lifetime guest (JDG number) in Customers");
         await refresh();
       },
@@ -148,6 +148,6 @@ export function followUpStatus(v: Record<string, unknown>): string {
   if (v.stage === "Won" || v.stage === "Lost") return "Closed";
   const d = String(v.next_follow_up ?? "").slice(0, 10);
   if (!d) return v.stage === "New" ? "Call now" : "Not set";
-  const t = todayISO();
+  const t = calendarTodayISO();
   return d < t ? "Overdue" : d === t ? "Today" : "Upcoming";
 }

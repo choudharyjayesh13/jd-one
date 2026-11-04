@@ -1,7 +1,7 @@
 import { ClipboardCheck } from "lucide-react";
 import { defineEntity, type FieldValues, type LiveHint } from "@/core/schema/types";
 import type { DataStore } from "@/core/data/types";
-import { todayISO } from "@/core/format";
+import { calendarTodayISO } from "@/core/format";
 
 /** Counts this person's day from the app (leads + stage history) and fills empty boxes. */
 export async function salesDayCounts(store: DataStore, staffId: string, date: string) {
@@ -28,7 +28,7 @@ export async function salesDayCounts(store: DataStore, staffId: string, date: st
 async function eodHint(values: FieldValues, store: DataStore): Promise<LiveHint | null> {
   const staffId = String(values.staff_id ?? "");
   if (!staffId) return null;
-  const c = await salesDayCounts(store, staffId, String(values.date ?? todayISO()));
+  const c = await salesDayCounts(store, staffId, String(values.date ?? calendarTodayISO()));
   const empty = (f: string) => values[f] == null || values[f] === "" || Number(values[f]) === 0;
   const patch: FieldValues = {};
   for (const f of ["leads_assigned", "conversations", "qualified", "quotes_prepared", "quotes_shared", "followups_done", "bookings_confirmed", "booking_value"] as const) {
@@ -55,7 +55,7 @@ export const salesEod = defineEntity({
   defaultSort: { field: "date", dir: "desc" },
   unique: [["date", "staff_id"]],
   fields: [
-    { name: "date", label: "Date", type: "date", required: true, default: todayISO },
+    { name: "date", label: "Date", type: "date", required: true, default: calendarTodayISO },
     { name: "staff_id", label: "Sales person", type: "relation", entity: "staff", required: true, defaultToMe: true },
     { name: "business_unit_id", label: "Business unit", type: "relation", entity: "business-units" },
     { name: "leads_assigned", label: "New leads assigned", type: "number", min: 0 },

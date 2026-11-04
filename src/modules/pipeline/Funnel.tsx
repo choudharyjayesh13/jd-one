@@ -6,7 +6,7 @@
 import { useState } from "react";
 import { useList } from "@/core/ui/hooks";
 import { cn } from "@/core/ui/cn";
-import { todayISO } from "@/core/format";
+import { calendarTodayISO } from "@/core/format";
 import { LEAD_STAGES, STAGE_GUIDE } from "@/modules/leads/options";
 
 const ORDER: Record<string, number> = Object.fromEntries(LEAD_STAGES.map((s, i) => [s, i]));
@@ -18,7 +18,7 @@ export function Funnel({ who }: { who: string }) {
   const { rows: leads } = useList("leads");
   const { rows: history } = useList("lead-stage-history");
   const [period, setPeriod] = useState<"month" | "all">("month");
-  const month = todayISO().slice(0, 7);
+  const month = calendarTodayISO().slice(0, 7);
 
   // furthest pipeline step each lead reached (ignoring Lost / Nurture, which are exits, not steps)
   const reached = new Map<string, number>();

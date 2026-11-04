@@ -13,7 +13,7 @@ import { useList } from "@/core/ui/hooks";
 import { Loading } from "@/core/ui/misc";
 import { useToast } from "@/core/ui/Toast";
 import { cn } from "@/core/ui/cn";
-import { formatDate, formatMoney, todayISO } from "@/core/format";
+import { formatDate, formatMoney, calendarTodayISO } from "@/core/format";
 import { newHref, viewHref } from "@/core/routes";
 import type { Row } from "@/core/schema/types";
 import { LEAD_QUALIFICATIONS, LEAD_STAGES, STAGE_GUIDE } from "@/modules/leads/options";
@@ -45,7 +45,7 @@ export function Pipeline() {
   const open = mine.filter((l) => l.stage !== "Won" && l.stage !== "Lost");
   const fu = (s: string) => open.filter((l) => followUpStatus(l) === s);
   const overdue = fu("Overdue"), today = fu("Today"), callNow = fu("Call now");
-  const month = todayISO().slice(0, 7);
+  const month = calendarTodayISO().slice(0, 7);
   const wonThisMonth = mine.filter((l) => l.stage === "Won" && String(l.won_at ?? l.updated_at ?? "").slice(0, 7) === month);
   const wonValue = wonThisMonth.reduce((a, l) => a + Number(l.booking_value ?? l.package_proposed ?? l.budget ?? 0), 0);
   const pending = leads.filter((l) => l.approval_status === "Pending" && l.stage !== "Won" && l.stage !== "Lost");
@@ -61,13 +61,13 @@ export function Pipeline() {
     }
   };
   const move = (l: Row, stage: string) =>
-    save(l, { stage, last_contact: todayISO(), ...(stage === "Awaiting approval" ? { approval_status: "Pending" } : {}) }, stage === "Won" ? `${l.name} won — saved as a lifetime guest 🎉` : `${l.name} → ${STAGE_GUIDE[stage]?.no ?? ""} ${stage}`);
+    save(l, { stage, last_contact: calendarTodayISO(), ...(stage === "Awaiting approval" ? { approval_status: "Pending" } : {}) }, stage === "Won" ? `${l.name} won — saved as a lifetime guest 🎉` : `${l.name} → ${STAGE_GUIDE[stage]?.no ?? ""} ${stage}`);
   const decide = (l: Row, status: "Approved" | "Revision required" | "Rejected") =>
     save(l, {
       approval_status: status,
       approved_by: me || null,
       approved_at: new Date().toISOString(),
-      approval_notes: [review[l.id]?.trim() ? `${todayISO()} ${String(user.name ?? "").split(" ")[0]}: ${review[l.id].trim()}` : "", String(l.approval_notes ?? "")].filter(Boolean).join("\n") || null,
+      approval_notes: [review[l.id]?.trim() ? `${calendarTodayISO()} ${String(user.name ?? "").split(" ")[0]}: ${review[l.id].trim()}` : "", String(l.approval_notes ?? "")].filter(Boolean).join("\n") || null,
       stage: status === "Approved" ? "Quote shared" : status === "Revision required" ? "Quote preparation" : l.stage,
     }, `${l.name}: ${status}`);
   const startFu = (l: Row) => {
@@ -75,12 +75,12 @@ export function Pipeline() {
     setFuForm({ date: String(l.next_follow_up ?? "").slice(0, 10), calls: Number(l.call_attempts ?? 0), action: String(l.next_action ?? ""), note: "" });
   };
   const saveFu = async (l: Row) => {
-    const stamp = `${todayISO()} (${String(user.name ?? "").split(" ")[0]}): ${fuForm.note.trim()}`;
+    const stamp = `${calendarTodayISO()} (${String(user.name ?? "").split(" ")[0]}): ${fuForm.note.trim()}`;
     await save(l, {
       next_follow_up: fuForm.date || null,
       call_attempts: fuForm.calls,
       next_action: fuForm.action.trim() || null,
-      last_contact: todayISO(),
+      last_contact: calendarTodayISO(),
       stage: l.stage === "New" && fuForm.calls > 0 ? "Contact attempted" : l.stage,
       ...(fuForm.note.trim() ? { notes: [stamp, String(l.notes ?? "")].filter(Boolean).join("\n") } : {}),
     }, `Follow-up saved for ${l.name}`);

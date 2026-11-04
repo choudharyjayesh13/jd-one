@@ -1,6 +1,6 @@
 import { FolderUp } from "lucide-react";
 import { defineEntity } from "@/core/schema/types";
-import { todayISO } from "@/core/format";
+import { calendarTodayISO } from "@/core/format";
 
 export const FILING_CATEGORIES = [
   "Bills & vouchers",
@@ -31,7 +31,7 @@ export const dailyFilings = defineEntity({
   defaultSort: { field: "date", dir: "desc" },
   secondarySort: { field: "created_at", dir: "desc" },
   fields: [
-    { name: "date", label: "Date", type: "date", required: true, default: todayISO },
+    { name: "date", label: "Date", type: "date", required: true, default: calendarTodayISO },
     { name: "business_unit_id", label: "Business unit", type: "relation", entity: "business-units", required: true },
     { name: "category", label: "What are you filing?", type: "select", options: FILING_CATEGORIES, required: true, default: "Bills & vouchers" },
     { name: "files", label: "Photos / scans", type: "files", required: true, help: "Take a clear photo of every page or bill. Add as many as you need." },

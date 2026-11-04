@@ -1,6 +1,6 @@
 import { Coffee } from "lucide-react";
 import { defineEntity } from "@/core/schema/types";
-import { todayISO } from "@/core/format";
+import { calendarTodayISO } from "@/core/format";
 
 /** Rest time given by a leader (owner / manager / HR). The staff member sees "You are on rest time". */
 export const restPeriods = defineEntity({
@@ -16,7 +16,7 @@ export const restPeriods = defineEntity({
   permissions: { create: ["owner", "manager", "hr"], update: ["owner", "manager", "hr"], delete: ["owner", "manager", "hr"] },
   fields: [
     { name: "staff_id", label: "Staff", type: "relation", entity: "staff", required: true },
-    { name: "date", label: "Date", type: "date", required: true, default: todayISO },
+    { name: "date", label: "Date", type: "date", required: true, default: calendarTodayISO },
     { name: "start_time", label: "From", type: "text", required: true, placeholder: "13:00" },
     { name: "end_time", label: "Until", type: "text", required: true, placeholder: "14:00" },
     { name: "note", label: "Message to staff", type: "text", placeholder: "Take rest, all rooms done" },

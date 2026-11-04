@@ -1,6 +1,6 @@
 import { TrendingUp } from "lucide-react";
 import { ADMIN_ROLES, defineEntity } from "@/core/schema/types";
-import { todayISO } from "@/core/format";
+import { calendarTodayISO } from "@/core/format";
 
 export const INVESTMENT_STATUSES = ["Active", "Matured", "Withdrawn", "Cancelled"] as const;
 
@@ -23,7 +23,7 @@ export const investments = defineEntity({
     { name: "business_unit_id", label: "Business unit", type: "relation", entity: "business-units" },
     { name: "type", label: "Type", type: "select", options: ["Equity", "Debt / fixed return", "Property unit", "Membership", "Other"], default: "Debt / fixed return" },
     { name: "amount", label: "Amount invested (₹)", type: "money", required: true, min: 0 },
-    { name: "invested_on", label: "Invested on", type: "date", required: true, default: todayISO },
+    { name: "invested_on", label: "Invested on", type: "date", required: true, default: calendarTodayISO },
     { name: "annual_return_pct", label: "Annual return %", type: "number", min: 0, step: 0.1 },
     { name: "maturity_on", label: "Maturity", type: "date" },
     { name: "current_value", label: "Current value (₹)", type: "money", min: 0, help: "Leave blank to show the invested amount" },

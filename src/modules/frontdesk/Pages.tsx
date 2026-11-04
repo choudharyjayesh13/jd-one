@@ -7,9 +7,11 @@
  * Staying: who is in the hotel right now, their rooms, bill, paid and balance; check out here.
  * Checked-out: guests who have left, with "Print bill" for each.
  */
-import { useCallback, useMemo, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { LogIn, Printer } from "lucide-react";
+import { LogIn, Printer, Search } from "lucide-react";
+import { getStore } from "@/core/data";
 import type { Row } from "@/core/schema/types";
 import { addDays, formatDate, formatDateTime, formatMoney, todayISO } from "@/core/format";
 import { viewHref } from "@/core/routes";
@@ -23,7 +25,7 @@ import { cn } from "@/core/ui/cn";
 import { roomLines, roomsLabel } from "@/modules/rooms/occupancy";
 import { useUnitChoice } from "@/modules/rooms/unit";
 import { CheckInDialog, CheckOutDialog } from "./Dialogs";
-import { PAY_LATER_TAG } from "./desk";
+import { PAY_LATER_TAG, billFor } from "./desk";
 
 function useAllowed() {
   const user = useUser();
@@ -304,43 +306,84 @@ export function StayingPage() {
 /* ---------------- Checked-out ---------------- */
 export function CheckedOutPage() {
   const allowed = useAllowed();
+  const router = useRouter();
   const today = todayISO();
   const [from, setFrom] = useState(addDays(today, -6));
   const [to, setTo] = useState(today);
+  const [q, setQ] = useState("");
+  const search = q.trim();
   const { unit, unitName } = useUnitChoice();
-  const { rows: checkins, loading } = useList("checkins", { range: { actual_out: { gte: `${from}T00:00:00`, lte: `${to}T23:59:59` } }, sort: { field: "actual_out", dir: "desc" } });
-  const { rows: bookings } = useList("bookings", { filter: { ...(unit ? { business_unit_id: unit } : {}), status: "Checked-out" }, range: { check_out: { gte: addDays(from, -30) } } });
+  const base = { ...(unit ? { business_unit_id: unit } : {}), status: "Checked-out" };
+  // Searching looks through every checked-out guest; otherwise the dates decide.
+  const { rows: bookings, loading } = useList(
+    "bookings",
+    search ? { filter: base, search, sort: { field: "check_out", dir: "desc" }, limit: 100 } : { filter: base, range: { check_out: { gte: from, lte: to } }, sort: { field: "check_out", dir: "desc" } },
+  );
+  const { rows: checkins } = useList("checkins", search ? { sort: { field: "actual_out", dir: "desc" }, limit: 500 } : { range: { actual_out: { gte: `${addDays(from, -3)}T00:00:00` } } });
   const { rows: staff } = useList("staff", {});
-  const bMap = useMemo(() => new Map(bookings.map((b) => [b.id, b])), [bookings]);
   const sName = useMemo(() => new Map(staff.map((s) => [s.id, String(s.name)])), [staff]);
+  const ciFor = useMemo(() => {
+    const m = new Map<string, Row>();
+    for (const c of checkins) if (c.actual_out) m.set(String(c.booking_id), c);
+    return m;
+  }, [checkins]);
   const roomsOf = useRoomNames(unit);
-  const list = checkins.filter((c) => bMap.has(String(c.booking_id)));
-  const total = list.reduce((s, c) => s + Number(bMap.get(String(c.booking_id))?.total ?? 0), 0);
-  const due = list.reduce((s, c) => s + Number(bMap.get(String(c.booking_id))?.balance ?? 0), 0);
+
+  // The real bill for each guest (rooms + food & drinks − payments), same as the printed bill.
+  const [bills, setBills] = useState<Map<string, { total: number; paid: number; balance: number }>>(new Map());
+  const ids = bookings.map((b) => b.id).join(",");
+  useEffect(() => {
+    let live = true;
+    void Promise.all(bookings.map(async (b) => [b.id, await billFor(getStore(), b)] as const)).then((pairs) => live && setBills(new Map(pairs)));
+    return () => {
+      live = false;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ids]);
+  const billOf = (b: Row) => bills.get(b.id) ?? { total: Number(b.total ?? 0), paid: Number(b.total ?? 0) - Number(b.balance ?? 0), balance: Number(b.balance ?? 0) };
+  const sum = (k: "total" | "paid" | "balance") => bookings.reduce((s, b) => s + billOf(b)[k], 0);
+  const open = (b: Row) => router.push(`/guest-bill/?id=${b.id}`);
 
   if (!allowed) return <NoAccess />;
   return (
     <div>
       <div className="print:hidden">
-        <PageHeader title="Checked-out" subtitle={`${unitName} · ${list.length} ${list.length === 1 ? "guest" : "guests"} · billed ${formatMoney(total)} · still due ${formatMoney(due)}`} />
-        <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-          <DateRange from={from} to={to} setFrom={setFrom} setTo={setTo} />
-          <div className="flex gap-2">
-            <UnitPicker />
-            <Button variant="secondary" icon={Printer} onClick={() => window.print()} disabled={!list.length}>
-              Print / PDF
-            </Button>
+        <PageHeader title="Checked-out" subtitle={`${unitName} · bills of guests who have left`} />
+        <div className="mb-4 flex flex-wrap items-center gap-3">
+          <div className="relative min-w-[220px] flex-1">
+            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+            <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search guest name, phone or booking no." className="pl-9" />
           </div>
+          {!search && <DateRange from={from} to={to} setFrom={setFrom} setTo={setTo} />}
+          <UnitPicker />
+          <Button variant="secondary" icon={Printer} onClick={() => window.print()} disabled={!bookings.length}>
+            Print / PDF report
+          </Button>
         </div>
       </div>
-      <PrintHeader title="Check-out register" sub={`${unitName} · ${formatDate(from)} to ${formatDate(to)}`} />
+      <PrintHeader title="Check-out bill report" sub={`${unitName} · ${search ? `search “${search}”` : `${formatDate(from)} to ${formatDate(to)}`}`} />
+
+      <div className="mb-4 grid grid-cols-2 gap-2 sm:grid-cols-4">
+        {[
+          ["Guests", String(bookings.length), ""],
+          ["Billed", formatMoney(sum("total")), ""],
+          ["Received", formatMoney(sum("paid")), "text-emerald-700"],
+          ["Still due", formatMoney(sum("balance")), sum("balance") > 0 ? "text-red-700" : ""],
+        ].map(([k, v, c]) => (
+          <div key={k} className="rounded-xl border border-line bg-white px-4 py-3">
+            <p className="text-[11px] uppercase tracking-[0.14em] text-slate-500">{k}</p>
+            <p className={cn("jd-serif text-2xl font-semibold text-navy", c)}>{v}</p>
+          </div>
+        ))}
+      </div>
+
       {loading ? (
         <Loading />
-      ) : list.length === 0 ? (
-        <EmptyState title="No check-outs in these dates" />
+      ) : bookings.length === 0 ? (
+        <EmptyState title={search ? "No checked-out guest matches" : "No check-outs in these dates"} />
       ) : (
         <div className="overflow-x-auto rounded-xl border border-line bg-white">
-          <table className="w-full min-w-[900px] text-sm">
+          <table className="w-full min-w-[960px] text-sm">
             <thead className="border-b border-line bg-slate-50">
               <tr>
                 <th className={th}>Guest</th>
@@ -348,32 +391,38 @@ export function CheckedOutPage() {
                 <th className={th}>Stay</th>
                 <th className={th}>Checked out</th>
                 <th className={cn(th, "text-right")}>Bill</th>
+                <th className={cn(th, "text-right")}>Paid</th>
                 <th className={cn(th, "text-right")}>Due</th>
                 <th className={th}>By</th>
                 <th className={cn(th, "print:hidden")} />
               </tr>
             </thead>
             <tbody className="divide-y divide-line">
-              {list.map((c) => {
-                const b = bMap.get(String(c.booking_id))!;
+              {bookings.map((b) => {
+                const c = ciFor.get(b.id);
+                const bill = billOf(b);
                 return (
-                  <tr key={c.id}>
+                  <tr key={b.id} onClick={() => open(b)} className="cursor-pointer hover:bg-[#faf5ea]">
                     <td className={td}>
                       <span className="font-medium text-navy">{String(b.guest_name)}</span>
-                      <div className="text-xs text-slate-500">{String(b.phone ?? "")}</div>
+                      <div className="text-xs text-slate-500">
+                        {String(b.phone ?? "")}
+                        {b.booking_ref || b.external_ref ? ` · #${String(b.booking_ref ?? b.external_ref)}` : ""}
+                      </div>
                     </td>
                     <td className={td}>{roomsOf(b, c)}</td>
                     <td className={cn(td, "whitespace-nowrap")}>
                       {formatDate(b.check_in)} → {formatDate(b.check_out)}
                     </td>
-                    <td className={cn(td, "whitespace-nowrap")}>{formatDateTime(c.actual_out)}</td>
-                    <td className={cn(td, "text-right")}>{formatMoney(b.total)}</td>
-                    <td className={cn(td, "text-right", Number(b.balance ?? 0) > 0 ? "font-medium text-red-700" : "text-slate-500")}>{formatMoney(b.balance)}</td>
-                    <td className={td}>{sName.get(String(c.handled_by)) ?? "—"}</td>
+                    <td className={cn(td, "whitespace-nowrap")}>{c?.actual_out ? formatDateTime(c.actual_out) : formatDate(b.check_out)}</td>
+                    <td className={cn(td, "text-right")}>{formatMoney(bill.total)}</td>
+                    <td className={cn(td, "text-right text-emerald-700")}>{formatMoney(bill.paid)}</td>
+                    <td className={cn(td, "text-right", bill.balance > 0 ? "font-medium text-red-700" : "text-slate-500")}>{formatMoney(bill.balance)}</td>
+                    <td className={td}>{c ? (sName.get(String(c.handled_by)) ?? "—") : "—"}</td>
                     <td className={cn(td, "whitespace-nowrap text-right print:hidden")}>
-                      <Link href={`/guest-bill/?id=${b.id}`} className="inline-flex items-center gap-1.5 rounded-lg border border-line px-3 py-1.5 text-sm font-medium text-navy hover:bg-slate-50">
-                        <Printer className="h-3.5 w-3.5" /> Print bill
-                      </Link>
+                      <span className="inline-flex items-center gap-1.5 rounded-lg border border-line px-3 py-1.5 text-sm font-medium text-navy">
+                        <Printer className="h-3.5 w-3.5" /> Open bill
+                      </span>
                     </td>
                   </tr>
                 );
@@ -382,6 +431,7 @@ export function CheckedOutPage() {
           </table>
         </div>
       )}
+      <p className="mt-3 text-xs text-slate-500 print:hidden">Open a bill to print it, save it as PDF or send it to the guest on WhatsApp.</p>
     </div>
   );
 }

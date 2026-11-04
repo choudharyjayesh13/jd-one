@@ -25,7 +25,7 @@ export const bookings = defineEntity({
   teams: ["property", "operations", "finance"],
   unitField: "business_unit_id",
   titleField: "guest_name",
-  searchFields: ["guest_name", "phone", "unit_type"],
+  searchFields: ["guest_name", "phone", "booking_ref", "external_ref", "unit_type"],
   defaultSort: { field: "check_in", dir: "desc" },
   // Finance reads bookings but does not edit them.
   permissions: { create: [...WRITE_ROLES], update: [...WRITE_ROLES], delete: ["owner"] },

@@ -6,7 +6,7 @@
  */
 import type { DataStore } from "@/core/data/types";
 import type { Row } from "@/core/schema/types";
-import { addDays, dateISO, monthRange, todayISO, TIMEZONE } from "@/core/format";
+import { addDays, dateISO, monthRange, calendarTodayISO, TIMEZONE } from "@/core/format";
 import { TICKET_CLOSED, isOpenTicket } from "@/modules/tickets/entity";
 
 export type Period = "today" | "week" | "month";
@@ -17,7 +17,7 @@ export const PERIODS: { id: Period; label: string }[] = [
 ];
 
 /** Inclusive yyyy-mm-dd range for a period (week = Monday–Sunday, IST). */
-export function periodRange(period: Period, today = todayISO()): { start: string; end: string } {
+export function periodRange(period: Period, today = calendarTodayISO()): { start: string; end: string } {
   if (period === "today") return { start: today, end: today };
   if (period === "month") {
     const { start, end } = monthRange(today.slice(0, 7));
@@ -164,7 +164,7 @@ export function rapidService(tickets: Row[], now = new Date()) {
 
 /** Everything the scoreboard needs for a period (optionally one unit). */
 export async function loadScoreboardData(store: DataStore, period: Period, unitId: string | null): Promise<ScoreboardInput> {
-  const today = todayISO();
+  const today = calendarTodayISO();
   const { start, end } = periodRange(period, today);
   const unitFilter = unitId ? { business_unit_id: unitId } : {};
   const [staffAll, attendance, tasks, tickets, leads, activities] = await Promise.all([

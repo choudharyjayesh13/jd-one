@@ -8,7 +8,7 @@ import { useState } from "react";
 import { Target } from "lucide-react";
 import { useList } from "@/core/ui/hooks";
 import { cn } from "@/core/ui/cn";
-import { todayISO } from "@/core/format";
+import { calendarTodayISO } from "@/core/format";
 
 const base = process.env.NEXT_PUBLIC_BASE_PATH ?? "";
 const SAROVAR_ROOMS = 5;
@@ -72,7 +72,7 @@ export function RevenueTargets() {
   const [fs, setFs] = useState(1500);
   const [img, setImg] = useState(false);
   const { rows: leads } = useList("leads", { filter: { stage: "Won" } });
-  const m = todayISO().slice(0, 7);
+  const m = calendarTodayISO().slice(0, 7);
   const wonValue = leads.filter((l) => String(l.won_at ?? l.updated_at ?? "").slice(0, 7) === m).reduce((a, l) => a + Number(l.booking_value ?? l.package_proposed ?? l.budget ?? 0), 0);
 
   const calc = { sarovar: month(SAROVAR_ROOMS, sr, occ), penthouse: month(PENTHOUSE_ROOMS, pr, occ), food: food(fs, occ) };

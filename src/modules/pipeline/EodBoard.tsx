@@ -7,14 +7,14 @@ import { useUser } from "@/core/auth/AuthProvider";
 import { useList } from "@/core/ui/hooks";
 import { Loading } from "@/core/ui/misc";
 import { cn } from "@/core/ui/cn";
-import { formatMoney, todayISO } from "@/core/format";
+import { formatMoney, calendarTodayISO } from "@/core/format";
 import { newHref, viewHref } from "@/core/routes";
 import { LEAD_STAGES, STAGE_GUIDE } from "@/modules/leads/options";
 
 export function EodBoard() {
   const user = useUser();
   const me = (user.staff?.id as string | undefined) ?? "";
-  const [date, setDate] = useState(todayISO());
+  const [date, setDate] = useState(calendarTodayISO());
   const { rows: leads, loading } = useList("leads");
   const { rows: staff } = useList("staff", { filter: { active: true } });
   const { rows: eods } = useList("sales-eod", { filter: { date } });

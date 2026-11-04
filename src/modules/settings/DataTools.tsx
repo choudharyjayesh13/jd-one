@@ -5,7 +5,7 @@ import { Download, Upload, Sparkles, Trash2, KeyRound } from "lucide-react";
 import { getStore, storeKind, type ExportBundle } from "@/core/data";
 import { clearDemoData, hasDemoData, seedDemoData } from "@/core/data/demo";
 import { downloadText } from "@/core/csv";
-import { todayISO } from "@/core/format";
+import { calendarTodayISO } from "@/core/format";
 import { setPin } from "@/core/auth/pin";
 import { Button } from "@/core/ui/Button";
 import { Card, CardBody, CardHeader } from "@/core/ui/Card";
@@ -36,7 +36,7 @@ export function DataTools() {
       "export",
       async () => {
         const bundle = await getStore().exportAll();
-        downloadText(`jd-one-backup-${todayISO()}.json`, JSON.stringify(bundle, null, 2), "application/json");
+        downloadText(`jd-one-backup-${calendarTodayISO()}.json`, JSON.stringify(bundle, null, 2), "application/json");
       },
       "Backup downloaded",
     );

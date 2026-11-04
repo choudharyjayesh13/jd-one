@@ -1,6 +1,6 @@
 import { MessageSquare } from "lucide-react";
 import { defineEntity } from "@/core/schema/types";
-import { nowLocalInput, todayISO } from "@/core/format";
+import { nowLocalInput, calendarTodayISO } from "@/core/format";
 
 export const activities = defineEntity({
   name: "activities",
@@ -35,7 +35,7 @@ export const activities = defineEntity({
     async afterCreate(record, ctx) {
       // Logging an activity is a contact: move the lead's follow-up forward.
       if (!record.lead_id) return;
-      const patch: Record<string, unknown> = { last_contact: todayISO() };
+      const patch: Record<string, unknown> = { last_contact: calendarTodayISO() };
       if (record.next_action_date) patch.next_follow_up = record.next_action_date;
       const lead = await ctx.store.get("leads", String(record.lead_id));
       if (lead?.stage === "New") patch.stage = "Contacted";

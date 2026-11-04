@@ -23,6 +23,7 @@ import { DbUpdateStrip } from "./DbSetup";
 import { canNightAudit, reportDepartments, useIsPropertySupervisor } from "@/modules/night-audit/access";
 import { SHARED_PAGES, useSharedPageDepts } from "@/modules/rooms/shared";
 import { Welcome } from "./Welcome";
+import { calendarTodayISO, formatDate, todayISO } from "@/core/format";
 
 const BASE = process.env.NEXT_PUBLIC_BASE_PATH ?? "";
 
@@ -70,7 +71,7 @@ function moduleVisible(m: ModuleDef, user: AuthUser, supervisor = false): boolea
     const lvl = moduleLevel("attendance");
     return !!user.post || (lvl === null ? legacyPageVisible("attendance", user) : lvl >= 1);
   }
-  if (m.key === "night-audit") return canNightAudit(user);
+  if (m.key === "night-audit") return canNightAudit(user) || supervisor;
   if (m.key === "dept-reports") return reportDepartments(user).length > 0;
   const lvl = moduleLevel(m.key);
   if (lvl !== null) return lvl >= 1;
@@ -310,6 +311,11 @@ export function AppShell({ children }: { children: ReactNode }) {
       </header>
 
       <DbUpdateStrip />
+      {todayISO() < calendarTodayISO() && (
+        <Link href="/night-audit/" className="print:hidden block border-b border-amber-200 bg-amber-50 px-4 py-1.5 text-center text-xs text-amber-900 hover:bg-amber-100">
+          Working day is still <b className="font-semibold">{formatDate(todayISO())}</b> – the night audit for it is not closed yet. Hotel entries go on this day until it is.
+        </Link>
+      )}
       {mode === "local" && <div className="print:hidden border-b border-[#eadfc6] bg-[#faf5ea] px-4 py-1 text-center text-[11px] text-[#7a5a1f]">Local mode – single device. Data lives in this browser; export it from Settings.</div>}
 
       <div className="flex flex-1">

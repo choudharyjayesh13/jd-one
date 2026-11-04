@@ -1,6 +1,6 @@
 import { UserPlus } from "lucide-react";
 import { ADMIN_ROLES, defineEntity } from "@/core/schema/types";
-import { todayISO } from "@/core/format";
+import { calendarTodayISO } from "@/core/format";
 import { viewHref } from "@/core/routes";
 
 export const CANDIDATE_STAGES = ["Applied", "Screening", "Interview", "Offer", "Hired", "Rejected", "On Hold"] as const;
@@ -29,7 +29,7 @@ export const candidates = defineEntity({
     { name: "business_unit_id", label: "Business unit", type: "relation", entity: "business-units", required: true },
     { name: "source", label: "Source", type: "select", options: ["Referral", "Walk-in", "Naukri", "Indeed", "WhatsApp", "Agency", "Other"], default: "Referral" },
     { name: "stage", label: "Stage", type: "select", options: CANDIDATE_STAGES, required: true, default: "Applied" },
-    { name: "applied_on", label: "Applied on", type: "date", default: todayISO },
+    { name: "applied_on", label: "Applied on", type: "date", default: calendarTodayISO },
     { name: "interview_on", label: "Interview", type: "datetime" },
     { name: "expected_salary", label: "Expected salary", type: "money", min: 0 },
     { name: "offered_salary", label: "Offered salary", type: "money", min: 0 },
@@ -59,11 +59,11 @@ export const candidates = defineEntity({
           business_unit_id: record.business_unit_id,
           designation: record.position,
           active: true,
-          joined_on: record.joining_date ?? todayISO(),
+          joined_on: record.joining_date ?? calendarTodayISO(),
           salary: record.offered_salary ?? record.expected_salary ?? null,
           notes: `Hired via JD One hiring pipeline (candidate ${record.name}, ${record.source ?? "source unknown"})`,
         });
-        await store.update("candidates", record.id, { stage: "Hired", staff_id: staff.id, joining_date: record.joining_date ?? todayISO() });
+        await store.update("candidates", record.id, { stage: "Hired", staff_id: staff.id, joining_date: record.joining_date ?? calendarTodayISO() });
         toast(`${record.name} added to staff`, "success");
         navigate(viewHref("staff", staff.id));
       },

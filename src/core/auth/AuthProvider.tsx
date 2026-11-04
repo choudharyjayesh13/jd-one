@@ -11,6 +11,8 @@ import type { Role, Row } from "@/core/schema/types";
 import { getStore, getSupabaseClient, storeKind } from "@/core/data";
 import { hasPin, isUnlocked, markUnlocked, setPin as savePin, verifyPin } from "./pin";
 import { setCurrentAccess, type Post } from "./access";
+import { BRAND_STORAGE_KEY, STAYS_PROPERTIES } from "./brands";
+import { loadBusinessDay } from "@/core/businessDate";
 
 export interface AuthUser {
   id: string;
@@ -119,6 +121,30 @@ async function loadPostAndAccess(email: string | null, staff: Row): Promise<{ po
 }
 
 /**
+ * Signed in at a hotel (e.g. The Udaisarovar): everyone, the Chairman and the Director too,
+ * works on that property only – no "All units", no other businesses. Also opens the business day.
+ */
+async function scopeToLoginProperty(user: AuthUser): Promise<AuthUser> {
+  await loadBusinessDay();
+  let brandId: string | null = null;
+  try {
+    brandId = window.localStorage.getItem(BRAND_STORAGE_KEY);
+  } catch {
+    /* no storage */
+  }
+  const brand = STAYS_PROPERTIES.find((b) => b.id === brandId);
+  if (!brand) return user;
+  const key = brand.name.toLowerCase().replace(/^(the|hotel)\s+/, "");
+  try {
+    const units = await getStore().list("business-units");
+    const unit = units.find((u) => String(u.name ?? "").toLowerCase().includes(key));
+    return unit ? { ...user, unitId: String(unit.id) } : user;
+  } catch {
+    return user;
+  }
+}
+
+/**
  * First sign-in without a staff row: record the sign-up request (from the
  * metadata given at sign-up) so HR can approve it. Idempotent: one row per auth user.
  */
@@ -153,9 +179,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const loadLocalUser = useCallback(async () => {
     const actAs = localStorage.getItem(ACT_AS_KEY);
-    if (!actAs) return localOwner;
+    if (!actAs) return scopeToLoginProperty(localOwner);
     const staff = await getStore().get("staff", actAs);
-    return staff ? userFromStaff(`local-${staff.id}`, null, staff) : localOwner;
+    return scopeToLoginProperty(staff ? userFromStaff(`local-${staff.id}`, null, staff) : localOwner);
   }, []);
 
   // Boot: restore session.
@@ -185,7 +211,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           return;
         }
         setPendingSignup(null);
-        setUser(userFromStaff(su.id, email, staff, await loadPostAndAccess(email, staff)));
+        setUser(await scopeToLoginProperty(userFromStaff(su.id, email, staff, await loadPostAndAccess(email, staff))));
       };
       try {
         const { data } = await client.auth.getSession();

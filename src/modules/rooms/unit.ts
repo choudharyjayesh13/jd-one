@@ -10,7 +10,8 @@ import { useList } from "@/core/ui/hooks";
 
 export function useUnitChoice() {
   const user = useUser();
-  const canAll = !!user.post;
+  // Signed in at a property = that property only. Chairman / Director signed in at JD Group can pick.
+  const canAll = !!user.post && !user.unitId;
   const { rows: units } = useList("business-units", { filter: { active: true }, sort: { field: "name", dir: "asc" } });
   const home = user.unitId ?? (units.find((u) => /udaisarovar/i.test(String(u.name)))?.id as string | undefined) ?? "";
   // null until the person picks; "" = all properties (Chairman / Director only).

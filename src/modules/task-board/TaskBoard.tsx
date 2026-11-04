@@ -7,7 +7,7 @@ import type { Row } from "@/core/schema/types";
 import { getStore } from "@/core/data";
 import { useUser } from "@/core/auth/AuthProvider";
 import { isAdmin } from "@/core/auth/access";
-import { formatDate, todayISO } from "@/core/format";
+import { formatDate, calendarTodayISO } from "@/core/format";
 import { newHref, viewHref } from "@/core/routes";
 import { useList } from "@/core/ui/hooks";
 import { useToast } from "@/core/ui/Toast";
@@ -28,7 +28,7 @@ export function TaskBoard() {
   const manager = isAdmin(user.role);
   const [scope, setScope] = useState<"mine" | "team">("mine");
   const [completing, setCompleting] = useState<Row | null>(null);
-  const today = todayISO();
+  const today = calendarTodayISO();
   const { rows: all, reload } = useList("tasks", scope === "mine" && me ? { filter: { assigned_to: me } } : {});
   const { rows: staff } = useList("staff");
   const nameOf = (id: unknown) => String(staff.find((s) => s.id === id)?.name ?? "Unassigned");

@@ -9,7 +9,7 @@ import { useList } from "@/core/ui/hooks";
 import { Loading } from "@/core/ui/misc";
 import { useToast } from "@/core/ui/Toast";
 import { cn } from "@/core/ui/cn";
-import { formatDate, formatMoney, todayISO } from "@/core/format";
+import { formatDate, formatMoney, calendarTodayISO } from "@/core/format";
 import { newHref, viewHref } from "@/core/routes";
 import type { Row } from "@/core/schema/types";
 import { DEAL_STAGES } from "@/modules/deals/entity";
@@ -36,7 +36,7 @@ export function DealsBoard() {
   });
   const open = mine.filter((d) => d.stage !== "Completed" && d.stage !== "Lost");
   const sum = (rs: Row[], f = "value") => rs.reduce((a, r) => a + Number(r[f] ?? 0), 0);
-  const today = todayISO();
+  const today = calendarTodayISO();
   const due = open.filter((d) => d.next_follow_up && String(d.next_follow_up) <= today);
   const month = today.slice(0, 7);
   const wonMonth = mine.filter((d) => d.stage === "Completed" && String(d.closed_at ?? "").slice(0, 7) === month);

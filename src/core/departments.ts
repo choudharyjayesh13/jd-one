@@ -46,12 +46,9 @@ export const DEPARTMENTS: Department[] = [
       { key: "checkins", label: "Check-in", entity: "checkins", href: "/check-in/" },
       { key: "staying", label: "Staying", href: "/staying/" },
       { key: "checked-out", label: "Checked-out", href: "/checked-out/" },
-      { key: "customers", label: "Guests", entity: "customers" },
-      { key: "guest-bill", label: "Guest bill", href: "/guest-bill/" },
+      { key: "customers", label: "Guest info", entity: "customers" },
       { key: "guest-requests", label: "Guest requests", entity: "guest-requests" },
-      { key: "shift-closes", label: "Shift close", entity: "shift-closes" },
       { key: "guest-info", label: "Guest app content", entity: "guest-info" },
-      { key: "rooms", label: "Rooms", entity: "rooms" },
     ],
   },
   {
@@ -199,7 +196,10 @@ export const DEPARTMENTS: Department[] = [
   {
     id: "company-policy",
     label: "Company policy",
-    modules: [{ key: "hotel-details", label: "Hotel details", href: "/hotel-details/" }],
+    modules: [
+      { key: "hotel-details", label: "Hotel details", href: "/hotel-details/" },
+      { key: "rooms", label: "Rooms setup", entity: "rooms" },
+    ],
   },
   {
     id: "reports",
@@ -259,7 +259,7 @@ export function modulesForEntity(entity: string): string[] {
  */
 export const ROLE_TEMPLATES: Record<string, Record<string, Level | Record<string, Level>>> = {
   "Front Office Executive": {
-    "front-office": { "room-chart": 1, checkins: 2, customers: 1, "guest-bill": 2, "guest-requests": 2, "shift-closes": 2, "guest-info": 1 },
+    "front-office": { "room-chart": 1, checkins: 2, customers: 1, "guest-requests": 2, "guest-info": 1 },
     reservations: { bookings: 2, availability: 1, "add-ons": 1, "payment-requests": 2, "pay-qr": 2 },
   },
   "Front Office Manager": {

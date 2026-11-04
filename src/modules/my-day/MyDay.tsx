@@ -11,7 +11,7 @@ import { Camera, CalendarClock, ChefHat, ClipboardList, Plus, QrCode, ShoppingCa
 import type { Row } from "@/core/schema/types";
 import { getStore } from "@/core/data";
 import { useUser } from "@/core/auth/AuthProvider";
-import { formatDate, formatDateTime, todayISO } from "@/core/format";
+import { formatDate, formatDateTime, calendarTodayISO } from "@/core/format";
 import { listHref, newHref, viewHref } from "@/core/routes";
 import { Badge } from "@/core/ui/Badge";
 import { Button } from "@/core/ui/Button";
@@ -88,7 +88,7 @@ export function MyDay() {
   const { toast } = useToast();
   const me = (user.staff?.id as string | undefined) ?? null;
   const unitId = user.unitId ?? ((user.staff?.business_unit_id as string | undefined) || null);
-  const today = todayISO();
+  const today = calendarTodayISO();
   const [now, setNow] = useState(new Date());
   const [adding, setAdding] = useState(false);
   const [draft, setDraft] = useState({ title: "", priority: "Medium", due: today });

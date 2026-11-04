@@ -108,8 +108,8 @@ function Bill({ id }: { id: string }) {
   return (
     <div className="flex flex-col items-center gap-5">
       <div className="flex flex-wrap justify-center gap-2 print:hidden">
-        <Link href={viewHref("bookings", String(b.id))}>
-          <Button variant="secondary">← Booking</Button>
+        <Link href={String(b.status) === "Checked-out" ? "/checked-out/" : String(b.status) === "Checked-in" ? "/staying/" : viewHref("bookings", String(b.id))}>
+          <Button variant="secondary">← {String(b.status) === "Checked-out" ? "Checked-out" : String(b.status) === "Checked-in" ? "Staying" : "Booking"}</Button>
         </Link>
         <Button icon={Printer} variant="secondary" onClick={() => window.print()}>
           Print / Save as PDF
