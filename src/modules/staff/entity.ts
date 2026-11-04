@@ -32,6 +32,7 @@ export const staff = defineEntity({
     { name: "notice_days", label: "Notice period (days)", type: "number", readOnly: true },
     { name: "last_working_day", label: "Last working day", type: "date", readOnly: true },
     { name: "exit_reason", label: "Leaving reason", type: "text", readOnly: true },
+    { name: "track_location", label: "Duty location", type: "boolean", default: false, readOnly: true, help: "Switched on by the Chairman / Director (HR → Employees). The JD One Android app then shares location from check-in to check-out." },
     { name: "auth_user_id", label: "Login user id", type: "text", help: "Supabase Auth user id (shared mode). Leave blank in local mode." },
     { name: "notes", label: "Notes", type: "textarea" },
     { name: "shift1_start", label: "Shift 1 starts", type: "text", default: "07:00", placeholder: "07:00" },

@@ -24,6 +24,7 @@ import { canNightAudit, reportDepartments, useIsPropertySupervisor } from "@/mod
 import { SHARED_PAGES, useSharedPageDepts } from "@/modules/rooms/shared";
 import { Welcome } from "./Welcome";
 import { useCanApproveLeave } from "@/modules/leave/LeavePage";
+import { LocationTracker } from "@/modules/location/tracker";
 import { calendarTodayISO, formatDate, todayISO } from "@/core/format";
 
 const BASE = process.env.NEXT_PUBLIC_BASE_PATH ?? "";
@@ -61,6 +62,7 @@ function moduleVisible(m: ModuleDef, user: AuthUser, supervisor = false): boolea
   if (m.soon) return false;
   if (m.key === "report-duty") return !!user.post || supervisor;
   if (m.key === "leave") return true; // every employee can ask for leave
+  if (m.key === "live-location") return !!user.post; // Chairman and Director only
   if (m.key === "arrivals" || m.key === "departures" || m.key === "staying" || m.key === "checked-out") {
     const lvl = Math.max(moduleLevel(m.key) ?? -1, moduleLevel("checkins") ?? -1, moduleLevel("room-chart") ?? -1);
     return !!user.post || (moduleLevel("checkins") === null ? legacyPageVisible("room-chart", user) : lvl >= 1);
@@ -334,6 +336,7 @@ export function AppShell({ children }: { children: ReactNode }) {
       </header>
 
       <DbUpdateStrip />
+      <LocationTracker />
       {todayISO() < calendarTodayISO() && (
         <Link href="/night-audit/" className="print:hidden block border-b border-amber-200 bg-amber-50 px-4 py-1.5 text-center text-xs text-amber-900 hover:bg-amber-100">
           Working day is still <b className="font-semibold">{formatDate(todayISO())}</b> – the night audit for it is not closed yet. Hotel entries go on this day until it is.

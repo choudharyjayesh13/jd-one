@@ -12,7 +12,7 @@
  */
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { Search, UserMinus, Undo2, Ban, UserPlus, KeyRound } from "lucide-react";
+import { Search, UserMinus, Undo2, Ban, UserPlus, KeyRound, MapPin } from "lucide-react";
 import { PasswordDialog } from "./PasswordDialog";
 import { getStore } from "@/core/data";
 import type { Row } from "@/core/schema/types";
@@ -65,6 +65,21 @@ export function Employees() {
   const [dialog, setDialog] = useState<null | "resign" | "remove">(null);
   const [busy, setBusy] = useState(false);
   const [pwFor, setPwFor] = useState<Row | null>(null);
+  /** Duty location (Chairman / Director): shared from the JD One Android app between check-in and check-out. */
+  const toggleLocation = async (r: Row) => {
+    const on = !r.track_location;
+    const msg = on
+      ? `Turn on duty location for ${String(r.name)}? From check-in to check-out, the JD One Android app on their phone will share where they are (they see a notice the whole time). Only the Chairman and the Director can see it; points are deleted after 30 days. Please tell ${String(r.name)} before turning it on.`
+      : `Turn off duty location for ${String(r.name)}?`;
+    if (!(await confirm(msg, on ? "Turn on duty location" : "Turn off duty location"))) return;
+    try {
+      await getStore().update("staff", r.id, { track_location: on });
+      toast(on ? `Duty location on for ${String(r.name)}` : `Duty location off for ${String(r.name)}`, "success");
+      await reload();
+    } catch (e) {
+      toast((e as Error).message, "error");
+    }
+  };
   const { rows: posts } = useList("org-posts");
   const chairmanEmail = String(posts.find((p) => p.post === "chairman")?.email ?? "").toLowerCase();
   /** Chairman: everyone. Director: everyone except the Chairman. Nobody else. */
@@ -269,6 +284,19 @@ export function Employees() {
                       {r.joined_on ? ` · joined ${formatDate(r.joined_on)}` : ""}
                     </span>
                   </Link>
+                  {tab !== "left" && !!user.post && (
+                    <button
+                      type="button"
+                      onClick={() => void toggleLocation(r)}
+                      title={r.track_location ? "Duty location is on – tap to turn off" : "Turn on duty location (JD One Android app)"}
+                      className={cn(
+                        "inline-flex shrink-0 items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-xs font-medium",
+                        r.track_location ? "border-emerald-300 bg-emerald-50 text-emerald-800" : "border-line text-slate-500 hover:border-[#c08a3a] hover:bg-[#faf5ea] hover:text-navy",
+                      )}
+                    >
+                      <MapPin className="h-3.5 w-3.5" /> {r.track_location ? "Location on" : "Location"}
+                    </button>
+                  )}
                   {tab !== "left" && canSetPassword(r) && (
                     <button type="button" onClick={() => setPwFor(r)} className="inline-flex shrink-0 items-center gap-1.5 rounded-lg border border-line px-2.5 py-1.5 text-xs font-medium text-navy hover:border-[#c08a3a] hover:bg-[#faf5ea]">
                       <KeyRound className="h-3.5 w-3.5" /> Password

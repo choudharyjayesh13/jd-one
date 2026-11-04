@@ -72,6 +72,7 @@ import { events } from "@/modules/events/entity";
 import { serviceSchedules } from "@/modules/service-schedules/entity";
 import { deptReports, nightAudits } from "@/modules/night-audit/entity";
 import { leaveRequests } from "@/modules/leave/entity";
+import { locationPings } from "@/modules/location/entity";
 import { homeCards, shiftRoster } from "@/modules/home/entity";
 
 export const entities: EntityDef[] = [
@@ -147,6 +148,7 @@ export const entities: EntityDef[] = [
   deptReports,
   nightAudits,
   leaveRequests,
+  locationPings,
   homeCards,
   shiftRoster,
 ];
