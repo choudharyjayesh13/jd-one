@@ -230,10 +230,16 @@ export function MyDay() {
                 {att ? `${ATTENDANCE_LABELS[String(att.status)] ?? att.status}${att.checked_in_at ? ` · in ${formatDateTime(att.checked_in_at).slice(-8)}` : ""}${att.checked_out_at ? ` · out ${formatDateTime(att.checked_out_at).slice(-8)}` : ""}` : "Attendance not marked yet"}
               </span>
             </div>
-            <Link href="/attendance/checkin/" className="jd-gold-btn inline-flex min-h-11 items-center justify-center gap-2 rounded-md px-5 text-xs font-medium uppercase tracking-[0.2em]">
-              <Camera className="h-4 w-4" /> {att?.checked_in_at ? (att.checked_out_at ? "View attendance" : "Check out") : "Mark attendance · selfie"}
-            </Link>
           </div>
+        </div>
+        <div className="px-5 pb-5 sm:px-7 sm:pb-7">
+          <Link
+            href="/attendance/checkin/"
+            className="jd-gold-btn flex min-h-[64px] w-full items-center justify-center gap-3 rounded-xl px-6 text-sm font-medium uppercase tracking-[0.26em] shadow-[0_6px_20px_rgba(169,128,47,0.25)] transition hover:brightness-105 sm:min-h-[72px] sm:text-base"
+          >
+            <Camera className="h-6 w-6" />
+            {att?.checked_in_at ? (att.checked_out_at ? "View attendance" : "Check out with selfie") : "Mark attendance with selfie"}
+          </Link>
         </div>
         <div className="flex flex-wrap items-center gap-x-6 gap-y-1 border-t border-line px-5 py-3 text-sm sm:px-7">
           <span className="text-[11px] uppercase tracking-[0.2em] text-slate-500">Today&apos;s shift</span>
