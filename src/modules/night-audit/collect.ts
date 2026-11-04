@@ -187,7 +187,7 @@ export async function collectDay(date: string, unitId: string | null): Promise<D
         { label: "Arrivals", value: `${arrived.length} of ${arrivals.length} checked in`, tone: arrived.length < arrivals.length ? "bad" : undefined },
         { label: "Departures", value: `${departed.length} of ${departures.length} checked out`, tone: departed.length < departures.length ? "bad" : undefined },
         { label: "In-house tonight", value: count(inHouse.length, "booking") },
-        { label: "Occupancy tonight", value: activeRooms ? `${occ} / ${activeRooms} rooms · ${Math.round((occ / activeRooms) * 100)}%` : `${occ} rooms` },
+        { label: "Occupancy tonight", value: activeRooms ? `${occ} / ${activeRooms} rooms · ${Math.round((occ / activeRooms) * 100)}%` : count(occ, "room") },
         { label: "Balance due (in-house)", value: money(sum(dueInHouse, "balance")), tone: dueInHouse.length ? "bad" : undefined },
         { label: "Guest requests today", value: `${reqs.length} · ${reqs.filter((r) => r.status === "Done").length} done` },
         { label: "Shift close", value: shiftCloses.length ? `Done · cash in hand ${money(sum(shiftCloses, "cash_in_hand"))}` : "Not done", tone: shiftCloses.length ? "good" : "bad" },

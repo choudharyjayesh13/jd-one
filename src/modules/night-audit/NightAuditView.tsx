@@ -122,7 +122,7 @@ export function NightAuditView() {
         const s = sections[d.id];
         if (!s) return null;
         const n = notes[d.id];
-        return <SectionView key={d.id} s={s} note={n?.notes || undefined} by={n?.by ? `Report by ${n.by}` : "No department report"} />;
+        return <SectionView key={d.id} s={s} note={n?.notes || undefined} by={n ? (n.by ? `Report by ${n.by}` : "Department report submitted") : "No department report"} />;
       })}
     </div>
   );
