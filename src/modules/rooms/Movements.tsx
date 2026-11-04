@@ -139,14 +139,14 @@ export function Movements({ kind }: { kind: Kind }) {
                     <Link href={viewHref("bookings", b.id)} className="grid grid-cols-1 gap-1 px-4 py-3 hover:bg-slate-50 sm:grid-cols-[1.4fr_1.4fr_1fr_auto] sm:items-center sm:gap-4 sm:px-5">
                       <span className="min-w-0">
                         <span className="block truncate font-medium text-navy">{String(b.guest_name)}</span>
-                        <span className="block truncate text-xs text-slate-500">
+                        <span className="block truncate text-xs text-slate-500 print:whitespace-normal">
                           {String(b.phone ?? "")}
                           {b.source ? ` · ${String(b.source)}` : ""}
                         </span>
                       </span>
                       <span className="min-w-0 text-sm text-slate-700">
-                        <span className="block truncate">{roomsLabel(b)}</span>
-                        <span className="block truncate text-xs text-slate-500">
+                        <span className="block truncate print:whitespace-normal">{roomsLabel(b)}</span>
+                        <span className="block truncate text-xs text-slate-500 print:whitespace-normal">
                           {assigned(b)} · {people(b)}
                           {b.meal_plan ? ` · ${String(b.meal_plan)}` : ""}
                         </span>
