@@ -8,7 +8,7 @@ import { useEffect, type ReactNode } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { useAuth } from "@/core/auth/AuthProvider";
 import { moduleLevel } from "@/core/auth/access";
-import { moduleForPath } from "@/core/departments";
+import { SELF_GUARDED_MODULES, moduleForPath } from "@/core/departments";
 import { AppShell } from "./AppShell";
 import { Loading } from "./misc";
 import { PasswordPrompt } from "@/core/auth/ChangePassword";
@@ -39,7 +39,7 @@ export function AuthGate({ children }: { children: ReactNode }) {
       </div>
     );
   const key = moduleForPath(pathname);
-  const blocked = key !== null && moduleLevel(key) === 0;
+  const blocked = key !== null && !SELF_GUARDED_MODULES.includes(key) && moduleLevel(key) === 0;
   return (
     <AppShell>
       <PasswordPrompt />

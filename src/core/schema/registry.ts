@@ -70,6 +70,7 @@ import { guestRequests } from "@/modules/guest-requests/entity";
 import { guestFeedback } from "@/modules/guest-feedback/entity";
 import { events } from "@/modules/events/entity";
 import { serviceSchedules } from "@/modules/service-schedules/entity";
+import { deptReports, nightAudits } from "@/modules/night-audit/entity";
 
 export const entities: EntityDef[] = [
   businessUnits,
@@ -141,6 +142,8 @@ export const entities: EntityDef[] = [
   guestFeedback,
   events,
   serviceSchedules,
+  deptReports,
+  nightAudits,
 ];
 
 const byName = new Map(entities.map((e) => [e.name, e]));

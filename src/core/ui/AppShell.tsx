@@ -20,6 +20,7 @@ import { canSeePerformance } from "@/modules/performance/Performance";
 import { useList } from "./hooks";
 import { cn } from "./cn";
 import { DbUpdateStrip } from "./DbSetup";
+import { canNightAudit, reportDepartments } from "@/modules/night-audit/access";
 import { Welcome } from "./Welcome";
 
 const BASE = process.env.NEXT_PUBLIC_BASE_PATH ?? "";
@@ -55,6 +56,8 @@ function legacyPageVisible(key: string, user: AuthUser): boolean {
 
 function moduleVisible(m: ModuleDef, user: AuthUser): boolean {
   if (m.soon) return false;
+  if (m.key === "night-audit") return canNightAudit(user);
+  if (m.key === "dept-reports") return reportDepartments(user).length > 0;
   const lvl = moduleLevel(m.key);
   if (lvl !== null) return lvl >= 1;
   if (m.entity) {
