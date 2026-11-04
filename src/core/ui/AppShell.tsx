@@ -57,6 +57,10 @@ function legacyPageVisible(key: string, user: AuthUser): boolean {
 function moduleVisible(m: ModuleDef, user: AuthUser, supervisor = false): boolean {
   if (m.soon) return false;
   if (m.key === "report-duty") return !!user.post || supervisor;
+  if (m.key === "roster") {
+    const lvl = moduleLevel("attendance");
+    return !!user.post || (lvl === null ? legacyPageVisible("attendance", user) : lvl >= 1);
+  }
   if (m.key === "night-audit") return canNightAudit(user);
   if (m.key === "dept-reports") return reportDepartments(user).length > 0;
   const lvl = moduleLevel(m.key);
@@ -69,6 +73,7 @@ function moduleVisible(m: ModuleDef, user: AuthUser, supervisor = false): boolea
 }
 
 function adminModuleVisible(m: ModuleDef, user: AuthUser): boolean {
+  if (m.key === "home-cards") return !!user.post;
   if (m.key === "director-changes") return user.post === "chairman";
   if (m.key === "team-access") return !!user.post;
   return isAdmin(user.role) || !!user.post;

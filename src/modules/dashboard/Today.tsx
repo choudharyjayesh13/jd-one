@@ -45,12 +45,12 @@ interface DayData {
 
 const KINDS: { id: Kind | "all"; label: string }[] = [
   { id: "all", label: "All" },
-  { id: "money", label: "💰 Money" },
-  { id: "guests", label: "🛎️ Guests & bookings" },
-  { id: "staff", label: "👥 Staff" },
-  { id: "sales", label: "📞 Sales" },
-  { id: "kitchen", label: "🍽️ Kitchen" },
-  { id: "property", label: "🏡 Property" },
+  { id: "money", label: "Money" },
+  { id: "guests", label: "Guests & bookings" },
+  { id: "staff", label: "Staff" },
+  { id: "sales", label: "Sales" },
+  { id: "kitchen", label: "Kitchen" },
+  { id: "property", label: "Property" },
 ];
 
 const num = (v: unknown) => Number(v ?? 0) || 0;
@@ -282,7 +282,7 @@ export function TodaySection() {
                   <li key={`${e.entity}-${e.id}-${i}`}>
                     <Link href={viewHref(e.entity, e.id)} className="flex gap-3 py-2.5 hover:bg-slate-50">
                       <span className="w-16 shrink-0 pt-0.5 text-right text-xs font-semibold text-slate-500">{timeIST(e.at)}</span>
-                      <span className="text-lg leading-6">{e.icon}</span>
+                      <span className={cn("mt-2 h-2 w-2 shrink-0 rounded-full", e.kind === "money" ? "bg-emerald-500" : e.kind === "guests" ? "bg-[#a9802f]" : e.kind === "kitchen" ? "bg-orange-400" : e.kind === "sales" ? "bg-sky-500" : e.kind === "staff" ? "bg-slate-400" : "bg-violet-400")} aria-hidden="true" />
                       <span className="min-w-0 flex-1">
                         <span className="block text-sm font-medium text-navy">{e.title}</span>
                         {(e.detail || e.staff) && <span className="block truncate text-xs text-slate-500">{join(e.detail, e.staff ? `by ${e.staff}` : "")}</span>}

@@ -19,11 +19,14 @@ import { Input, Select } from "@/core/ui/Input";
 import { useList } from "@/core/ui/hooks";
 import { useToast } from "@/core/ui/Toast";
 import { cn } from "@/core/ui/cn";
-import { PropertyStrip, photoOfDay } from "@/core/ui/property";
+import { PropertyStrip } from "@/core/ui/property";
 import { CompleteTaskDialog } from "@/core/ui/CompleteTask";
 import { AwardsBanner } from "@/modules/rewards/AwardsBanner";
 import { INCENTIVES, loadAwards } from "@/modules/rewards/rewards";
-import { activeRest, phaseAt, pretty, routineOf, shiftsOf } from "@/modules/attendance/shifts";
+import { activeRest, phaseAt, pretty, routineOf } from "@/modules/attendance/shifts";
+import { shiftsForDay } from "@/modules/home/Roster";
+import { greeting } from "@/core/ui/Welcome";
+import { TIMEZONE } from "@/core/format";
 import { ATTENDANCE_LABELS } from "@/modules/attendance/entity";
 import { isOpenTicket } from "@/modules/tickets/entity";
 import { computeScoreboard, loadScoreboardData, medal, type ScoreRow } from "@/modules/scoreboard/compute";
@@ -106,6 +109,7 @@ export function MyDay() {
   const { rows: reports } = useList("daily-reports", { filter: unitId ? { business_unit_id: unitId } : {}, sort: { field: "date", dir: "desc" }, limit: 1 });
   const { rows: units } = useList("business-units");
   const { rows: rests } = useList(me ? "rest-periods" : null, { filter: { date: today, staff_id: me } });
+  const { rows: rosterRows } = useList(me ? "shift-roster" : null, { filter: { date: today, staff_id: me } });
   const { rows: allStaff } = useList("staff");
   const { rows: payRows } = useList(me ? "staff-pay" : null, { filter: { staff_id: me } });
   const pay = payRows[0] ?? null;
@@ -135,8 +139,10 @@ export function MyDay() {
   const profile: Row = meRows[0] ?? user.staff ?? ({} as Row);
   const att = attendance[0] ?? null;
   const routine = routineOf(profile);
-  const shifts = shiftsOf(profile);
-  const phase = phaseAt(profile, now);
+  const day = shiftsForDay(profile, rosterRows[0] ?? null);
+  const shifts = { s1: day.s1, s2: day.s2 };
+  // Today's timings (roster first, then the usual ones) drive the "now" phase as well.
+  const phase = phaseAt({ ...profile, shift1_start: day.s1[0], shift1_end: day.s1[1], shift2_start: day.s2[0], shift2_end: day.s2[1] } as Row, now);
   const rest = activeRest(rests, now);
   const restBy = rest ? String(allStaff.find((x) => x.id === rest.assigned_by)?.name ?? "your leader") : "";
 
@@ -166,7 +172,6 @@ export function MyDay() {
   const unitName = String(units.find((u) => u.id === unitId)?.name ?? "JD Group");
   const kpis = [1, 2, 3, 4, 5].map((i) => profile[`kpi_${i}`] as string | null);
   const kras = [1, 2, 3, 4, 5].map((i) => profile[`kra_${i}`] as string | null);
-  const hour = now.getHours();
 
   const markDone = (t: Row) => setCompleting(t);
   const addTask = async () => {
@@ -186,7 +191,7 @@ export function MyDay() {
     const overdue = t.due && String(t.due) < today;
     return (
       <li key={t.id} className="flex items-center gap-4 rounded-xl border border-line px-4 py-3.5 transition hover:border-navy/20 hover:bg-slate-50">
-        <button type="button" onClick={() => markDone(t)} className="shrink-0 rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-emerald-700" aria-label={`Complete ${t.title}`}>📸 Complete</button>
+        <button type="button" onClick={() => markDone(t)} className="shrink-0 rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-emerald-700" aria-label={`Complete ${t.title}`}>Complete</button>
         <Link href={viewHref("tasks", t.id)} className="min-w-0 flex-1">
           <span className="block font-medium text-navy">{String(t.title)}</span>
           <span className={cn("text-xs", overdue ? "font-medium text-red-600" : "text-slate-500")}>
@@ -202,35 +207,52 @@ export function MyDay() {
   return (
     <div className="mx-auto max-w-6xl space-y-6 pb-10">
       {/* Welcome */}
-      <section className="relative overflow-hidden rounded-3xl text-white shadow-lg">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={photoOfDay().url} alt="" className="absolute inset-0 h-full w-full object-cover" />
-        <div className="absolute inset-0 bg-gradient-to-br from-black/95 via-black/80 to-black/40" />
-        <div className="relative p-6 sm:p-8">
-        <div className="flex flex-col gap-6 sm:flex-row sm:items-end sm:justify-between">
-          <div>
-            <p className="text-sm text-white/70">{now.toLocaleDateString("en-IN", { weekday: "long", day: "numeric", month: "long", year: "numeric" })}</p>
-            <h1 className="mt-1 text-3xl font-bold sm:text-4xl">Good {hour < 12 ? "morning" : hour < 17 ? "afternoon" : "evening"}, {user.name.split(" ")[0]} 👋</h1>
-            <div className="mt-3 flex flex-wrap gap-2 text-xs">
-              {profile.designation ? <span className="rounded-full bg-white/10 px-3 py-1">{String(profile.designation)}</span> : null}
-              <span className="rounded-full bg-white/10 px-3 py-1">{unitName}</span>
-              <span className="rounded-full bg-gold/90 px-3 py-1 font-semibold capitalize text-navy">{user.role}</span>
+      <section className="rounded-2xl border border-line bg-white">
+        <div className="flex flex-col gap-6 p-5 sm:flex-row sm:items-center sm:justify-between sm:p-7">
+          <div className="flex items-center gap-4 sm:gap-5">
+            <span className="jd-serif flex h-16 w-16 shrink-0 items-center justify-center rounded-full border-[1.5px] border-[#d4bf96] text-2xl font-semibold text-[#9a7128] sm:h-20 sm:w-20 sm:text-3xl">
+              {user.name.split(" ").filter((w) => /^[A-Za-z]/.test(w)).slice(0, 2).map((w) => w[0]!.toUpperCase()).join("") || "JD"}
+            </span>
+            <div className="min-w-0">
+              <p className="text-[11px] uppercase tracking-[0.28em] text-slate-500">{new Intl.DateTimeFormat("en-IN", { weekday: "long", day: "numeric", month: "long", year: "numeric", timeZone: TIMEZONE }).format(now)}</p>
+              <h1 className="jd-serif mt-1 text-[clamp(28px,3.6vw,44px)] font-light leading-tight text-navy">
+                {greeting(now)}, <em className="font-normal italic text-[#9a7128]">{user.name.split(" ")[0]}</em>
+              </h1>
+              <p className="mt-1 text-sm text-slate-500">
+                {user.post === "chairman" ? "Chairman" : user.post === "director" ? "Director" : String(profile.designation ?? user.role)} · {unitName}
+              </p>
             </div>
           </div>
-          <div className="text-left sm:text-right">
-            <div className="text-4xl font-bold tabular-nums sm:text-5xl">{now.toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" })}</div>
-            <p className="mt-1 text-sm text-white/70">
-              {att ? `${ATTENDANCE_LABELS[String(att.status)] ?? att.status}${att.checked_in_at ? ` · in ${formatDateTime(att.checked_in_at).slice(-8)}` : ""}${att.checked_out_at ? ` · out ${formatDateTime(att.checked_out_at).slice(-8)}` : ""}` : "Attendance not marked yet"}
-            </p>
+          <div className="flex flex-col gap-3 sm:items-end">
+            <div className="flex items-baseline gap-3 sm:flex-col sm:items-end sm:gap-0">
+              <span className="jd-serif text-4xl font-semibold tabular-nums text-navy sm:text-5xl">{now.toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit", timeZone: TIMEZONE })}</span>
+              <span className="text-xs text-slate-500">
+                {att ? `${ATTENDANCE_LABELS[String(att.status)] ?? att.status}${att.checked_in_at ? ` · in ${formatDateTime(att.checked_in_at).slice(-8)}` : ""}${att.checked_out_at ? ` · out ${formatDateTime(att.checked_out_at).slice(-8)}` : ""}` : "Attendance not marked yet"}
+              </span>
+            </div>
+            <Link href="/attendance/checkin/" className="jd-gold-btn inline-flex min-h-11 items-center justify-center gap-2 rounded-md px-5 text-xs font-medium uppercase tracking-[0.2em]">
+              <Camera className="h-4 w-4" /> {att?.checked_in_at ? (att.checked_out_at ? "View attendance" : "Check out") : "Mark attendance · selfie"}
+            </Link>
           </div>
         </div>
-        <Link href="/attendance/checkin/" className="mt-6 flex w-full items-center justify-center gap-2 rounded-2xl bg-gold px-6 py-4 text-base font-semibold text-navy shadow transition hover:brightness-105 sm:w-auto sm:inline-flex">
-          <Camera className="h-5 w-5" /> {att?.checked_in_at ? (att.checked_out_at ? "View attendance" : "Check out") : "Mark attendance with selfie"}
-        </Link>
-        <p className="mt-4 text-xs text-white/60">📍 {photoOfDay().caption} · The Udaisarovar</p>
+        <div className="flex flex-wrap items-center gap-x-6 gap-y-1 border-t border-line px-5 py-3 text-sm sm:px-7">
+          <span className="text-[11px] uppercase tracking-[0.2em] text-slate-500">Today&apos;s shift</span>
+          {day.off ? (
+            <span className="font-medium text-navy">Day off</span>
+          ) : (
+            <>
+              <span className="text-navy">
+                Shift 1 · <b className="font-medium">{pretty(shifts.s1[0])} – {pretty(shifts.s1[1])}</b>
+              </span>
+              <span className="text-navy">
+                Shift 2 · <b className="font-medium">{pretty(shifts.s2[0])} – {pretty(shifts.s2[1])}</b>
+              </span>
+            </>
+          )}
+          {day.changed && !day.off && <span className="text-xs text-[#9a7128]">changed by HR for today</span>}
+          {rosterRows[0]?.note ? <span className="text-xs text-slate-500">{String(rosterRows[0].note)}</span> : null}
         </div>
       </section>
-
       {!me && (
         <div className="rounded-2xl border border-amber-200 bg-amber-50 px-5 py-4 text-sm text-amber-800">
           Your login is not linked to a staff record yet, so your tasks and role cannot be shown. Please ask the office to link it.
@@ -240,7 +262,7 @@ export function MyDay() {
       <DocsNudge />
       {rest && (
         <section className="flex items-center gap-4 rounded-2xl border-2 border-emerald-300 bg-emerald-50 px-5 py-4">
-          <span className="text-4xl">🌿</span>
+          <span className="flex h-10 w-10 items-center justify-center rounded-full bg-emerald-100 text-emerald-700"><CalendarClock className="h-5 w-5" /></span>
           <div>
             <div className="text-lg font-semibold text-emerald-800">You are on rest time until {pretty(String(rest.end_time))}</div>
             <div className="text-sm text-emerald-700">{rest.note ? `${String(rest.note)} · ` : ""}given by {restBy}</div>
@@ -252,7 +274,7 @@ export function MyDay() {
       <section className="overflow-hidden rounded-2xl border border-line bg-white shadow-sm">
         <header className="flex flex-wrap items-center justify-between gap-2 px-5 pt-5 sm:px-6">
           <div>
-            <h2 className="text-base font-semibold text-navy">📋 My daily task sheet</h2>
+            <h2 className="text-base font-semibold text-navy">My daily task sheet</h2>
             <p className="text-xs text-slate-500">Your day every day — complete each job with a photo. Rest time is only for those who did Shift 1 well: on time, IN &amp; OUT marked, every Shift 1 job done.</p>
           </div>
           <span className="rounded-full bg-navy px-3 py-1 text-xs font-semibold text-white">
@@ -269,8 +291,8 @@ export function MyDay() {
               <div className="mb-3 flex items-center justify-between text-sm font-semibold text-navy">{b.title}{b.active && <span className="rounded-full bg-gold px-2 py-0.5 text-[10px] font-bold text-navy">NOW</span>}</div>
               {b.key === "br" ? (
                 <div className="space-y-2 text-sm text-emerald-800">
-                  <p>🛁 1 hour for bathing, lunch and personal work. Extra rest only if Shift 1 was done well (on time, IN &amp; OUT marked, all jobs done).</p>
-                  {rests.map((r) => <p key={r.id} className="rounded-lg bg-white px-3 py-2 text-xs">🌿 Extra rest {pretty(String(r.start_time))}–{pretty(String(r.end_time))}{r.note ? ` · ${r.note}` : ""}</p>)}
+                  <p>1 hour for bathing, lunch and personal work. Extra rest only if Shift 1 was done well (on time, IN &amp; OUT marked, all jobs done).</p>
+                  {rests.map((r) => <p key={r.id} className="rounded-lg bg-white px-3 py-2 text-xs">Extra rest {pretty(String(r.start_time))}–{pretty(String(r.end_time))}{r.note ? ` · ${r.note}` : ""}</p>)}
                 </div>
               ) : b.items.length === 0 ? (
                 <p className="text-xs text-slate-400">{routine.length ? "No jobs in this shift" : "Your daily routine will be added by your leader"}</p>
@@ -280,7 +302,7 @@ export function MyDay() {
                     <li key={t.id} className="flex items-center gap-2 rounded-xl bg-slate-50 px-3 py-2">
                       <span className="w-12 shrink-0 text-[11px] font-semibold tabular-nums text-slate-500">{String(t.routine_key ?? "").split("|")[0] ? pretty(String(t.routine_key).split("|")[0]) : "today"}</span>
                       <span className={cn("min-w-0 flex-1 text-sm", t.status === "Done" ? "text-slate-400 line-through" : "text-navy")}>{String(t.title)}</span>
-                      {t.status === "Done" ? <span className="text-emerald-600">✅</span> : <button type="button" onClick={() => markDone(t)} className="rounded-lg bg-emerald-600 px-2 py-1 text-[11px] font-semibold text-white">📸 Done</button>}
+                      {t.status === "Done" ? <span className="text-xs font-medium text-emerald-700">Done</span> : <button type="button" onClick={() => markDone(t)} className="rounded-lg bg-emerald-600 px-2 py-1 text-[11px] font-semibold text-white">Done</button>}
                     </li>
                   ))}
                 </ul>
@@ -334,7 +356,7 @@ export function MyDay() {
               </form>
             )}
             {myTasks.length === 0 ? (
-              <p className="rounded-xl bg-emerald-50 px-4 py-6 text-center text-sm text-emerald-700">{me ? "All clear for today 🎉" : "—"}</p>
+              <p className="rounded-xl bg-emerald-50 px-4 py-6 text-center text-sm text-emerald-700">{me ? "All clear for today" : "—"}</p>
             ) : (
               <ul className="space-y-2.5">{myTasks.map((t) => taskRow(t, true))}</ul>
             )}
@@ -426,13 +448,13 @@ export function MyDay() {
                     {inc > 0 && (
                       <div className={cn("rounded-2xl border-2 px-5 py-4", onTrack ? "border-emerald-300 bg-emerald-50" : "border-gold/60 bg-gold/10")}>
                         <div className="flex items-center justify-between gap-2">
-                          <div className="text-sm font-semibold text-navy">{onTrack ? "🔓 On track to unlock" : "🔒 Incentive to unlock"}</div>
+                          <div className="text-sm font-semibold text-navy">{onTrack ? "On track to unlock" : "Incentive to unlock"}</div>
                           <div className="text-xl font-bold tabular-nums text-navy">+₹{inc.toLocaleString("en-IN")}</div>
                         </div>
                         <div className="text-xs text-slate-600">Up to ₹{((fixed ?? 0) + inc).toLocaleString("en-IN")} this month</div>
                         <ul className="mt-3 space-y-1.5 text-xs">
-                          {checks.map((c) => <li key={c.label} className={c.ok ? "text-emerald-700" : "text-amber-800"}>{c.ok ? "✅" : "⬜"} {c.label}</li>)}
-                          {extra.map((x) => <li key={x} className="text-slate-600">🎯 {x} <span className="text-slate-400">(checked by management)</span></li>)}
+                          {checks.map((c) => <li key={c.label} className={c.ok ? "text-emerald-700" : "text-amber-800"}>{c.ok ? "✓" : "○"} {c.label}</li>)}
+                          {extra.map((x) => <li key={x} className="text-slate-600">– {x} <span className="text-slate-400">(checked by management)</span></li>)}
                         </ul>
                       </div>
                     )}
