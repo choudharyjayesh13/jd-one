@@ -1,5 +1,5 @@
 import { CalendarOff } from "lucide-react";
-import { defineEntity } from "@/core/schema/types";
+import { defineEntity, type Row } from "@/core/schema/types";
 
 export const LEAVE_KINDS = ["Weekly off", "Monthly off", "Leave", "Half day", "Emergency"] as const;
 export const LEAVE_HINT: Record<string, string> = {
@@ -42,6 +42,6 @@ export const leaveRequests = defineEntity({
 });
 
 /** Approved leave covering a date for a staff member (for the roster and My Day). */
-export function leaveOn(rows: { staff_id?: unknown; status?: unknown; date_from?: unknown; date_to?: unknown; kind?: unknown }[], staffId: string, date: string) {
+export function leaveOn(rows: Row[], staffId: string, date: string): Row | null {
   return rows.find((r) => String(r.staff_id) === staffId && r.status === "Approved" && String(r.date_from) <= date && String(r.date_to) >= date) ?? null;
 }
