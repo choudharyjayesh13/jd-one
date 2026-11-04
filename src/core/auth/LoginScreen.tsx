@@ -175,6 +175,12 @@ export function LoginScreen() {
   const submit = async () => {
     setError(null);
     setBusy(true);
+    // Every sign-in gets the greeting again (see core/ui/Welcome).
+    try {
+      for (const k of Object.keys(window.sessionStorage)) if (k.startsWith("jdone.greeted.")) window.sessionStorage.removeItem(k);
+    } catch {
+      /* ignore */
+    }
     try {
       if (mode === "local") {
         if (!/^\d{4}$/.test(pin)) throw new Error("PIN must be 4 digits");
@@ -400,14 +406,14 @@ export function LoginScreen() {
           <BackLink onClick={() => setStage(isStaysProperty(brand) ? "stays" : "group")}>{isStaysProperty(brand) ? "← JD Stays properties" : "← All businesses"}</BackLink>
           <div className="flex flex-col gap-2">
             <Eyebrow>{tab === "signup" ? "New staff" : "Staff sign in"}</Eyebrow>
-            <h1 className="jd-serif text-5xl font-medium leading-none">
+            <h1 className="jd-serif mt-1 text-[clamp(48px,5.2vw,64px)] font-light leading-[0.95] tracking-[-0.015em] text-[#17140f]">
               {tab === "signup" ? (
                 <>
-                  Join <em className="text-[#9a7128]">JD One</em>
+                  Join <em className="font-normal italic text-[#9a7128]">JD One</em>
                 </>
               ) : (
                 <>
-                  Welcome <em className="text-[#9a7128]">back</em>
+                  Welcome <em className="font-normal italic text-[#9a7128]">back</em>
                 </>
               )}
             </h1>

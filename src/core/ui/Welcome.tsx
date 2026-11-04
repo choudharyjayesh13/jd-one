@@ -1,17 +1,19 @@
 "use client";
 /**
- * Greeting after sign-in ("Good morning, Harish Bairwa"), like a phone's hello screen.
- * Shown once per app session for each signed-in person, then fades into the app.
+ * Greeting after every sign-in, in the style of the iPhone "hello" screen:
+ * clean white, system font, the words drift in from a soft blur.
+ *   Good morning
+ *   Harish Bairwa
+ *   General Manager
+ * Shown after each sign-in and once each time the app is opened; fades into the app.
  * Tap anywhere to skip.
  */
 import { useEffect, useState } from "react";
 import { useUser } from "@/core/auth/AuthProvider";
-import { BRAND_STORAGE_KEY, STAYS_PROPERTIES, findBrand } from "@/core/auth/brands";
 import { TIMEZONE } from "@/core/format";
 
-const BASE = process.env.NEXT_PUBLIC_BASE_PATH ?? "";
 const SHOW_MS = 2600;
-const FADE_MS = 600;
+const FADE_MS = 700;
 
 function greeting(now: Date): string {
   const h = Number(new Intl.DateTimeFormat("en-GB", { hour: "numeric", hour12: false, timeZone: TIMEZONE }).format(now)) % 24;
@@ -21,19 +23,19 @@ function greeting(now: Date): string {
   return "Hello";
 }
 
+const SYSTEM_FONT = '-apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", "Segoe UI", Roboto, Arial, sans-serif';
+
 export function Welcome() {
   const user = useUser();
   const [phase, setPhase] = useState<"hidden" | "show" | "fade">("hidden");
-  const [property, setProperty] = useState(STAYS_PROPERTIES[0]!);
 
   useEffect(() => {
     const key = `jdone.greeted.${user.id}`;
     try {
       if (window.sessionStorage.getItem(key)) return;
       window.sessionStorage.setItem(key, "1");
-      setProperty(findBrand(window.localStorage.getItem(BRAND_STORAGE_KEY)) ?? STAYS_PROPERTIES[0]!);
     } catch {
-      /* storage blocked: still greet once for this page */
+      /* storage blocked: still greet */
     }
     setPhase("show");
     const t1 = window.setTimeout(() => setPhase("fade"), SHOW_MS);
@@ -45,8 +47,6 @@ export function Welcome() {
   }, [user.id]);
 
   if (phase === "hidden") return null;
-  const now = new Date();
-  const day = new Intl.DateTimeFormat("en-IN", { weekday: "long", day: "numeric", month: "long", timeZone: TIMEZONE }).format(now);
   const post = user.post === "chairman" ? "Chairman" : user.post === "director" ? "Director" : String(user.staff?.designation ?? "");
 
   return (
@@ -54,32 +54,18 @@ export function Welcome() {
       role="status"
       aria-live="polite"
       onClick={() => setPhase("hidden")}
-      className="jd-sans fixed inset-0 z-[100] flex cursor-pointer flex-col items-center justify-center gap-7 bg-white px-6 text-center text-[#17140f] transition-opacity"
-      style={{ opacity: phase === "fade" ? 0 : 1, transitionDuration: `${FADE_MS}ms` }}
+      className="fixed inset-0 z-[100] flex cursor-pointer flex-col items-center justify-center bg-white px-8 text-center text-[#1d1d1f] transition-opacity ease-out"
+      style={{ opacity: phase === "fade" ? 0 : 1, transitionDuration: `${FADE_MS}ms`, fontFamily: SYSTEM_FONT }}
     >
-      <div className="jd-pop relative h-[120px] w-[120px]">
-        <span className="jd-orbit gold" aria-hidden="true" />
-        {property.logo ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img src={`${BASE}/brands/${property.logo}`} alt="" className="block h-[120px] w-[120px] rounded-full object-cover" />
-        ) : (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img src={`${BASE}/icons/icon-512.png`} alt="" className="block h-[120px] w-[120px] rounded-full" />
-        )}
-      </div>
-      <div className="jd-rise flex flex-col items-center gap-3" style={{ animationDelay: "0.15s" }}>
-        <span className="jd-serif text-[clamp(26px,4vw,36px)] font-medium italic text-[#9a7128]">{greeting(now)},</span>
-        <span className="jd-serif text-[clamp(34px,6vw,58px)] font-semibold leading-tight">{user.name}</span>
-        <span className="flex items-center gap-3" aria-hidden="true">
-          <span className="h-px w-16 bg-gradient-to-r from-transparent to-[#d7aa60]" />
-          <span className="h-[7px] w-[7px] rotate-45 bg-[#d7aa60]" />
-          <span className="h-px w-16 bg-gradient-to-r from-[#d7aa60] to-transparent" />
-        </span>
-        {post && <span className="text-[11px] uppercase tracking-[0.3em] text-[#17140f]">{post}</span>}
-      </div>
-      <span className="jd-rise text-xs uppercase tracking-[0.24em] text-[#6b6255]" style={{ animationDelay: "0.35s" }}>
-        {property.name} · {day}
+      <span className="jd-hello text-[clamp(40px,7vw,68px)] font-semibold leading-[1.05] tracking-[-0.03em]">{greeting(new Date())}</span>
+      <span className="jd-hello mt-3 text-[clamp(24px,3.6vw,34px)] font-medium leading-tight tracking-[-0.02em]" style={{ animationDelay: "0.25s" }}>
+        {user.name}
       </span>
+      {post && (
+        <span className="jd-hello mt-2 text-[clamp(15px,1.8vw,18px)] font-normal tracking-[-0.01em] text-[#86868b]" style={{ animationDelay: "0.45s" }}>
+          {post}
+        </span>
+      )}
     </div>
   );
 }

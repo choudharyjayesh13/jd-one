@@ -145,11 +145,29 @@ textarea {
 .jd-circ:focus-visible .jd-plate {
   box-shadow: 0 0 0 2.5px #c08a3a;
 }
+/* iPhone-style "hello": words drift up out of a soft blur. */
+@keyframes jd-hello {
+  from {
+    opacity: 0;
+    filter: blur(14px);
+    transform: translateY(14px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    filter: blur(0);
+    transform: none;
+  }
+}
+.jd-hello {
+  display: block;
+  animation: jd-hello 0.9s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
 @media (prefers-reduced-motion: reduce) {
   .jd-ring,
   .jd-orbit,
   .jd-bar,
   .jd-rise,
+  .jd-hello,
   .jd-pop {
     animation: none;
   }
