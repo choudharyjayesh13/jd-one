@@ -58,7 +58,7 @@ function legacyPageVisible(key: string, user: AuthUser): boolean {
 function moduleVisible(m: ModuleDef, user: AuthUser, supervisor = false): boolean {
   if (m.soon) return false;
   if (m.key === "report-duty") return !!user.post || supervisor;
-  if (m.key === "arrivals" || m.key === "departures") {
+  if (m.key === "arrivals" || m.key === "departures" || m.key === "staying" || m.key === "checked-out") {
     const lvl = Math.max(moduleLevel(m.key) ?? -1, moduleLevel("checkins") ?? -1, moduleLevel("room-chart") ?? -1);
     return !!user.post || (moduleLevel("checkins") === null ? legacyPageVisible("room-chart", user) : lvl >= 1);
   }

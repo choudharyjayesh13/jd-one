@@ -34,6 +34,7 @@ export type DayData = Record<string, Section>;
 
 export { REPORT_DEPARTMENTS, deptTitle } from "./access";
 import { deptTitle } from "./access";
+import { PAY_LATER_TAG } from "@/modules/frontdesk/desk";
 
 const istDay = new Intl.DateTimeFormat("en-CA", { timeZone: TIMEZONE, year: "numeric", month: "2-digit", day: "2-digit" });
 /** The India date (yyyy-mm-dd) of a timestamp. */
@@ -119,6 +120,7 @@ export async function collectDay(date: string, unitId: string | null): Promise<D
     attendance,
     staffAll,
     checkins,
+    openStays,
     rest,
     gate,
     vehicles,
@@ -158,6 +160,7 @@ export async function collectDay(date: string, unitId: string | null): Promise<D
     list("attendance", { range: { date: { gte: date, lte: date } } }),
     list("staff"),
     list("checkins", around("created_at")),
+    list("checkins", { range: { actual_in: { gte: `${addDays(date, -60)}T00:00:00` } } }),
     list("rest-periods", { range: { date: { gte: date, lte: date } } }),
     list("gate-entries", around("time_in")),
     list("vehicle-entries", around("time_in")),
@@ -200,6 +203,9 @@ export async function collectDay(date: string, unitId: string | null): Promise<D
     const alerts: string[] = [];
     for (const b of arrivals.filter((b) => !arrived.includes(b))) alerts.push(`Arrival not checked in: ${String(b.guest_name)} (${roomsLabel(b)})`);
     for (const b of departures.filter((b) => !departed.includes(b))) alerts.push(`Departure not checked out: ${String(b.guest_name)}${num(b.balance) > 0 ? ` · balance ${money(num(b.balance))}` : ""}`);
+    const inHouseIds = new Set(inHouse.map((b) => String(b.id)));
+    const payLater = new Set(openStays.filter((c) => !c.actual_out && String(c.notes ?? "").startsWith(PAY_LATER_TAG) && inHouseIds.has(String(c.booking_id))).map((c) => String(c.booking_id)));
+    for (const b of inHouse.filter((b) => payLater.has(String(b.id)))) alerts.push(`Pays at check-out (approved): ${String(b.guest_name)} · balance ${money(num(b.balance))}`);
     if (!shiftCloses.length) alerts.push("Shift close not filled today");
     if (reqOpen.length) alerts.push(`${count(reqOpen.length, "guest request")} still open`);
     put("front-office", {
@@ -215,7 +221,7 @@ export async function collectDay(date: string, unitId: string | null): Promise<D
       tables: [
         { title: "Arrivals", columns: ["Guest", "Rooms", "Status"], rows: arrivals.map((b) => [String(b.guest_name), roomsLabel(b), String(b.status)]) },
         { title: "Departures", columns: ["Guest", "Balance", "Status"], rows: departures.map((b) => [String(b.guest_name), money(num(b.balance)), String(b.status)]) },
-        { title: "In-house tonight", columns: ["Guest", "Rooms", "Till"], rows: inHouse.map((b) => [String(b.guest_name), roomsLabel(b), String(b.check_out)]) },
+        { title: "In-house tonight", columns: ["Guest", "Rooms", "Till", "Balance"], rows: inHouse.map((b) => [String(b.guest_name), roomsLabel(b), String(b.check_out), `${money(num(b.balance))}${payLater.has(String(b.id)) ? " · pays at check-out" : ""}`]) },
       ],
       alerts,
     }, [...ciToday, ...shiftCloses, ...reqs]);

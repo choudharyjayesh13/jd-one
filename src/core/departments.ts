@@ -43,12 +43,11 @@ export const DEPARTMENTS: Department[] = [
       { key: "room-chart", label: "Room chart", href: "/room-chart/" },
       { key: "arrivals", label: "Arrivals", href: "/arrivals/" },
       { key: "departures", label: "Departures", href: "/departures/" },
-      { key: "checkins", label: "Check-in / Check-out", entity: "checkins" },
+      { key: "checkins", label: "Check-in", entity: "checkins", href: "/check-in/" },
+      { key: "staying", label: "Staying", href: "/staying/" },
+      { key: "checked-out", label: "Checked-out", href: "/checked-out/" },
       { key: "customers", label: "Guests", entity: "customers" },
       { key: "guest-bill", label: "Guest bill", href: "/guest-bill/" },
-      { key: "payment-requests", label: "Payment requests", entity: "payment-requests" },
-      { key: "pay-qr", label: "Scan to pay (QR)", href: "/pay-qr/" },
-      { key: "petty-cash", label: "Petty cash", entity: "petty-cash" },
       { key: "guest-requests", label: "Guest requests", entity: "guest-requests" },
       { key: "shift-closes", label: "Shift close", entity: "shift-closes" },
       { key: "guest-info", label: "Guest app content", entity: "guest-info" },
@@ -62,6 +61,8 @@ export const DEPARTMENTS: Department[] = [
     modules: [
       { key: "bookings", label: "Bookings", entity: "bookings" },
       { key: "booking-chart", label: "Booking chart", href: "/booking-chart/" },
+      { key: "payment-requests", label: "Payment requests", entity: "payment-requests" },
+      { key: "pay-qr", label: "Scan to pay (QR)", href: "/pay-qr/" },
       { key: "availability", label: "Availability calendar", href: "/availability/" },
       { key: "rates", label: "Rates", entity: "rates" },
       { key: "rates-calendar", label: "Rate calendar", href: "/rates-calendar/" },
@@ -162,6 +163,7 @@ export const DEPARTMENTS: Department[] = [
     label: "Accounts",
     modules: [
       { key: "payments", label: "Payments", entity: "payments" },
+      { key: "petty-cash", label: "Petty cash", entity: "petty-cash" },
       { key: "vouchers", label: "Vouchers", entity: "vouchers" },
       { key: "expenses", label: "Expenses", entity: "expenses" },
       { key: "daily-reports", label: "Daily report", entity: "daily-reports" },
@@ -225,7 +227,7 @@ export const ASSIGNABLE_DEPARTMENTS = DEPARTMENTS.filter((d) => !d.adminOnly && 
 export const HIDDEN_FOR_HOTEL = ["investors", "investments", "wallet-transactions", "business-units", "import-runs", "lead-stage-history", "attendance"];
 
 /** Modules whose pages decide access themselves (department reports follow the departments a person works in). */
-export const SELF_GUARDED_MODULES: readonly string[] = ["dept-reports", "night-audit", "report-duty", "home-cards", "roster", "room-chart", "arrivals", "departures", "booking-chart"];
+export const SELF_GUARDED_MODULES: readonly string[] = ["dept-reports", "night-audit", "report-duty", "home-cards", "roster", "room-chart", "arrivals", "departures", "booking-chart", "staying", "checked-out"];
 
 export const moduleHref = (m: ModuleDef): string | null => (m.soon ? null : m.href ?? (m.entity ? `/${m.entity}/` : null));
 
@@ -253,8 +255,8 @@ export function modulesForEntity(entity: string): string[] {
  */
 export const ROLE_TEMPLATES: Record<string, Record<string, Level | Record<string, Level>>> = {
   "Front Office Executive": {
-    "front-office": { "room-chart": 1, checkins: 2, customers: 1, "guest-bill": 2, "payment-requests": 2, "pay-qr": 2, "guest-requests": 2, "shift-closes": 2, "guest-info": 1 },
-    reservations: { bookings: 2, availability: 1, "add-ons": 1 },
+    "front-office": { "room-chart": 1, checkins: 2, customers: 1, "guest-bill": 2, "guest-requests": 2, "shift-closes": 2, "guest-info": 1 },
+    reservations: { bookings: 2, availability: 1, "add-ons": 1, "payment-requests": 2, "pay-qr": 2 },
   },
   "Front Office Manager": {
     "front-office": 3,
@@ -286,7 +288,7 @@ export const ROLE_TEMPLATES: Record<string, Record<string, Level | Record<string
   "Activities In-charge": { activities: 3, reservations: { bookings: 1 }, "front-office": { customers: 1 } },
   "Security Guard": { security: 2 },
   "Maintenance Technician": { maintenance: { tickets: 2, "property-assets": 1, preventive: 2, "service-vendors": 1, "daily-filings": 2, "vehicle-logs": 2 } },
-  Accountant: { accounts: { payments: 2, vouchers: 2, "vendor-dues": 2, expenses: 2, "daily-reports": 2, "salary-payments": 2, reports: 1, performance: 1 }, stores: { vendors: 1, purchases: 1 } },
+  Accountant: { accounts: { payments: 2, "petty-cash": 2, vouchers: 2, "vendor-dues": 2, expenses: 2, "daily-reports": 2, "salary-payments": 2, reports: 1, performance: 1 }, stores: { vendors: 1, purchases: 1 } },
   "General Manager": { "front-office": 3, reservations: 3, sales: 3, housekeeping: 3, "fb-service": 3, "fb-production": 3, stores: 3, activities: 3, security: 3, maintenance: 3, accounts: 1, hr: 2 },
   Custom: {},
 };
