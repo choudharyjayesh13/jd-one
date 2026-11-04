@@ -12,7 +12,8 @@
  */
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { Search, UserMinus, Undo2, Ban, UserPlus } from "lucide-react";
+import { Search, UserMinus, Undo2, Ban, UserPlus, KeyRound } from "lucide-react";
+import { PasswordDialog } from "./PasswordDialog";
 import { getStore } from "@/core/data";
 import type { Row } from "@/core/schema/types";
 import { useUser } from "@/core/auth/AuthProvider";
@@ -63,6 +64,11 @@ export function Employees() {
   const [picked, setPicked] = useState<Set<string>>(new Set());
   const [dialog, setDialog] = useState<null | "resign" | "remove">(null);
   const [busy, setBusy] = useState(false);
+  const [pwFor, setPwFor] = useState<Row | null>(null);
+  const { rows: posts } = useList("org-posts");
+  const chairmanEmail = String(posts.find((p) => p.post === "chairman")?.email ?? "").toLowerCase();
+  /** Chairman: everyone. Director: everyone except the Chairman. Nobody else. */
+  const canSetPassword = (r: Row) => !!user.post && !!r.auth_user_id && (user.post === "chairman" || !chairmanEmail || String(r.email ?? "").toLowerCase() !== chairmanEmail);
 
   const isPost = !!user.post; // Chairman or Director
   const staffLevel = moduleLevel("staff");
@@ -263,6 +269,11 @@ export function Employees() {
                       {r.joined_on ? ` · joined ${formatDate(r.joined_on)}` : ""}
                     </span>
                   </Link>
+                  {tab !== "left" && canSetPassword(r) && (
+                    <button type="button" onClick={() => setPwFor(r)} className="inline-flex shrink-0 items-center gap-1.5 rounded-lg border border-line px-2.5 py-1.5 text-xs font-medium text-navy hover:border-[#c08a3a] hover:bg-[#faf5ea]">
+                      <KeyRound className="h-3.5 w-3.5" /> Password
+                    </button>
+                  )}
                   <span className="shrink-0 text-right text-xs">
                     {tab === "working" && <span className="rounded-full bg-emerald-50 px-2.5 py-1 font-medium text-emerald-700">Working</span>}
                     {tab === "notice" && (
@@ -294,6 +305,7 @@ export function Employees() {
         Only the Chairman and the Director can remove someone immediately.
       </p>
 
+      {pwFor && <PasswordDialog person={pwFor} onClose={() => setPwFor(null)} />}
       {dialog === "resign" && (
         <ResignDialog
           people={pickedRows}
