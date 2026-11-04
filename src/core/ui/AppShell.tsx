@@ -23,6 +23,7 @@ import { DbUpdateStrip } from "./DbSetup";
 import { canNightAudit, reportDepartments, useIsPropertySupervisor } from "@/modules/night-audit/access";
 import { SHARED_PAGES, useSharedPageDepts } from "@/modules/rooms/shared";
 import { Welcome } from "./Welcome";
+import { useCanApproveLeave } from "@/modules/leave/LeavePage";
 import { calendarTodayISO, formatDate, todayISO } from "@/core/format";
 
 const BASE = process.env.NEXT_PUBLIC_BASE_PATH ?? "";
@@ -59,6 +60,7 @@ function legacyPageVisible(key: string, user: AuthUser): boolean {
 function moduleVisible(m: ModuleDef, user: AuthUser, supervisor = false): boolean {
   if (m.soon) return false;
   if (m.key === "report-duty") return !!user.post || supervisor;
+  if (m.key === "leave") return true; // every employee can ask for leave
   if (m.key === "arrivals" || m.key === "departures" || m.key === "staying" || m.key === "checked-out") {
     const lvl = Math.max(moduleLevel(m.key) ?? -1, moduleLevel("checkins") ?? -1, moduleLevel("room-chart") ?? -1);
     return !!user.post || (moduleLevel("checkins") === null ? legacyPageVisible("room-chart", user) : lvl >= 1);
@@ -117,7 +119,10 @@ function useBadges(user: AuthUser) {
   const { rows: tickets } = useList(canTickets ? "tickets" : null);
   const { rows: signups } = useList(canApprove ? "signup-requests" : null, { filter: { status: "Pending" } });
   const { rows: changes } = useList(user.post === "chairman" ? "change-log" : null, { filter: { seen: false } });
-  return { tickets: tickets.filter(isOpenTicket).length, "signup-requests": signups.length, "director-changes": changes.length } as Record<string, number>;
+  const leaveApprover = useCanApproveLeave();
+  const { rows: leaves } = useList(leaveApprover ? "leave-requests" : null, { filter: { status: "Pending" } });
+  const leaveWaiting = leaves.filter((r) => String(r.staff_id) !== (user.staff?.id ?? "")).length;
+  return { tickets: tickets.filter(isOpenTicket).length, "signup-requests": signups.length, "director-changes": changes.length, leave: leaveWaiting } as Record<string, number>;
 }
 
 function useProperty() {

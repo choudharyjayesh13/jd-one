@@ -4,6 +4,7 @@
  * A day follows the person's usual shifts (set on their staff record) unless HR changes it
  * here – to other timings or a day off. My Day shows each person their shift from this roster.
  */
+import { leaveOn } from "@/modules/leave/entity";
 import { useMemo, useState } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { getStore } from "@/core/data";
@@ -44,6 +45,7 @@ export function Roster() {
   const days = useMemo(() => Array.from({ length: 7 }, (_, i) => addDays(start, i)), [start]);
   const { rows: staffRows, loading } = useList("staff", { filter: { active: true }, sort: { field: "name", dir: "asc" } });
   const { rows: roster, error, reload } = useList("shift-roster", { range: { date: { gte: days[0], lte: days[6] } } });
+  const { rows: leaves } = useList("leave-requests", { filter: { status: "Approved" }, range: { date_to: { gte: days[0] } } });
   const [edit, setEdit] = useState<{ staff: Row; date: string; row: Row | null } | null>(null);
   const [form, setForm] = useState({ off: false, s1a: "", s1b: "", s2a: "", s2b: "", note: "", week: false });
   const [busy, setBusy] = useState(false);
@@ -134,6 +136,15 @@ export function Roster() {
                   </td>
                   {days.map((d) => {
                     const sh = shiftsForDay(s, cell(s.id, d));
+                    const lv = leaveOn(leaves, s.id, d);
+                    if (lv)
+                      return (
+                        <td key={d} className="px-1.5 py-1.5 text-center">
+                          <span title={String(lv.reason ?? "")} className="block w-full rounded-md border border-amber-200 bg-amber-50 px-1.5 py-1.5 text-[11px] font-medium leading-tight text-amber-800">
+                            {String(lv.kind) === "Half day" ? "Half day" : "On leave"}
+                          </span>
+                        </td>
+                      );
                     return (
                       <td key={d} className="px-1.5 py-1.5 text-center">
                         <button

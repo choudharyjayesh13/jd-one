@@ -1,4 +1,5 @@
 "use client";
+import { LeaveNotice } from "@/modules/leave/LeavePage";
 import { DocsNudge } from "@/modules/staff-docs/MyDocuments";
 /**
  * /my-day — the staff home. Spacious, card-based: welcome + attendance, quick actions,
@@ -259,6 +260,7 @@ export function MyDay() {
           {rosterRows[0]?.note ? <span className="text-xs text-slate-500">{String(rosterRows[0].note)}</span> : null}
         </div>
       </section>
+      <LeaveNotice />
       {!me && (
         <div className="rounded-2xl border border-amber-200 bg-amber-50 px-5 py-4 text-sm text-amber-800">
           Your login is not linked to a staff record yet, so your tasks and role cannot be shown. Please ask the office to link it.
