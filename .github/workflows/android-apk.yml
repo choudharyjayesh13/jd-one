@@ -1,0 +1,54 @@
+# Builds the JD One Android app and publishes it at https://app.myjdgroup.com/downloads/jd-one.apk
+# The app opens the live site (app.myjdgroup.com) and adds background duty location.
+name: Android app (APK)
+
+on:
+  push:
+    branches: [redesign/login-flow, redesign/phase1]
+    paths: ["android-app/**", ".github/workflows/android-apk.yml"]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: deploy-app
+  cancel-in-progress: false
+
+jobs:
+  apk:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      # Same signing key every build, so a new APK installs over the old one.
+      - uses: actions/cache@v4
+        with:
+          path: ~/.android/debug.keystore
+          key: jd-one-android-signing-v1
+
+      - name: Build APK
+        working-directory: android-app
+        run: bash build.sh 2>&1 | tee ../apk.log
+
+      - name: Publish to app.myjdgroup.com/downloads/
+        run: |
+          git fetch --depth 1 origin gh-pages
+          git worktree add pages origin/gh-pages
+          cd pages
+          git checkout -B gh-pages
+          mkdir -p downloads
+          cp ../android-app/jd-one.apk downloads/jd-one.apk
+          echo "{\"version\":\"1.${GITHUB_RUN_NUMBER}\",\"built\":\"$(date -u +%Y-%m-%dT%H:%M:%SZ)\"}" > downloads/jd-one-apk.json
+          git add downloads
+          git -c user.name="JD One deploy" -c user.email="noreply@anthropic.com" commit -qm "Android app 1.${GITHUB_RUN_NUMBER} (${GITHUB_SHA::7})"
+          git push origin gh-pages

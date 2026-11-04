@@ -52,7 +52,7 @@ jobs:
           git checkout -B gh-pages
           if [ "$TARGET_DIR" = "." ]; then
             # Live deploy: replace everything except the test copy in preview/.
-            find . -mindepth 1 -maxdepth 1 ! -name .git ! -name preview -exec rm -rf {} +
+            find . -mindepth 1 -maxdepth 1 ! -name .git ! -name preview ! -name downloads -exec rm -rf {} +
             cp -R ../out/. .
           else
             rm -rf "$TARGET_DIR" && mkdir -p "$TARGET_DIR" && cp -R ../out/. "$TARGET_DIR"/
