@@ -53,15 +53,15 @@ const isStaysProperty = (b: Brand | null) => !!b && STAYS_PROPERTIES.some((p) =>
 function Diamond() {
   return (
     <span className="flex items-center gap-3" aria-hidden="true">
-      <span className="h-px w-20 bg-gradient-to-r from-transparent to-[#d7aa60]" />
-      <span className="h-[7px] w-[7px] rotate-45 bg-[#d7aa60]" />
-      <span className="h-px w-20 bg-gradient-to-r from-[#d7aa60] to-transparent" />
+      <span className="h-px w-20 bg-gradient-to-r from-transparent to-[#17140f]" />
+      <span className="h-[7px] w-[7px] rotate-45 bg-[#17140f]" />
+      <span className="h-px w-20 bg-gradient-to-r from-[#17140f] to-transparent" />
     </span>
   );
 }
 
 function Eyebrow({ children, className }: { children: ReactNode; className?: string }) {
-  return <span className={cn("text-[11px] uppercase tracking-[0.34em] text-[#9a7128]", className)}>{children}</span>;
+  return <span className={cn("text-[11px] uppercase tracking-[0.34em] text-[#17140f]", className)}>{children}</span>;
 }
 
 /** A logo on a round plate. */
@@ -92,7 +92,7 @@ function BrandButton({ brand, size, delay, onClick }: { brand: Brand; size: numb
       <LogoCircle brand={brand} size={size} />
       <span className="flex flex-col items-center gap-1">
         <span className="jd-serif text-xl font-semibold tracking-[0.04em]">{brand.name}</span>
-        <span className="text-[10px] uppercase tracking-[0.22em] text-[#9a7128]">{brand.tagline}</span>
+        <span className="text-[10px] uppercase tracking-[0.22em] text-[#17140f]">{brand.tagline}</span>
       </span>
     </button>
   );
@@ -100,7 +100,7 @@ function BrandButton({ brand, size, delay, onClick }: { brand: Brand; size: numb
 
 function BackLink({ onClick, children }: { onClick: () => void; children: ReactNode }) {
   return (
-    <button type="button" onClick={onClick} className="min-h-11 self-start text-xs uppercase tracking-[0.2em] text-[#9a7128] hover:text-[#9a7128]">
+    <button type="button" onClick={onClick} className="min-h-11 self-start text-xs uppercase tracking-[0.2em] text-[#17140f] hover:text-[#6b6255]">
       {children}
     </button>
   );
@@ -329,7 +329,7 @@ export function LoginScreen() {
         <button
           type="button"
           onClick={() => setStage("stays")}
-          className="jd-circ flex flex-wrap items-center gap-9 rounded-[22px] border border-[#d7aa60]/45 bg-white p-8 text-left text-[#17140f] hover:border-[#17140f]"
+          className="jd-circ flex flex-wrap items-center gap-9 rounded-[22px] border border-[#d7aa60]/45 bg-white p-8 text-left text-[#17140f] hover:border-[#c08a3a]"
         >
           <span className="relative m-3 shrink-0">
             <span className="jd-orbit gold" aria-hidden="true" />
@@ -345,7 +345,7 @@ export function LoginScreen() {
                 </span>
               ))}
             </span>
-            <span className="mt-1 text-xs uppercase tracking-[0.24em] text-[#9a7128]">Open →</span>
+            <span className="mt-1 text-xs uppercase tracking-[0.24em] text-[#17140f]">Open →</span>
           </span>
         </button>
       </div>
