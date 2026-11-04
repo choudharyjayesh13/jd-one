@@ -143,7 +143,7 @@ textarea {
 }
 .jd-circ:hover .jd-plate,
 .jd-circ:focus-visible .jd-plate {
-  box-shadow: 0 0 0 2px #d7aa60;
+  box-shadow: 0 0 0 2px #17140f;
 }
 @media (prefers-reduced-motion: reduce) {
   .jd-ring,

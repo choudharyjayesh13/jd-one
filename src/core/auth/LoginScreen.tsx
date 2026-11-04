@@ -254,8 +254,7 @@ export function LoginScreen() {
           <img src={`${BASE}/icons/icon-512.png`} alt="JD Group" className="block h-[150px] w-[150px] rounded-full" />
         </div>
         <div className="jd-rise flex flex-col items-center gap-3 text-center">
-          <span className="jd-serif pl-[0.24em] text-4xl font-semibold uppercase tracking-[0.24em]">JD Group</span>
-          <Eyebrow className="pl-[0.34em]">of companies · Udaipur · since 1995</Eyebrow>
+          <span className="pl-[0.34em] text-[11px] uppercase tracking-[0.34em] text-[#17140f]">of companies · Udaipur · since 1995</span>
         </div>
         <div className="h-0.5 w-56 overflow-hidden rounded bg-[#17140f]/[0.06]">
           <div className="jd-bar" />
@@ -315,9 +314,9 @@ export function LoginScreen() {
             <img src={`${BASE}/icons/icon-512.png`} alt="JD Group" className="block h-28 w-28 rounded-full" />
           </div>
           <div className="flex flex-col items-center gap-3">
-            <h1 className="jd-serif pl-[0.24em] text-[clamp(34px,4vw,52px)] font-semibold uppercase leading-none tracking-[0.24em]">JD Group</h1>
+            <h1 className="sr-only">JD Group</h1>
             <Diamond />
-            <Eyebrow className="pl-[0.34em]">Of companies · choose your business</Eyebrow>
+            <span className="pl-[0.34em] text-[11px] uppercase tracking-[0.34em] text-[#17140f]">Of companies · choose your business</span>
           </div>
         </header>
 
@@ -330,7 +329,7 @@ export function LoginScreen() {
         <button
           type="button"
           onClick={() => setStage("stays")}
-          className="jd-circ flex flex-wrap items-center gap-9 rounded-[22px] border border-[#d7aa60]/45 bg-white p-8 text-left text-[#17140f] hover:border-[#d7aa60]/80"
+          className="jd-circ flex flex-wrap items-center gap-9 rounded-[22px] border border-[#d7aa60]/45 bg-white p-8 text-left text-[#17140f] hover:border-[#17140f]"
         >
           <span className="relative m-3 shrink-0">
             <span className="jd-orbit gold" aria-hidden="true" />
@@ -361,7 +360,7 @@ export function LoginScreen() {
         <header className="jd-pop flex flex-col items-center gap-5 text-center">
           <div className="relative">
             <span className="jd-orbit gold" aria-hidden="true" />
-            <span className="flex h-[150px] w-[150px] items-center justify-center rounded-full border border-[#d7aa60]/45 bg-[#17140f]">
+            <span className="flex h-[150px] w-[150px] items-center justify-center rounded-full border-[1.5px] border-[#d4bf96] bg-white shadow-[0_3px_14px_rgba(23,20,15,0.10)]">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src={`${BASE}/brands/jd-lotus.webp`} alt="" className="w-[62%]" />
             </span>

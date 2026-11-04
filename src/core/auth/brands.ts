@@ -40,7 +40,7 @@ export const STAYS_PROPERTIES: Brand[] = [
   { id: "crown-fort-house", name: "Crown Fort House", tagline: "Opening 2028–30", logo: "crownfort.webp", plate: "light" },
 ];
 
-export const JD_STAYS: Brand = { id: "jd-stays", name: "JD Stays & Hospitality", tagline: "Hotels & resorts", logo: "jd-stays.webp", plate: "dark" };
+export const JD_STAYS: Brand = { id: "jd-stays", name: "JD Stays & Hospitality", tagline: "Hotels & resorts", logo: "jd-stays.webp", plate: "light" };
 
 export function findBrand(id: string | null): Brand | null {
   if (!id) return null;
