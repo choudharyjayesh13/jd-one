@@ -67,7 +67,7 @@ function Eyebrow({ children, className }: { children: ReactNode; className?: str
 /** A logo on a round plate. */
 function LogoCircle({ brand, size }: { brand: Brand; size: number | string }) {
   const px = typeof size === "number" ? `${size}px` : size;
-  const plate = brand.plate === "light" ? "border border-[#e7e1d5] bg-white" : brand.plate === "cover" ? "bg-[#ee8122]" : "border border-[#d7aa60]/45 bg-[#17140f]";
+  const plate = brand.plate === "light" ? "border-[1.5px] border-[#d4bf96] bg-white shadow-[0_3px_14px_rgba(23,20,15,0.10)]" : brand.plate === "cover" ? "bg-[#ee8122]" : "border border-[#d7aa60]/45 bg-[#17140f]";
   return (
     <span className={cn("jd-plate flex shrink-0 items-center justify-center overflow-hidden rounded-full transition-shadow", plate)} style={{ width: px, height: px }}>
       {brand.logo ? (
