@@ -74,3 +74,8 @@ insert into jdone.meter_readings (date, business_unit_id, meter, reading, photo,
 select r.date, coalesce(r.business_unit_id, '71c3804a-5906-4328-9e3b-79555f65f035'::uuid), 'Main meter', r.electricity_closing, r.electricity_photo, 'Copied from the daily report'
 from jdone.daily_reports r where r.date = '2026-10-31' and r.electricity_closing is not null
 on conflict do nothing;
+
+-- Vendor's UPI QR on payment vouchers (scan it to pay). Can be added after the voucher is saved.
+alter table jdone.vouchers add column if not exists payee_qr jsonb;
+drop trigger if exists zz_guard_locked_edit on jdone.vouchers;
+create trigger zz_guard_locked_edit before update on jdone.vouchers for each row execute function jdone.guard_locked_edit('status','paid_on','mode','reference','payment_proof','paid_by','paid_to_account','notes','payee_qr');

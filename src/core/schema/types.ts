@@ -105,6 +105,8 @@ export interface FieldDef {
   hidden?: boolean;
   /** Show the field on a full row in the form. */
   wide?: boolean;
+  /** Show the field only when this is true for the current values (form and detail view). */
+  showIf?: (values: FieldValues) => boolean;
 }
 
 /** Reverse relation: records of `entity` whose `field` points at this record. */

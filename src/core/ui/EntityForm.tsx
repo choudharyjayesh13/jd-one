@@ -191,6 +191,7 @@ function GenericEntityForm({ entity, id, prefill, locked = [], only, onSaved, on
 
   const renderField = (f: FieldDef) => {
     if (f.hidden) return null;
+    if (f.showIf && !f.showIf(values)) return null;
     if (only && !only.includes(f.name)) return null;
     if (f.readOnly && !id) return null; // e.g. balance — kept by hooks
     const disabled = saving || lockedSet.has(f.name) || Boolean(f.readOnly);

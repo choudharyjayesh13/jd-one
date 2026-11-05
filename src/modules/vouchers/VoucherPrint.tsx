@@ -43,6 +43,8 @@ export function VoucherPrint() {
         ["Paid by", String(payer?.name ?? "—")],
       ] as [string, string][])
     : [];
+  const qrRaw = v.payee_qr as { url?: string } | { url?: string }[] | null | undefined;
+  const qr = (Array.isArray(qrRaw) ? qrRaw[0] : qrRaw)?.url ?? null;
   const proofs = (Array.isArray(v.payment_proof) ? (v.payment_proof as { url?: string; name?: string; type?: string }[]) : []).filter((f) => f?.url);
   return (
     <div className="flex flex-col items-center gap-5">
@@ -99,6 +101,13 @@ export function VoucherPrint() {
                 </div>
               ))}
             </dl>
+            {qr && (
+              <div className="mt-3">
+                <p className="mb-1.5 text-xs text-[#5C5244]">Vendor&apos;s UPI QR code</p>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={String(qr)} alt="Vendor's UPI QR" className="max-h-56 rounded border border-[#D9CCB4] bg-white object-contain" />
+              </div>
+            )}
             {proofs.length > 0 ? (
               <div className="mt-3">
                 <p className="mb-1.5 text-xs text-[#5C5244]">Payment receipt</p>

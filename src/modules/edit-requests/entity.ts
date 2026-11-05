@@ -9,7 +9,7 @@ const EVERYONE = ["owner", "manager", "hr", "accounts", "finance", "marketing", 
  * Chairman approves. The same lists are enforced in the database (jdone.guard_locked_edit).
  */
 export const LOCKED_ENTITIES: Record<string, string[]> = {
-  vouchers: ["status", "paid_on", "mode", "reference", "payment_proof", "paid_by", "paid_to_account", "notes"],
+  vouchers: ["status", "paid_on", "mode", "reference", "payment_proof", "paid_by", "paid_to_account", "notes", "payee_qr"],
   payments: ["notes"],
   expenses: ["receipt"],
   "petty-cash": ["receipt", "notes"],
