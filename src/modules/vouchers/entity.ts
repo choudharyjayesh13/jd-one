@@ -53,7 +53,7 @@ export const vouchers = defineEntity({
     { name: "amount", label: "Amount", type: "money", required: true, min: 0 },
     { name: "bill_no", label: "Bill / invoice no.", type: "text", placeholder: "Vendor's bill number", showIf: (v) => v.vtype !== "RV" },
     { name: "mode", label: "Mode", type: "select", options: ["Cash", "UPI", "UPI QR", "Card", "Bank", "OTA"], default: "Bank" },
-    { name: "payee_qr", label: "Vendor's UPI QR code", type: "file", help: "Photo or screenshot of the vendor's QR – scan it from here to pay", showIf: (v) => v.vtype !== "RV" && v.mode === "UPI QR" },
+    { name: "payee_qr", label: "Vendor's UPI QR code", type: "files", help: "Photo or screenshot of the vendor's QR – scan it from here to pay", showIf: (v) => v.vtype !== "RV" && v.mode === "UPI QR" },
     { name: "paid_to_account", label: "Paid to account", type: "text", placeholder: "UPI ID / bank account / QR name", showIf: (v) => v.vtype !== "RV" },
     { name: "reference", label: "Reference", type: "text", placeholder: "UTR / cheque / UPI ref" },
     { name: "payment_proof", label: "Payment receipt", type: "files", help: "Screenshot of the UPI / QR / bank payment", showIf: (v) => v.vtype !== "RV" },

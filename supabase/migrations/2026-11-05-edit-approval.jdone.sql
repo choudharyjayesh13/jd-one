@@ -57,7 +57,7 @@ do $$
 declare r record;
 begin
   for r in select * from (values
-    ('vouchers', $a$'status','paid_on','mode','reference','payment_proof','paid_by','paid_to_account','notes'$a$),
+    ('vouchers', $a$'status','paid_on','mode','reference','payment_proof','paid_by','paid_to_account','notes','payee_qr'$a$),
     ('payments', $a$'notes'$a$),
     ('expenses', $a$'receipt','source_ref'$a$),
     ('petty_cash', $a$'receipt','notes','payment_id'$a$),
