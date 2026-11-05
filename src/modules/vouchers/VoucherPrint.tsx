@@ -17,19 +17,33 @@ export function VoucherPrint() {
   const id = params.get("id");
   const { row: v, loading, error } = useRecord("vouchers", id);
   const { row: unit } = useRecord("business-units", v?.business_unit_id ? String(v.business_unit_id) : null);
+  const { row: payer } = useRecord("staff", v?.paid_by ? String(v.paid_by) : null);
   const { toast } = useToast();
   if (!id) return <ErrorBox message="No voucher chosen." />;
   if (loading) return <Loading />;
   if (error || !v) return <ErrorBox message={error ?? "Voucher not found."} />;
   const unitName = String(unit?.name ?? "The Udaisarovar");
+  const pv = v.vtype !== "RV";
   const rows: [string, string][] = [
     ["Date", formatDate(v.date)],
-    [v.vtype === "RV" ? "Received from" : "Paid to", String(v.party ?? "—")],
+    [pv ? "Paid to" : "Received from", String(v.party ?? "—")],
     ["For", String(v.against ?? "—")],
-    ["Mode", String(v.mode ?? "—")],
-    ["Reference", String(v.reference ?? "—")],
+    ...(pv && v.bill_no ? ([["Bill / invoice no.", String(v.bill_no)]] as [string, string][]) : []),
+    ...(pv ? [] : ([["Mode", String(v.mode ?? "—")], ["Reference", String(v.reference ?? "—")]] as [string, string][])),
     ["Status", String(v.status ?? "")],
   ];
+  // Payment vouchers: how, when and on what basis the company paid.
+  const payRows: [string, string][] = pv
+    ? ([
+        ["Basis of payment", [v.against, v.bill_no ? `bill ${String(v.bill_no)}` : ""].filter(Boolean).map(String).join(" · ") || "—"],
+        ["Paid by mode", String(v.mode ?? "—")],
+        ["Paid to account", String(v.paid_to_account ?? "—")],
+        ["UTR / UPI reference", String(v.reference ?? "—")],
+        ["Paid on", v.paid_on ? formatDate(v.paid_on) : v.status === "Paid" ? formatDate(v.date) : "Not paid yet"],
+        ["Paid by", String(payer?.name ?? "—")],
+      ] as [string, string][])
+    : [];
+  const proofs = (Array.isArray(v.payment_proof) ? (v.payment_proof as { url?: string; name?: string; type?: string }[]) : []).filter((f) => f?.url);
   return (
     <div className="flex flex-col items-center gap-5">
       <div className="flex gap-2 print:hidden">
@@ -74,6 +88,38 @@ export function VoucherPrint() {
           <span className="jd-serif text-4xl font-bold">{formatMoney(v.amount)}</span>
         </div>
         <p className="mt-1 text-sm italic text-[#5C5244]">{amountInWords(Number(v.amount) || 0)}</p>
+        {pv && (
+          <section className="mt-6 break-inside-avoid">
+            <h3 className="text-xs uppercase tracking-[0.2em] text-[#8A672A]">Payment details</h3>
+            <dl className="mt-2 flex flex-col">
+              {payRows.map(([k, val]) => (
+                <div key={k} className="flex justify-between gap-6 border-b border-dashed border-[#D9CCB4] py-2 text-sm">
+                  <dt className="text-[#5C5244]">{k}</dt>
+                  <dd className="text-right font-medium">{val}</dd>
+                </div>
+              ))}
+            </dl>
+            {proofs.length > 0 ? (
+              <div className="mt-3">
+                <p className="mb-1.5 text-xs text-[#5C5244]">Payment receipt</p>
+                <div className="flex flex-wrap gap-3">
+                  {proofs.map((f) =>
+                    f.type === "image" || /\.(png|jpe?g|webp|gif)(\?|$)/i.test(String(f.url)) ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img key={f.url} src={String(f.url)} alt="Payment receipt" className="max-h-72 rounded border border-[#D9CCB4] object-contain" />
+                    ) : (
+                      <a key={f.url} href={String(f.url)} target="_blank" rel="noreferrer" className="text-sm underline">
+                        {String(f.name ?? "Receipt")}
+                      </a>
+                    ),
+                  )}
+                </div>
+              </div>
+            ) : (
+              <p className="mt-2 text-xs italic text-[#8C8273]">No payment receipt attached.</p>
+            )}
+          </section>
+        )}
         <div className="mt-5 rounded bg-[#F3ECDF] px-3 py-2 text-sm">
           Posted to ledger: <b className="font-semibold">{String(v.ledger ?? "JD Stays & Hospitality")}</b>
         </div>

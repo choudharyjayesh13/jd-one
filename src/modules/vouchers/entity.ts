@@ -51,8 +51,12 @@ export const vouchers = defineEntity({
     { name: "party", label: "Paid to / received from", type: "text", required: true },
     { name: "against", label: "For", type: "text", placeholder: "Booking, bill, purchase…", wide: true },
     { name: "amount", label: "Amount", type: "money", required: true, min: 0 },
-    { name: "mode", label: "Mode", type: "select", options: ["Cash", "UPI", "Card", "Bank", "OTA"], default: "Bank" },
+    { name: "bill_no", label: "Bill / invoice no.", type: "text", placeholder: "Vendor's bill number (payment vouchers)" },
+    { name: "mode", label: "Mode", type: "select", options: ["Cash", "UPI", "UPI QR", "Card", "Bank", "OTA"], default: "Bank" },
+    { name: "paid_to_account", label: "Paid to account", type: "text", placeholder: "UPI ID / bank account / QR name (payment vouchers)" },
     { name: "reference", label: "Reference", type: "text", placeholder: "UTR / cheque / UPI ref" },
+    { name: "payment_proof", label: "Payment receipt", type: "files", help: "Payment vouchers: screenshot of the UPI / QR / bank payment" },
+    { name: "paid_by", label: "Paid by", type: "relation", entity: "staff" },
     { name: "status", label: "Status", type: "select", options: VOUCHER_STATUSES, required: true, default: "To pay" },
     { name: "paid_on", label: "Paid on", type: "date" },
     { name: "ledger", label: "Ledger", type: "text", default: "JD Stays & Hospitality", readOnly: true },
@@ -64,6 +68,14 @@ export const vouchers = defineEntity({
       let v = { ...values };
       if (!v.ledger) v.ledger = "JD Stays & Hospitality";
       if (v.status === "Paid" && !v.paid_on) v.paid_on = todayISO();
+      if (v.vtype === "PV" && v.status === "Paid") {
+        if (!v.paid_by && ctx.staffId) v.paid_by = ctx.staffId;
+        const proof = Array.isArray(v.payment_proof) && v.payment_proof.length > 0;
+        if (["UPI", "UPI QR"].includes(String(v.mode)) && !proof && !String(v.reference ?? "").trim()) {
+          throw new Error("Add the payment receipt (UPI / QR screenshot) or the UPI reference number.");
+        }
+        if (v.mode === "Bank" && !proof && !String(v.reference ?? "").trim()) throw new Error("Add the bank UTR number or the payment receipt.");
+      }
       if (!id && ctx.store.kind === "local" && !v.voucher_no) v = { ...v, voucher_no: await localVoucherNo(v, ctx) };
       return v;
     },
@@ -98,7 +110,7 @@ export const vouchers = defineEntity({
       icon: CheckCircle2,
       variant: "secondary",
       visible: (r) => r.status === "To pay",
-      form: { title: "Mark as paid", fields: ["paid_on", "mode", "reference"], patch: { status: "Paid" }, submitLabel: "Mark as paid" },
+      form: { title: "Mark as paid", fields: ["paid_on", "mode", "paid_to_account", "reference", "payment_proof"], patch: { status: "Paid" }, submitLabel: "Mark as paid" },
     },
   ],
 });

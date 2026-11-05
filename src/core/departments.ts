@@ -143,7 +143,7 @@ export const DEPARTMENTS: Department[] = [
       { key: "property-assets", label: "Property assets", entity: "property-assets" },
       { key: "preventive", label: "Preventive service", entity: "service-schedules" },
       { key: "service-vendors", label: "Repair contacts", entity: "service-vendors" },
-      { key: "daily-filings", label: "Electricity units", entity: "daily-filings" },
+      { key: "daily-filings", label: "Electricity meter", entity: "meter-readings" },
       { key: "vehicle-logs", label: "Vehicle log", entity: "vehicle-logs" },
     ],
   },

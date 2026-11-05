@@ -67,6 +67,20 @@ export function SectionView({ s, note, by, compact }: { s: Section; note?: strin
               </table>
             </div>
           ))}
+      {!compact && s.photos && s.photos.length > 0 && (
+        <div className="mt-4">
+          <p className="mb-2 text-xs uppercase tracking-[0.14em] text-slate-500">Meter photos ({s.photos.length})</p>
+          <div className="grid grid-cols-3 gap-2 sm:grid-cols-4 lg:grid-cols-7 print:grid-cols-7">
+            {s.photos.map((ph) => (
+              <a key={ph.url} href={ph.url} target="_blank" rel="noreferrer" className="block break-inside-avoid overflow-hidden rounded-lg border border-line">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={ph.url} alt={ph.caption} loading="lazy" className="aspect-square w-full object-cover" />
+                <span className="block px-1.5 py-1 text-[10px] leading-tight text-slate-600">{ph.caption}</span>
+              </a>
+            ))}
+          </div>
+        </div>
+      )}
     </section>
   );
 }

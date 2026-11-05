@@ -29,6 +29,8 @@ export interface Section {
   stats: Stat[];
   tables: Table[];
   alerts: string[];
+  /** Photos shown under the section (e.g. meter readings), with a caption. */
+  photos?: { caption: string; url: string }[];
 }
 export type DayData = Record<string, Section>;
 
@@ -123,6 +125,7 @@ export async function collectDay(date: string, unitId: string | null): Promise<D
     rest,
     gate,
     vehicles,
+    meters,
   ] = await Promise.all([
     list("bookings", { filter: stayFilter, range: { check_out: { gte: date } } }),
     list("bookings", around("created_at")),
@@ -162,6 +165,7 @@ export async function collectDay(date: string, unitId: string | null): Promise<D
     list("rest-periods", { range: { date: { gte: date, lte: date } } }),
     list("gate-entries", around("time_in")),
     list("vehicle-entries", around("time_in")),
+    list("meter-readings", { filter: unit, range: { date: { gte: addDays(date, -6), lte: date } } }),
   ]);
 
   const out: DayData = {};
@@ -370,16 +374,43 @@ export async function collectDay(date: string, unitId: string | null): Promise<D
     const open = ticketsOpen.filter((t) => !["Done", "Verified"].includes(String(t.status)));
     const urgent = open.filter((t) => /high|urgent/i.test(String(t.priority)));
     const dueSvc = preventive.filter((p) => String(p.next_due) <= date);
+    // Electricity meter: today's units and the last 7 days, with the meter photos.
+    const meterRows = [...meters].sort((a, b) => String(b.date).localeCompare(String(a.date)) || String(a.meter).localeCompare(String(b.meter)));
+    const todays = meterRows.filter((m) => String(m.date) === date);
+    const unitsToday = todays.reduce((s, m) => s + (m.units != null ? num(m.units) : 0), 0);
+    const week = meterRows.filter((m) => m.units != null);
+    const weekUnits = week.reduce((s, m) => s + num(m.units), 0);
+    const weekDays = week.reduce((s, m) => s + (num(m.days) || 1), 0);
+    const kwh = (n: number) => `${Math.round(n * 100) / 100} units`;
+    const meterPhotos = meterRows.flatMap((m) =>
+      (Array.isArray(m.photo) ? (m.photo as { url?: string }[]) : [])
+        .filter((f) => f?.url)
+        .slice(0, 1)
+        .map((f) => ({ caption: `${String(m.date)} · ${num(m.reading).toLocaleString("en-IN")}${m.units != null ? ` · ${kwh(num(m.units))}` : ""}`, url: String(f.url) })),
+    );
     put("maintenance", {
+      photos: meterPhotos,
       stats: [
+        { label: "Electricity used today", value: todays.length ? (todays.some((m) => m.units != null) ? kwh(unitsToday) : `Reading ${num(todays[0].reading).toLocaleString("en-IN")} (first one)`) : "Meter not read", tone: todays.length ? undefined : "bad" },
+        { label: "Electricity · last 7 days", value: week.length ? `${kwh(weekUnits)} · about ${kwh(weekDays ? weekUnits / weekDays : 0)} a day` : "—" },
         { label: "Issues reported today", value: String(opened.length) },
         { label: "Fixed today", value: String(closed.length), tone: closed.length ? "good" : undefined },
         { label: "Still open", value: `${open.length}${urgent.length ? ` · ${urgent.length} urgent` : ""}`, tone: urgent.length ? "bad" : undefined },
         { label: "Preventive service due", value: String(dueSvc.length), tone: dueSvc.length ? "bad" : undefined },
       ],
-      tables: [{ title: "Open issues", columns: ["Issue", "Where", "Priority", "Status"], rows: open.slice(0, 30).map((t) => [String(t.title), String(t.location ?? ""), String(t.priority ?? ""), String(t.status)]) }],
-      alerts: urgent.map((t) => `Urgent issue open: ${String(t.title)}`).concat(dueSvc.map((p) => `Service due: ${String(p.what)} ${String(p.asset_name ?? "")}`.trim())),
-    }, opened);
+      tables: [
+        {
+          title: "Electricity meter · last 7 days",
+          columns: ["Date", "Meter", "Reading", "Units used", "Recorded by"],
+          rows: meterRows.map((m) => [String(m.date), String(m.meter ?? "Main meter"), num(m.reading).toLocaleString("en-IN"), m.units != null ? `${kwh(num(m.units))}${num(m.days) > 1 ? ` (${num(m.days)} days)` : ""}` : "first reading", nameOf.get(String(m.recorded_by)) ?? ""]),
+        },
+        { title: "Open issues", columns: ["Issue", "Where", "Priority", "Status"], rows: open.slice(0, 30).map((t) => [String(t.title), String(t.location ?? ""), String(t.priority ?? ""), String(t.status)]) },
+      ],
+      alerts: (todays.length ? [] : ["Electricity meter not read today"])
+        .concat(todays.filter((m) => m.units != null && num(m.units) < 0).map(() => "Meter reading is lower than the day before – check it"))
+        .concat(urgent.map((t) => `Urgent issue open: ${String(t.title)}`))
+        .concat(dueSvc.map((p) => `Service due: ${String(p.what)} ${String(p.asset_name ?? "")}`.trim())),
+    }, [...opened, ...todays]);
   }
 
   // ---------------- Activities
