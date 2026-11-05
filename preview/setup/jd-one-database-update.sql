@@ -1389,3 +1389,9 @@ begin
     execute format('create trigger zz_guard_locked_edit before update on jdone.%I for each row execute function jdone.guard_locked_edit(%s)', r.tbl, r.args);
   end loop;
 end $$;
+
+-- ===== Vendor UPI QR on payment vouchers =====
+-- Vendor's UPI QR on payment vouchers (scan it to pay). Can be added after the voucher is saved.
+alter table jdone.vouchers add column if not exists payee_qr jsonb;
+drop trigger if exists zz_guard_locked_edit on jdone.vouchers;
+create trigger zz_guard_locked_edit before update on jdone.vouchers for each row execute function jdone.guard_locked_edit('status','paid_on','mode','reference','payment_proof','paid_by','paid_to_account','notes','payee_qr');
