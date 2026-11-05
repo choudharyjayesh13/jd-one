@@ -1301,3 +1301,13 @@ insert into jdone.meter_readings (date, business_unit_id, meter, reading, photo,
 select r.date, coalesce(r.business_unit_id, '71c3804a-5906-4328-9e3b-79555f65f035'::uuid), 'Main meter', r.electricity_closing, r.electricity_photo, 'Copied from the daily report'
 from jdone.daily_reports r where r.date = '2026-10-31' and r.electricity_closing is not null
 on conflict do nothing;
+
+-- ===== Task Manager post =====
+-- JD One (5 Nov 2026): Task Manager post — assigns tasks to every staff member (HR → Assign tasks).
+-- The Chairman or the Director chooses who holds it. Applied on 5 Nov 2026. Safe to run again.
+alter table jdone.org_posts drop constraint if exists org_posts_post_check;
+alter table jdone.org_posts add constraint org_posts_post_check check (post in ('chairman', 'director', 'property_supervisor', 'task_manager'));
+insert into jdone.org_posts (post) values ('task_manager') on conflict (post) do nothing;
+drop policy if exists "director sets task manager" on jdone.org_posts;
+create policy "director sets task manager" on jdone.org_posts for update to authenticated
+  using (jdone.is_director() and post = 'task_manager') with check (jdone.is_director() and post = 'task_manager');
