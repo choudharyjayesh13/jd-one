@@ -14,7 +14,7 @@ export const orgPosts = defineEntity({
   searchFields: ["post", "holder_name", "email"],
   defaultSort: { field: "post", dir: "asc" },
   fields: [
-    { name: "post", label: "Post", type: "select", options: ["chairman", "director", "property_supervisor"], required: true },
+    { name: "post", label: "Post", type: "select", options: ["chairman", "director", "property_supervisor", "task_manager"], required: true },
     { name: "holder_name", label: "Name", type: "text" },
     { name: "email", label: "Login email", type: "email" },
   ],

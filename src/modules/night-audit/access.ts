@@ -57,6 +57,24 @@ export function useIsPropertySupervisor(user: AuthUser): boolean {
   return yes;
 }
 
+/** Holder of an org post (by login email), e.g. "task_manager". */
+export function useHoldsPost(user: AuthUser, post: string): boolean {
+  const [yes, setYes] = useState(false);
+  useEffect(() => {
+    const email = (user.email ?? "").toLowerCase();
+    if (!email) return;
+    let live = true;
+    getStore()
+      .list("org-posts", { filter: { post } })
+      .then((rows) => live && setYes(rows.some((r) => String(r.email ?? "").toLowerCase() === email)))
+      .catch(() => undefined);
+    return () => {
+      live = false;
+    };
+  }, [user.email, post]);
+  return yes;
+}
+
 /** Chairman, Director and the Property Supervisor assign report duty. */
 export function useCanAssignReports(user: AuthUser): boolean {
   const sup = useIsPropertySupervisor(user);
