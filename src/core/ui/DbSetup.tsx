@@ -17,7 +17,7 @@ const BASE = process.env.NEXT_PUBLIC_BASE_PATH ?? "";
 const SQL_URL = `${BASE}/setup/jd-one-database-update.sql`;
 const SUPABASE_SQL_EDITOR = "https://supabase.com/dashboard/project/cyimbgjzxxxszjadxpgv/sql/new";
 /** One table from each update; if any is missing, the update has not been (fully) run. */
-const PROBES = ["org-posts", "staff-access", "vouchers", "indents", "linen-logs", "recipes", "service-schedules", "dept-reports", "night-audits", "home-cards", "shift-roster", "leave-requests", "location-pings", "meter-readings"];
+const PROBES = ["org-posts", "staff-access", "vouchers", "indents", "linen-logs", "recipes", "service-schedules", "dept-reports", "night-audits", "home-cards", "shift-roster", "leave-requests", "location-pings", "meter-readings", "edit-requests"];
 
 export function useDbUpdateNeeded(): { needed: boolean | null; recheck: () => Promise<void> } {
   const [needed, setNeeded] = useState<boolean | null>(null);

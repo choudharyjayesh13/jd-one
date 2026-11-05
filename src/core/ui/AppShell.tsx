@@ -88,6 +88,7 @@ function moduleVisible(m: ModuleDef, user: AuthUser, supervisor = false): boolea
 
 function adminModuleVisible(m: ModuleDef, user: AuthUser): boolean {
   if (m.key === "home-cards") return !!user.post;
+  if (m.key === "edit-approvals") return !!user.post;
   if (m.key === "director-changes") return user.post === "chairman";
   if (m.key === "team-access") return !!user.post;
   return isAdmin(user.role) || !!user.post;
@@ -126,7 +127,8 @@ function useBadges(user: AuthUser) {
   const leaveApprover = useCanApproveLeave();
   const { rows: leaves } = useList(leaveApprover ? "leave-requests" : null, { filter: { status: "Pending" } });
   const leaveWaiting = leaves.filter((r) => String(r.staff_id) !== (user.staff?.id ?? "")).length;
-  return { tickets: tickets.filter(isOpenTicket).length, "signup-requests": signups.length, "director-changes": changes.length, leave: leaveWaiting } as Record<string, number>;
+  const { rows: edits } = useList(user.post ? "edit-requests" : null, { filter: { status: "Pending" } });
+  return { tickets: tickets.filter(isOpenTicket).length, "signup-requests": signups.length, "director-changes": changes.length, leave: leaveWaiting, "edit-approvals": edits.length } as Record<string, number>;
 }
 
 function useProperty() {
