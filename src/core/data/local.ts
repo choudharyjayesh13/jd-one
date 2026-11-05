@@ -11,7 +11,7 @@ import { newId } from "./types";
 import { applyQuery } from "./query";
 
 const DB_NAME = "jd-one";
-const DB_VERSION = 5; // v2: messages, v3: candidates, v4: investors/investments/wallet_transactions, v5: tickets/signup_requests
+const DB_VERSION = 19; // v19: edit_requests; v18: meter_readings; v17: location_pings; v16: leave_requests; v15: home_cards/shift_roster; v14: dept_reports/night_audits; v13: guest_reviews (staff-recorded feedback; guest_feedback belongs to the guest portal); v12: guest_requests/guest_feedback/events/service_schedules; v11: recipes/purchase_orders; v10: amenity_refills/linen_logs/lost_found/activity_bookings/gate_entries/vehicle_entries; v9: indents/wastage/hygiene_checks/gas_logs; v8: vouchers/staff_access/org_posts/change_log; … v6: kots/purchases/pay/vendors/property_assets, v7: rooms/rates/promotions/payment_requests/housekeeping_reports/petty_cash/agents/add_ons
 
 type Listener = () => void;
 

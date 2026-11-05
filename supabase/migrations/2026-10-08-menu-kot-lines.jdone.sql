@@ -1,0 +1,107 @@
+-- Restaurant menu (Lake City Cafe at The Udaisarovar, menu card Oct 2026) + KOT order lines. 8 Oct 2026.
+create table if not exists jdone.menu_items (
+  id uuid primary key default gen_random_uuid(),
+  business_unit_id uuid references jdone.business_units(id) on delete cascade,
+  name text not null,
+  category text not null,
+  price numeric(10,2) not null check (price >= 0),
+  description text,
+  veg boolean not null default true,
+  active boolean not null default true,
+  sort integer not null default 100,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  created_by uuid references jdone.staff(id) on delete set null,
+  unique (business_unit_id, name)
+);
+drop trigger if exists set_updated_at on jdone.menu_items;
+create trigger set_updated_at before update on jdone.menu_items for each row execute function jdone.set_updated_at();
+alter table jdone.menu_items enable row level security;
+drop policy if exists "staff read" on jdone.menu_items;
+create policy "staff read" on jdone.menu_items for select to authenticated using (true);
+drop policy if exists "office write" on jdone.menu_items;
+create policy "office write" on jdone.menu_items for all to authenticated using (jdone.is_hr_admin()) with check (jdone.is_hr_admin());
+grant select, insert, update, delete on jdone.menu_items to authenticated, service_role;
+alter table jdone.kots add column if not exists lines jsonb not null default '[]'::jsonb;
+insert into jdone.menu_items (business_unit_id, name, category, price, sort, description)
+select u.id, v.name, v.category, v.price, v.sort, v.description from (values
+('Bread Toast','Breakfast',100,1,null),
+('Butter Toast','Breakfast',150,2,null),
+('Jam Toast','Breakfast',120,3,null),
+('Poha','Breakfast',120,4,null),
+('Puri Bhaji','Breakfast',200,5,null),
+('Plain Parantha','Breakfast',100,6,null),
+('Aloo Parantha','Breakfast',120,7,null),
+('Paneer Parantha','Breakfast',180,8,null),
+('Onion Parantha','Breakfast',140,9,null),
+('Mix Veg Parantha','Breakfast',160,10,null),
+('Hot & Sour Soup','Soup & Chakna',250,11,null),
+('Tomato Soup','Soup & Chakna',250,12,null),
+('Peanut Masala','Soup & Chakna',200,13,null),
+('Double Veg Maggi','Soup & Chakna',250,14,null),
+('Double Cheese Maggi','Soup & Chakna',300,15,null),
+('Roasted Masala Papad','Soup & Chakna',150,16,null),
+('Plain Roasted Papad','Soup & Chakna',60,17,null),
+('Kurkuri Pakodi','Starters',270,18,null),
+('Hara Bhara Kabab','Starters',350,19,null),
+('Cheese Balls','Starters',400,20,null),
+('Paneer Chilly','Starters',350,21,null),
+('Honey Chilly Potato','Starters',300,22,null),
+('Vegetable Cutlets','Starters',350,23,null),
+('French Fries (Plain)','Starters',280,24,null),
+('French Fries (Peri Peri)','Starters',280,25,null),
+('Crispy Corn','Starters',350,26,null),
+('Veg Hakka Noodles','Starters',400,27,null),
+('Veg Schezwan Noodles','Starters',400,28,null),
+('Cigar Cheese Roll','Starters',400,29,null),
+('Paneer Butter Masala','Main Course',400,30,null),
+('Paneer Tufani','Main Course',380,31,null),
+('Kadhai Paneer','Main Course',380,32,null),
+('Shimla Paneer Bhurji','Main Course',420,33,null),
+('Paneer Lababdar','Main Course',400,34,null),
+('Vegetable Kadhai Masala','Main Course',300,35,null),
+('Vegetable Jalfrezi','Main Course',300,36,null),
+('Dum Aloo Kashmiri','Main Course',300,37,null),
+('Mushroom Matar Curry','Main Course',380,38,null),
+('Tadke Wale Bhindi','Main Course',280,39,null),
+('Gobi Matar Adraki','Main Course',250,40,null),
+('Lasuni Palak','Main Course',350,41,null),
+('Dal Makhni','Dal & Rice',350,42,null),
+('Dal Tadka','Dal & Rice',250,43,null),
+('Dal Khichdi','Dal & Rice',350,44,null),
+('Pulao','Dal & Rice',300,45,null),
+('Veg Rice','Dal & Rice',300,46,null),
+('Steam Rice','Dal & Rice',300,47,null),
+('Jeera Rice','Dal & Rice',300,48,null),
+('Laccha Paratha','Breads',45,49,null),
+('Tandoori Roti','Breads',45,50,null),
+('Naan','Breads',45,51,null),
+('Tawa Roti','Breads',35,52,null),
+('Garlic Naan','Breads',150,53,null),
+('Margherita Pizza','Pizza, Pasta & Sandwich',350,54,null),
+('Farm House Pizza','Pizza, Pasta & Sandwich',380,55,null),
+('Paneer Tikka Pizza','Pizza, Pasta & Sandwich',420,56,null),
+('Spicy Peri-Peri Pizza','Pizza, Pasta & Sandwich',450,57,null),
+('Corn & Mushroom Pizza','Pizza, Pasta & Sandwich',450,58,null),
+('Alfredo Pasta','Pizza, Pasta & Sandwich',450,59,null),
+('Red Sauce Pasta','Pizza, Pasta & Sandwich',450,60,null),
+('Pink Pasta','Pizza, Pasta & Sandwich',450,61,null),
+('Veg Cheese Sandwich','Pizza, Pasta & Sandwich',250,62,null),
+('Grilled Cheese Sandwich','Pizza, Pasta & Sandwich',350,63,null),
+('Fixed Lunch Thali (per person)','Fixed Meal',500,64,'Green salad, raita, papad, mix veg / gobi / aloo palak, dal tadka / dal fry, masala bhindi, rice & tawa roti, buttermilk, ice cream'),
+('Ice Cream','Dessert',110,65,null),
+('American Nuts Ice Cream','Dessert',150,66,null),
+('Hot Coffee','Hot Beverages',130,67,null),
+('Classic Tea','Hot Beverages',70,68,null),
+('Hot Milk','Hot Beverages',70,69,null),
+('Cold Coffee','Cold Beverages',200,70,null),
+('Chocolate Shake','Cold Beverages',350,71,null),
+('Vanilla Shake','Cold Beverages',250,72,null),
+('Lemonade','Cold Beverages',120,73,null),
+('Juice','Cold Beverages',150,74,null),
+('Virgin Mojito','Cold Beverages',250,75,null),
+('Butter Milk','Cold Beverages',90,76,null)
+) as v(name, category, price, sort, description)
+join jdone.business_units u on u.short_code = 'UDS'
+on conflict (business_unit_id, name) do update set category = excluded.category, price = excluded.price, sort = excluded.sort, description = coalesce(excluded.description, jdone.menu_items.description);
+notify pgrst, 'reload schema';

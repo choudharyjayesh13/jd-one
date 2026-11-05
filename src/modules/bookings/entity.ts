@@ -1,14 +1,17 @@
-import { BedDouble, LogIn, LogOut, IndianRupee } from "lucide-react";
-import { defineEntity } from "@/core/schema/types";
+import { BedDouble, LogIn, LogOut, IndianRupee, ShieldCheck, ReceiptText } from "lucide-react";
+import { defineEntity, type Row } from "@/core/schema/types";
 import { normalizePhone } from "@/core/phone";
 import { newHref } from "@/core/routes";
 import { customerLiveHint, matchOrCreateCustomer } from "@/modules/customers/match";
 import { nightsBetween } from "@/modules/customers/stats";
 import { paidForBooking } from "./balance";
+import { roomLines } from "@/modules/rooms/occupancy";
+import { BookingForm } from "./BookingForm";
 
 export const UNIT_TYPES = ["Lake View Cottage", "Pool View Cottage", "Family Suite", "Camping", "Glass House", "Other"] as const;
-export const BOOKING_SOURCES = ["Direct", "MMT/Goibibo", "Booking.com", "Airbnb", "Agoda", "Expedia", "Walk-in", "Corporate"] as const;
-export const BOOKING_STATUSES = ["Enquiry", "Confirmed", "Checked-in", "Checked-out", "Cancelled", "No-show"] as const;
+export const BOOKING_SOURCES = ["Website", "Direct", "MMT/Goibibo", "Booking.com", "Airbnb", "Agoda", "Expedia", "EaseMyTrip", "Cleartrip", "Google Hotels", "Travel agent", "Walk-in", "Corporate"] as const;
+/** "On hold" = tentative block (AsiaTech Hold Booking): holds inventory until confirmed or released. */
+export const BOOKING_STATUSES = ["Enquiry", "On hold", "Confirmed", "Checked-in", "Checked-out", "Cancelled", "No-show"] as const;
 export const OTA_SOURCES: readonly string[] = ["MMT/Goibibo", "Booking.com", "Airbnb", "Agoda", "Expedia"];
 
 const WRITE_ROLES = ["owner", "manager", "staff", "marketing", "accounts"] as const;
@@ -19,10 +22,10 @@ export const bookings = defineEntity({
   labelSingular: "Booking",
   icon: BedDouble,
   table: "bookings",
-  teams: ["operations", "finance"],
+  teams: ["property", "operations", "finance"],
   unitField: "business_unit_id",
   titleField: "guest_name",
-  searchFields: ["guest_name", "phone", "unit_type"],
+  searchFields: ["guest_name", "phone", "booking_ref", "external_ref", "unit_type"],
   defaultSort: { field: "check_in", dir: "desc" },
   // Finance reads bookings but does not edit them.
   permissions: { create: [...WRITE_ROLES], update: [...WRITE_ROLES], delete: ["owner"] },
@@ -35,23 +38,49 @@ export const bookings = defineEntity({
     { name: "business_unit_id", label: "Business unit", type: "relation", entity: "business-units", required: true },
     { name: "check_in", label: "Check-in", type: "date", required: true },
     { name: "check_out", label: "Check-out", type: "date", required: true },
-    { name: "unit_type", label: "Unit type", type: "select", options: UNIT_TYPES, required: true },
-    { name: "units", label: "Units", type: "number", min: 1, default: 1 },
+    {
+      name: "rooms_summary",
+      label: "Rooms",
+      type: "text",
+      virtual: true,
+      computed: (v) => {
+        const ls = roomLines(v as Row);
+        if (!ls.length) return v.unit_type ? `${Number(v.units ?? 1) || 1} × ${String(v.unit_type)}${v.meal_plan ? ` · ${String(v.meal_plan)}` : ""}` : "";
+        return ls.map((l) => `${l.rooms} × ${l.unit_type} · ${l.meal_plan} @ ₹${l.rate.toLocaleString("en-IN")}`).join("; ");
+      },
+    },
+    { name: "room_lines", label: "Room categories", type: "multiselect", options: [], hidden: true },
+    { name: "unit_type", label: "Unit type", type: "select", options: UNIT_TYPES, required: true, hidden: true },
+    { name: "room_id", label: "Room / cottage", type: "relation", entity: "rooms", help: "Assign the exact room; shows on the room chart", hidden: true },
+    { name: "units", label: "Units", type: "number", min: 1, default: 1, hidden: true },
     { name: "adults", label: "Adults", type: "number", min: 0, default: 2 },
     { name: "children", label: "Children", type: "number", min: 0, default: 0 },
-    { name: "meal_plan", label: "Meal plan", type: "select", options: ["EP", "CP", "MAP", "AP"], default: "CP" },
-    { name: "rate", label: "Rate / unit / night", type: "money", min: 0 },
+    { name: "meal_plan", label: "Meal plan", type: "select", options: ["CP", "MAP", "AP", "EP"], default: "CP", help: "EP (room only) is no longer sold — kept only for old bookings" },
+    { name: "rate", label: "Rate / unit / night", type: "money", min: 0, hidden: true },
     { name: "total", label: "Total", type: "money", min: 0, help: "Leave blank to use rate × units × nights" },
     { name: "advance", label: "Advance agreed", type: "money", min: 0, help: "Record the actual receipt under Payments" },
     { name: "paid", label: "Paid", type: "money", readOnly: true },
     { name: "balance", label: "Balance", type: "money", readOnly: true },
     { name: "source", label: "Source", type: "select", options: BOOKING_SOURCES, required: true, default: "Direct" },
+    { name: "agent_id", label: "Agent", type: "relation", entity: "agents", help: "Travel / corporate agent who sent the booking" },
+    { name: "hold_until", label: "Hold until", type: "datetime", help: "For On hold bookings: release if not confirmed by then" },
     { name: "status", label: "Status", type: "select", options: BOOKING_STATUSES, required: true, default: "Confirmed" },
     { name: "special_requests", label: "Special requests", type: "textarea" },
     { name: "booked_by", label: "Booked by", type: "text", help: "Staff member or channel that created the booking" },
     { name: "external_ref", label: "Channel booking ID", type: "text", readOnly: true, help: "AsiaTech / OTA reference" },
+    { name: "booking_ref", label: "Booking no. (website)", type: "text", readOnly: true },
+    { name: "rooms_count", label: "Rooms", type: "number", min: 1, hidden: true },
+    { name: "room_amount", label: "Room & meals (before GST)", type: "money", min: 0 },
+    { name: "tax_amount", label: "GST", type: "money", min: 0 },
+    { name: "gst_company", label: "GST invoice – company", type: "text" },
+    { name: "gstin", label: "GSTIN", type: "text", placeholder: "08ABCDE1234F1Z5" },
+    { name: "gst_address", label: "GST billing address", type: "textarea" },
+    { name: "billing_email", label: "Billing email", type: "email" },
+    { name: "payment_ref", label: "Online payment ID", type: "text", readOnly: true, help: "Razorpay payment id from the website" },
+    { name: "payment_verified", label: "Payment verified in Razorpay", type: "boolean", default: false },
   ],
-  listColumns: ["guest_name", "status", "check_in", "check_out", "unit_type", "business_unit_id", "total", "balance"],
+  listColumns: ["guest_name", "status", "source", "check_in", "check_out", "rooms_summary", "total", "balance", "booking_ref"],
+  customForm: BookingForm,
   reverse: [
     { entity: "payments", field: "booking_id", label: "Payments" },
     { entity: "checkins", field: "booking_id", label: "Check-ins" },
@@ -62,9 +91,20 @@ export const bookings = defineEntity({
       const phone = normalizePhone(values.phone) || null;
       const customer_id = await matchOrCreateCustomer(ctx.store, { ...values, phone }, "guest_name", { source: "Direct", staffId: ctx.staffId });
       const nights = nightsBetween(values.check_in, values.check_out);
-      const total = values.total !== null && values.total !== undefined ? Number(values.total) : Number(values.rate ?? 0) * Number(values.units ?? 1) * nights;
-      const paid = id ? await paidForBooking(ctx.store, id) : 0;
-      return { ...values, phone, customer_id, total, paid, balance: total - paid };
+      // Several room categories: total = Σ rate × rooms × nights (+ GST already on website bookings).
+      const lines = roomLines(values as Row);
+      const total = lines.length
+        ? lines.reduce((s, l) => s + l.rate * l.rooms * nights, 0) + (values.booking_ref ? Number(values.tax_amount ?? 0) : 0)
+        : values.total !== null && values.total !== undefined
+          ? Number(values.total)
+          : Number(values.rate ?? 0) * Number(values.units ?? 1) * nights;
+      // Paid = sum of Payments; bookings imported with a paid amount but no Payments rows keep that amount.
+      const fromPayments = id ? await paidForBooking(ctx.store, id) : 0;
+      const paid = fromPayments > 0 ? fromPayments : Number(values.paid ?? 0);
+      const out: Record<string, unknown> = { ...values, phone, customer_id, total, paid, balance: total - paid };
+      // Single-room bookings do not need room_lines (keeps saving working before the phase-2 SQL is run).
+      if (!lines.length) delete out.room_lines;
+      return out;
     },
     async afterCreate(record, ctx) {
       // A booking created from a lead closes that lead as Won.
@@ -76,11 +116,30 @@ export const bookings = defineEntity({
   },
   actions: [
     {
+      id: "guest-bill",
+      label: "Guest bill",
+      icon: ReceiptText,
+      visible: (r) => r.status !== "Cancelled" && r.status !== "Enquiry",
+      run: ({ record, navigate }) => navigate(`/guest-bill/?id=${record.id}`),
+    },
+    {
+      id: "verify-payment",
+      label: "Payment verified (Razorpay)",
+      icon: ShieldCheck,
+      variant: "primary",
+      visible: (r) => !!r.payment_ref && !r.payment_verified,
+      async run({ record, store, toast, refresh }) {
+        await store.update("bookings", record.id, { payment_verified: true });
+        toast("Marked as verified");
+        await refresh();
+      },
+    },
+    {
       id: "check-in",
       label: "Check in now",
       icon: LogIn,
       variant: "primary",
-      visible: (r) => r.status === "Confirmed" || r.status === "Enquiry",
+      visible: (r) => r.status === "Confirmed" || r.status === "Enquiry" || r.status === "On hold",
       async run({ record, store, staffId, toast, refresh, confirm }) {
         if (!(await confirm(`Check in ${record.guest_name}? A check-in record will be created.`))) return;
         await store.create("checkins", { booking_id: record.id, actual_in: new Date().toISOString(), handled_by: staffId, created_by: staffId });

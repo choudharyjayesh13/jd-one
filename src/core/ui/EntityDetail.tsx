@@ -103,7 +103,7 @@ export function EntityDetail({ entity, id, startEditing }: { entity: string; id:
       <div className="rounded-xl border border-line bg-white p-4 shadow-sm">
         <dl className="grid grid-cols-1 gap-x-6 gap-y-3 sm:grid-cols-2 lg:grid-cols-3">
           {def.fields
-            .filter((f) => !f.hidden)
+            .filter((f) => !f.hidden && (!f.showIf || f.showIf(row)))
             .map((f) => (
               <div key={f.name} className={cn((f.type === "textarea" || f.type === "files") && "sm:col-span-2 lg:col-span-3")}>
                 <dt className="text-xs font-medium uppercase tracking-wide text-slate-500">{f.label}</dt>

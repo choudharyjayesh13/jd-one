@@ -90,7 +90,7 @@ export function ReportIssue() {
       <section className="relative overflow-hidden rounded-3xl text-white shadow-lg">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src={photoOfDay(2).url} alt="" className="absolute inset-0 h-full w-full object-cover" />
-        <div className="absolute inset-0 bg-gradient-to-r from-navy/95 via-navy/80 to-navy/30" />
+        <div className="absolute inset-0 bg-gradient-to-r from-black/95 via-black/80 to-black/30" />
         <div className="relative p-6 sm:p-8">
           <p className="text-sm text-white/70">Keep The Udaisarovar perfect</p>
           <h1 className="mt-1 text-3xl font-bold">Report an issue</h1>

@@ -6,7 +6,7 @@ type Variant = "primary" | "secondary" | "danger" | "ghost";
 type Size = "sm" | "md";
 
 const variants: Record<Variant, string> = {
-  primary: "bg-navy text-white hover:bg-navy-700 disabled:bg-navy/50",
+  primary: "jd-gold-btn hover:brightness-110 disabled:opacity-50",
   secondary: "bg-white text-navy border border-line hover:bg-slate-50 disabled:text-slate-400",
   danger: "bg-red-600 text-white hover:bg-red-700 disabled:bg-red-300",
   ghost: "bg-transparent text-navy hover:bg-slate-100",
@@ -26,7 +26,7 @@ export function Button({ variant = "primary", size = "md", icon: Icon, loading, 
     <button
       type="button"
       className={cn(
-        "inline-flex items-center justify-center rounded-lg font-medium whitespace-nowrap transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-gold",
+        "inline-flex items-center justify-center rounded-md font-medium whitespace-nowrap transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-gold",
         variants[variant],
         sizes[size],
         className,

@@ -23,6 +23,7 @@ export const purchases = defineEntity({
     { name: "frequency", label: "Bought", type: "select", options: PURCHASE_FREQUENCIES, required: true, default: "Daily" },
     { name: "category", label: "Category", type: "select", options: PURCHASE_CATEGORIES, required: true },
     { name: "item", label: "Item", type: "text", required: true, placeholder: "Milk, tomatoes, LPG cylinder…" },
+    { name: "stock_id", label: "Add to stock item", type: "relation", entity: "stock", help: "Pick the stock item and enter the quantity — it is added to stock automatically" },
     { name: "quantity", label: "Quantity", type: "number", min: 0 },
     { name: "unit", label: "Unit", type: "text", placeholder: "kg, litre, pcs, cylinder" },
     { name: "rate", label: "Rate", type: "money", min: 0, help: "Price per unit (optional)" },

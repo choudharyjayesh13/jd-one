@@ -25,6 +25,19 @@ export class SupabaseStore implements DataStore {
   }
 
   async list(entity: string, query?: ListQuery): Promise<Row[]> {
+    // Supabase returns at most 1,000 rows per request: page through until everything is loaded.
+    if (query?.limit) return this.listPage(entity, query, 0, query.limit);
+    const PAGE = 1000;
+    const all: Row[] = [];
+    for (let from = 0; ; from += PAGE) {
+      const rows = await this.listPage(entity, query, from, PAGE);
+      all.push(...rows);
+      if (rows.length < PAGE || from > 50000) break;
+    }
+    return all;
+  }
+
+  private async listPage(entity: string, query: ListQuery | undefined, from: number, size: number): Promise<Row[]> {
     const def = getEntity(entity);
     let q = this.client.from(def.table).select("*");
     if (query?.filter) {
@@ -47,8 +60,8 @@ export class SupabaseStore implements DataStore {
     q = q.order(sort.field, { ascending: sort.dir === "asc", nullsFirst: false });
     const thenBy = query?.thenBy ?? (query?.sort ? undefined : def.secondarySort);
     if (thenBy) q = q.order(thenBy.field, { ascending: thenBy.dir === "asc", nullsFirst: false });
-    if (query?.limit) q = q.limit(query.limit);
-    const { data, error } = await q;
+    q = q.order("id", { ascending: true });
+    const { data, error } = await q.range(from, from + size - 1);
     if (error) throw new Error(error.message);
     return (data ?? []) as Row[];
   }
@@ -63,17 +76,36 @@ export class SupabaseStore implements DataStore {
   async create(entity: string, data: FieldValues): Promise<Row> {
     const def = getEntity(entity);
     const values = await this.uploadFiles(entity, data);
-    const { data: row, error } = await this.client.from(def.table).insert(values).select("*").single();
-    if (error) throw new Error(error.message);
-    return row as Row;
+    return this.withoutMissingColumns(values, (v) => this.client.from(def.table).insert(v).select("*").single());
   }
 
   async update(entity: string, id: string, patch: FieldValues): Promise<Row> {
     const def = getEntity(entity);
     const values = await this.uploadFiles(entity, patch, id);
-    const { data: row, error } = await this.client.from(def.table).update(values).eq("id", id).select("*").single();
-    if (error) throw new Error(error.message);
-    return row as Row;
+    return this.withoutMissingColumns(values, (v) => this.client.from(def.table).update(v).eq("id", id).select("*").single());
+  }
+
+  /**
+   * A new app field whose database column is not there yet (the update SQL has
+   * not been run) would fail the whole save. Drop that field and save the rest,
+   * so everyday forms keep working; the field starts saving once the SQL is run.
+   */
+  private async withoutMissingColumns(
+    values: FieldValues,
+    run: (v: FieldValues) => PromiseLike<{ data: unknown; error: { message: string } | null }>,
+  ): Promise<Row> {
+    let v = { ...values };
+    for (let i = 0; i < 8; i++) {
+      const { data, error } = await run(v);
+      if (!error) return data as Row;
+      const col = /Could not find the '([^']+)' column/i.exec(error.message)?.[1] ?? /column "?([a-z_0-9]+)"? of relation .* does not exist/i.exec(error.message)?.[1];
+      if (!col || !(col in v)) throw new Error(error.message);
+      console.warn(`JD One: column "${col}" is not in the database yet (run the update SQL); saved without it.`);
+      const next = { ...v };
+      delete next[col];
+      v = next;
+    }
+    throw new Error("Could not save: the database needs the latest update SQL.");
   }
 
   async remove(entity: string, id: string): Promise<void> {
@@ -164,7 +196,7 @@ export class SupabaseStore implements DataStore {
 /** Keep only columns the table knows about (ignores helper keys from older exports). */
 function stripUnknownColumns(entity: string, row: Row): Row {
   const def = getEntity(entity);
-  const allowed = new Set(["id", "created_at", "updated_at", "created_by", ...def.fields.map((f) => f.name)]);
+  const allowed = new Set(["id", "created_at", "updated_at", "created_by", ...def.fields.filter((f) => !f.virtual).map((f) => f.name)]);
   const out: Row = { id: row.id, created_at: row.created_at, updated_at: row.updated_at };
   for (const [k, v] of Object.entries(row)) if (allowed.has(k)) out[k] = v;
   return out;

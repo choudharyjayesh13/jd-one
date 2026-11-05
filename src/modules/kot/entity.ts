@@ -1,4 +1,6 @@
-import { ChefHat, Flame, BellRing, Utensils, ReceiptIndianRupee, QrCode } from "lucide-react";
+import { ChefHat, Flame, BellRing, Utensils, ReceiptIndianRupee, QrCode, PackageMinus, Printer } from "lucide-react";
+import { newHref } from "@/core/routes";
+import { KotListBanner } from "./KotOrder";
 import { defineEntity } from "@/core/schema/types";
 
 export const KOT_TYPES = ["Table", "Room", "Camping", "Event", "Takeaway", "Staff meal"] as const;
@@ -20,6 +22,7 @@ export const kots = defineEntity({
   titleField: "kot_no",
   searchFields: ["kot_no", "table_or_room", "guest_name", "items"],
   defaultSort: { field: "created_at", dir: "desc" },
+  listExtra: KotListBanner,
   fields: [
     { name: "kot_no", label: "KOT no.", type: "text", readOnly: true, help: "Given automatically when saved" },
     { name: "order_type", label: "Order for", type: "select", options: KOT_TYPES, required: true, default: "Table" },
@@ -27,12 +30,15 @@ export const kots = defineEntity({
     { name: "guest_name", label: "Guest name", type: "text" },
     { name: "pax", label: "Guests (pax)", type: "number", min: 1 },
     { name: "items", label: "Items (one per line)", type: "textarea", required: true, placeholder: "2 x Paneer tikka\n1 x Dal makhani\n3 x Butter roti\n2 x Cold coffee" },
+    { name: "lines", label: "Order lines", type: "multiselect", options: [], hidden: true },
     { name: "special_notes", label: "Kitchen notes", type: "textarea", placeholder: "Less spicy, no onion, Jain…" },
     { name: "status", label: "Status", type: "select", options: KOT_STATUSES, required: true, default: "New" },
     { name: "amount", label: "Bill amount", type: "money", min: 0 },
     { name: "taken_by", label: "Order taken by", type: "relation", entity: "staff" },
     { name: "booking_id", label: "Booking (room orders)", type: "relation", entity: "bookings" },
     { name: "business_unit_id", label: "Business unit", type: "relation", entity: "business-units", required: true },
+    { name: "source", label: "Ordered from", type: "select", options: ["Staff", "Guest app"], default: "Staff", readOnly: true },
+    { name: "printed_at", label: "Printed at", type: "datetime", readOnly: true },
   ],
   listColumns: ["kot_no", "order_type", "table_or_room", "items", "status", "amount", "taken_by"],
   hooks: {
@@ -56,6 +62,10 @@ export const kots = defineEntity({
         const base = process.env.NEXT_PUBLIC_BASE_PATH ?? "";
         window.location.href = `${base}/pay-qr/?kot=${encodeURIComponent(String(record.kot_no ?? ""))}${record.amount ? `&amount=${record.amount}` : ""}`;
       } },
+    { id: "print", label: "Print KOT", icon: Printer, visible: (r) => r.status !== "Cancelled",
+      run: ({ navigate }) => navigate("/kot-print/") },
+    { id: "ingredients", label: "Log ingredients used", icon: PackageMinus, visible: (r) => r.status !== "Cancelled",
+      run: ({ record, navigate }) => navigate(newHref("stock-movements", { kot_id: record.id, direction: "Out", source: "KOT", business_unit_id: record.business_unit_id })) },
     { id: "bill", label: "Bill", icon: ReceiptIndianRupee, visible: (r) => r.status === "Served",
       form: { title: "Bill this KOT", fields: ["amount"], patch: { status: "Billed" }, submitLabel: "Save bill" } },
   ],

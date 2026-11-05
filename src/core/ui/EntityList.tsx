@@ -100,14 +100,14 @@ export function EntityList({ entity, fixedFilter, newPrefill, embedded, limit }:
                     <span className="font-medium text-navy">{String(row[def.titleField] ?? "") || def.labelSingular}</span>
                     {columns[1] && (
                       <span className="text-sm">
-                        <FieldValue field={columns[1]} value={row[columns[1].name]} maps={maps} />
+                        <FieldValue field={columns[1]} value={columns[1].virtual && columns[1].computed ? columns[1].computed(row) : row[columns[1].name]} maps={maps} />
                       </span>
                     )}
                   </div>
                   <div className="mt-1 flex flex-wrap gap-x-3 gap-y-0.5 text-xs text-slate-500">
                     {columns.slice(2, 5).map((c) => (
                       <span key={c.name}>
-                        {c.label}: <FieldValue field={c} value={row[c.name]} maps={maps} />
+                        {c.label}: <FieldValue field={c} value={c.virtual && c.computed ? c.computed(row) : row[c.name]} maps={maps} />
                       </span>
                     ))}
                   </div>
@@ -130,7 +130,7 @@ export function EntityList({ entity, fixedFilter, newPrefill, embedded, limit }:
                   <tr key={row.id} className="cursor-pointer hover:bg-slate-50" onClick={() => router.push(viewHref(entity, row.id))}>
                     {columns.map((c) => (
                       <Td key={c.name} className={c.name === def.titleField ? "font-medium text-navy" : undefined}>
-                        <FieldValue field={c} value={row[c.name]} maps={maps} />
+                        <FieldValue field={c} value={c.virtual && c.computed ? c.computed(row) : row[c.name]} maps={maps} />
                       </Td>
                     ))}
                   </tr>

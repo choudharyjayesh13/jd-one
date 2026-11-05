@@ -1,0 +1,12 @@
+{
+  "name": "jd-one-android",
+  "private": true,
+  "description": "JD One Android app: the live app (app.myjdgroup.com) plus background duty location. Built in GitHub Actions (.github/workflows/android-apk.yml).",
+  "dependencies": {
+    "@capacitor/android": "latest",
+    "@capacitor/app": "latest",
+    "@capacitor/cli": "latest",
+    "@capacitor/core": "latest",
+    "@capacitor-community/background-geolocation": "latest"
+  }
+}

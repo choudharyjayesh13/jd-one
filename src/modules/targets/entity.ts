@@ -20,6 +20,8 @@ export const targets = defineEntity({
     { name: "business_unit_id", label: "Business unit", type: "relation", entity: "business-units", required: true },
     { name: "month", label: "Month (yyyy-mm)", type: "text", required: true, default: currentMonth, placeholder: "2026-09" },
     { name: "target_amount", label: "Target sales", type: "money", required: true, min: 0 },
+    { name: "occupancy_target", label: "Occupancy target %", type: "number", min: 0, max: 100, default: 70 },
+    { name: "adr_target", label: "ADR target (avg rate per room night)", type: "money", min: 0, help: "Leave blank to calculate from sales and occupancy" },
   ],
-  listColumns: ["month", "business_unit_id", "target_amount"],
+  listColumns: ["month", "business_unit_id", "target_amount", "occupancy_target", "adr_target"],
 });
