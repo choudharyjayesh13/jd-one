@@ -14,13 +14,13 @@
 //   ANTHROPIC_API_KEY   Claude (preferred when set)
 //   JD_MODEL            optional, default claude-sonnet-5-5
 //   GEMINI_API_KEY      Google Gemini (free tier) — used when there is no Claude key
-//   GEMINI_MODEL        optional, default gemini-flash-latest
+//   GEMINI_MODEL        optional, default gemini-flash-lite-latest (bigger free daily quota)
 // SUPABASE_URL and SUPABASE_ANON_KEY are provided by Supabase automatically.
 
 import { createClient } from "npm:@supabase/supabase-js@2";
 
 const MODEL = Deno.env.get("JD_MODEL") ?? "claude-sonnet-5-5";
-const GEMINI_MODEL = Deno.env.get("GEMINI_MODEL") ?? "gemini-flash-latest";
+const GEMINI_MODEL = Deno.env.get("GEMINI_MODEL") ?? "gemini-flash-lite-latest";
 const SCHEMA = Deno.env.get("JD_SCHEMA") ?? "jdone";
 const MAX_MESSAGES = 60;
 
