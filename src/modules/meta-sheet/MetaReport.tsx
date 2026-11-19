@@ -109,7 +109,7 @@ export function MetaReport() {
             <Tile label="Follow-ups overdue" value={String(all.overdue)} warn={all.overdue > 0} />
           </div>
 
-          <Table title="By campaign" first="Campaign tab" rows={byTab} />
+          <Table title="By campaign" first="Campaign tab" rows={byTab} link={(n) => `/pipeline/?c=${encodeURIComponent(n)}`} />
           <Table title="By ad" first="Ad" rows={byAd} />
           <Table title="By person" first="Person" rows={byPerson} />
           <Table title="By package chosen in the form" first="Package" rows={byPackage} />
@@ -129,7 +129,7 @@ function Tile({ label, value, sub, warn, gold }: { label: string; value: string;
   );
 }
 
-function Table({ title, first, rows }: { title: string; first: string; rows: { name: string; t: Totals }[] }) {
+function Table({ title, first, rows, link }: { title: string; first: string; rows: { name: string; t: Totals }[]; link?: (name: string) => string }) {
   return (
     <section className="overflow-hidden rounded-xl border border-line bg-white">
       <h2 className="jd-serif border-b border-line px-5 py-3 text-lg font-semibold text-navy">{title}</h2>
@@ -151,7 +151,7 @@ function Table({ title, first, rows }: { title: string; first: string; rows: { n
           <tbody>
             {rows.map(({ name, t }) => (
               <tr key={name} className="border-b border-line/60 last:border-0">
-                <td className="px-5 py-2 font-medium text-navy">{name}</td>
+                <td className="px-5 py-2 font-medium text-navy">{link ? <Link href={link(name)} className="underline decoration-[#c9a54c] underline-offset-4 hover:text-[#9a7b2f]">{name}</Link> : name}</td>
                 <td className="px-3 py-2 text-right tabular-nums">{t.leads}</td>
                 <td className={cn("px-3 py-2 text-right tabular-nums", t.notCalled ? "text-rose-700" : "text-slate-400")}>{t.notCalled}</td>
                 <td className="px-3 py-2 text-right tabular-nums">{pct(t.talked, t.leads)}</td>

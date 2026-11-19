@@ -8,14 +8,16 @@ import { useList } from "@/core/ui/hooks";
 import { cn } from "@/core/ui/cn";
 import { calendarTodayISO } from "@/core/format";
 import { LEAD_STAGES, STAGE_GUIDE } from "@/modules/leads/options";
+import { campaignLabel, inCampaign } from "./CampaignBar";
 
 const ORDER: Record<string, number> = Object.fromEntries(LEAD_STAGES.map((s, i) => [s, i]));
 const OLD: Record<string, string> = { Proposal: "Quote shared", Negotiation: "Quote shared", "On Hold": "Nurture" };
 const STEPS = ["New", "Contact attempted", "Contacted", "Qualified", "Quote shared", "Confirmation pending", "Won"] as const;
 const LABEL: Record<string, string> = { New: "Leads in", "Contact attempted": "Contact attempted", Contacted: "Spoke to guest", Qualified: "Qualified", "Quote shared": "Quote shared", "Confirmation pending": "Ready to book", Won: "Won — booked" };
 
-export function Funnel({ who }: { who: string }) {
-  const { rows: leads } = useList("leads");
+export function Funnel({ who, campaign = "" }: { who: string; campaign?: string }) {
+  const { rows: allLeads } = useList("leads");
+  const leads = allLeads.filter((l) => inCampaign(l, campaign));
   const { rows: history } = useList("lead-stage-history");
   const [period, setPeriod] = useState<"month" | "all">("month");
   const month = calendarTodayISO().slice(0, 7);
@@ -41,7 +43,7 @@ export function Funnel({ who }: { who: string }) {
     <section className="overflow-hidden rounded-2xl border border-line bg-white shadow-sm">
       <div className="flex flex-wrap items-center justify-between gap-2 bg-gradient-to-r from-navy to-indigo-700 px-4 py-3 text-white">
         <div>
-          <h2 className="font-semibold">Sales funnel</h2>
+          <h2 className="font-semibold">Sales funnel{campaign ? ` · ${campaignLabel(campaign)}` : ""}</h2>
           <p className="text-xs opacity-80">Call → qualify → approved quote → advance → won. Push every lead one step down today.</p>
         </div>
         <div className="flex rounded-xl bg-white/15 p-0.5 text-xs">

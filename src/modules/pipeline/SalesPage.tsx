@@ -8,6 +8,7 @@ import { DealsBoard } from "./DealsBoard";
 import { EodBoard } from "./EodBoard";
 import { Funnel } from "./Funnel";
 import { RevenueTargets, TargetStrip } from "./RevenueTargets";
+import { CampaignBar, readCampaign, writeCampaign } from "./CampaignBar";
 
 type Tab = "leads" | "deals" | "eod" | "targets";
 const TABS: [Tab, string][] = [["leads", "🧲 New leads"], ["deals", "🤝 Customer deals"], ["eod", "📊 Daily EOD"], ["targets", "💰 Revenue targets"]];
@@ -18,6 +19,11 @@ export function SalesPage() {
   const q = typeof window !== "undefined" ? new URLSearchParams(window.location.search).get("tab") : null;
   const [tab, setTab] = useState<Tab>(q === "deals" || q === "eod" || q === "targets" ? q : "leads");
   const [mineOnly, setMineOnly] = useState(user.role === "marketing");
+  const [campaign, setCampaignState] = useState(readCampaign);
+  const setCampaign = (c: string) => {
+    setCampaignState(c);
+    writeCampaign(c);
+  };
 
   return (
     <div className="space-y-5 pb-10">
@@ -32,8 +38,9 @@ export function SalesPage() {
         )}
       </div>
       {tab !== "targets" && <TargetStrip onOpen={() => setTab("targets")} />}
-      {tab === "leads" && <Funnel who={mineOnly ? me : ""} />}
-      {tab === "leads" ? <Pipeline /> : tab === "deals" ? <DealsBoard /> : tab === "eod" ? <EodBoard /> : <RevenueTargets />}
+      {tab === "leads" && <CampaignBar value={campaign} onChange={setCampaign} />}
+      {tab === "leads" && <Funnel who={mineOnly ? me : ""} campaign={campaign} />}
+      {tab === "leads" ? <Pipeline campaign={campaign} /> : tab === "deals" ? <DealsBoard /> : tab === "eod" ? <EodBoard /> : <RevenueTargets />}
     </div>
   );
 }

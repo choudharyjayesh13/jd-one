@@ -19,12 +19,13 @@ import type { Row } from "@/core/schema/types";
 import { LEAD_QUALIFICATIONS, LEAD_STAGES, STAGE_GUIDE } from "@/modules/leads/options";
 import { followUpStatus } from "@/modules/leads/entity";
 import { useIsSalesSeat } from "@/modules/night-audit/access";
+import { campaignLabel, inCampaign } from "./CampaignBar";
 
 const TONE: Record<string, string> = { Overdue: "bg-rose-100 text-rose-700", Today: "bg-amber-100 text-amber-800", "Call now": "bg-orange-100 text-orange-700", Upcoming: "bg-emerald-50 text-emerald-700", "Not set": "bg-slate-100 text-slate-500", Closed: "bg-slate-100 text-slate-400" };
 const QTONE: Record<string, string> = { Hot: "bg-rose-500 text-white", Warm: "bg-amber-400 text-white", Cold: "bg-sky-200 text-sky-800", Unqualified: "bg-slate-200 text-slate-600" };
 const APPROVERS = ["owner", "manager"];
 
-export function Pipeline() {
+export function Pipeline({ campaign = "" }: { campaign?: string }) {
   const user = useUser();
   const { toast } = useToast();
   const { rows: leads, loading } = useList("leads");
@@ -33,7 +34,6 @@ export function Pipeline() {
   const canApprove = APPROVERS.includes(String(user.role));
   const [who, setWho] = useState<string>(user.role === "marketing" && me ? me : "");
   const [q, setQ] = useState("");
-  const [tab, setTab] = useState("");
   const salesSeat = useIsSalesSeat(user);
   useEffect(() => {
     if (salesSeat && !user.post && me) setWho(me);
@@ -47,8 +47,7 @@ export function Pipeline() {
   if (loading) return <Loading />;
   const name = (id: unknown) => String(staff.find((s) => s.id === id)?.name ?? "Unassigned");
   const t = q.trim().toLowerCase();
-  const tabs = [...new Set(leads.map((l) => String(l.sheet_tab ?? "")).filter(Boolean))].sort();
-  const mine = leads.filter((l) => (!tab || (tab === "other" ? !l.sheet_tab : l.sheet_tab === tab)) && (!who || (who === "none" ? !l.assigned_to : l.assigned_to === who)) && (!t || `${l.name} ${l.phone} ${l.requirement ?? ""} ${l.campaign ?? ""} ${l.city ?? ""}`.toLowerCase().includes(t)));
+  const mine = leads.filter((l) => inCampaign(l, campaign) && (!who || (who === "none" ? !l.assigned_to : l.assigned_to === who)) && (!t || `${l.name} ${l.phone} ${l.requirement ?? ""} ${l.campaign ?? ""} ${l.city ?? ""}`.toLowerCase().includes(t)));
   const open = mine.filter((l) => l.stage !== "Won" && l.stage !== "Lost");
   const fu = (s: string) => open.filter((l) => followUpStatus(l) === s);
   const overdue = fu("Overdue"), today = fu("Today"), callNow = fu("Call now");
@@ -177,7 +176,7 @@ export function Pipeline() {
     <div className="space-y-5">
       <header className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold text-navy">Sales pipeline</h1>
+          <h1 className="text-2xl font-bold text-navy">Sales pipeline{campaign ? ` · ${campaignLabel(campaign)}` : ""}</h1>
           <p className="text-sm text-slate-500">Every enquiry in one place. Update the stage, next action and follow-up after every call — no lead without a next step.</p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
@@ -187,13 +186,6 @@ export function Pipeline() {
             <option value="none">Unassigned</option>
             {callers.map((s) => <option key={s.id as string} value={s.id as string}>{String(s.name)}{s.id === me ? " (me)" : ""}</option>)}
           </select>
-          {tabs.length > 0 && (
-            <select value={tab} onChange={(e) => setTab(e.target.value)} className="rounded-xl border border-line bg-white px-3 py-2 text-sm" aria-label="Campaign">
-              <option value="">All sources</option>
-              {tabs.map((t) => <option key={t} value={t}>{t}</option>)}
-              <option value="other">Not from Meta sheet</option>
-            </select>
-          )}
           <label className="flex items-center gap-1 text-sm text-slate-600"><input type="checkbox" checked={showClosed} onChange={(e) => setShowClosed(e.target.checked)} /> Won / Lost</label>
           <button type="button" onClick={() => setGuide(!guide)} className="flex items-center gap-1 rounded-xl border border-line bg-white px-3 py-2 text-sm text-slate-600"><Info className="h-4 w-4" />Stage rules</button>
           <Link href={newHref("leads", { stage: "New", assigned_to: me || undefined })} className="flex items-center gap-1 rounded-xl bg-navy px-3 py-2 text-sm font-semibold text-white"><Plus className="h-4 w-4" />New lead</Link>

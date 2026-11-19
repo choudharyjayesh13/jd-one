@@ -1445,7 +1445,7 @@ alter table jdone.leads add column if not exists form_when text;
 alter table jdone.leads add column if not exists form_package text;
 create index if not exists leads_sheet_tab_idx on jdone.leads (sheet_tab) where sheet_tab is not null;
 
--- 3. The sheet link (key + counters) -------------------------------------------------------------
+-- 3. The sheet link (key + counters + which campaign tabs are switched off) ------------------------
 create table if not exists jdone.sheet_links (
   id text primary key,
   secret text not null default replace(gen_random_uuid()::text || gen_random_uuid()::text, '-', ''),
@@ -1457,6 +1457,8 @@ create table if not exists jdone.sheet_links (
   last_out_at timestamptz,
   created_at timestamptz not null default now()
 );
+alter table jdone.sheet_links add column if not exists skip_tabs text[] not null default '{"Campaign 1"}';
+alter table jdone.sheet_links add column if not exists tabs_seen jsonb not null default '{}';
 alter table jdone.sheet_links enable row level security;
 drop policy if exists "posts read sheet link" on jdone.sheet_links;
 create policy "posts read sheet link" on jdone.sheet_links for select to authenticated
@@ -1564,7 +1566,7 @@ begin
   for r in select value from jsonb_array_elements(p_rows) loop
     ph := jdone.norm_phone(r ->> 'phone');
     mid := nullif(trim(coalesce(r ->> 'meta_id', '')), '');
-    if ph = '' then n_skip := n_skip + 1; continue; end if;
+    if ph = '' or (r ->> 'tab') = any (link.skip_tabs) then n_skip := n_skip + 1; continue; end if;
 
     ex := null;
     if mid is not null then select * into ex from jdone.leads where external_id = mid limit 1; end if;
@@ -1680,3 +1682,33 @@ grant execute on function jdone.sheet_ingest_leads(text, jsonb) to anon, authent
 grant execute on function jdone.sheet_lead_status(text) to anon, authenticated;
 grant execute on function jdone.rotate_sheet_key() to authenticated;
 grant select on jdone.sheet_links to authenticated;
+
+-- 7. Which campaign tabs come into JD One (switched on/off in Sales → Meta sheet link) -------------
+create or replace function jdone.sheet_config(p_key text, p_tabs jsonb) returns jsonb
+language plpgsql security definer set search_path to jdone, public as $$
+declare link jdone.sheet_links;
+begin
+  select * into link from jdone.sheet_links where id = 'meta-leads';
+  if link.id is null or coalesce(p_key, '') = '' or p_key <> link.secret then
+    raise exception 'Wrong key' using errcode = '28000';
+  end if;
+  if jsonb_typeof(p_tabs) = 'object' then
+    update jdone.sheet_links set tabs_seen = p_tabs where id = 'meta-leads';
+  end if;
+  return jsonb_build_object('skip', to_jsonb(link.skip_tabs));
+end $$;
+
+create or replace function jdone.set_sheet_tab(p_tab text, p_on boolean) returns void
+language plpgsql security definer set search_path to jdone, public as $$
+begin
+  if not (jdone.is_chairman() or jdone.is_director()) then raise exception 'Only the Chairman or the Director can change this'; end if;
+  update jdone.sheet_links
+     set skip_tabs = case when p_on then array_remove(skip_tabs, p_tab)
+                          else (select array_agg(distinct x) from unnest(array_append(skip_tabs, p_tab)) x) end
+   where id = 'meta-leads';
+end $$;
+
+revoke all on function jdone.sheet_config(text, jsonb) from public;
+revoke all on function jdone.set_sheet_tab(text, boolean) from public;
+grant execute on function jdone.sheet_config(text, jsonb) to anon, authenticated;
+grant execute on function jdone.set_sheet_tab(text, boolean) to authenticated;

@@ -8,6 +8,7 @@
  * The database checks everything again (jdone.sheet_links is readable only by the two posts).
  */
 import { useCallback, useEffect, useState } from "react";
+import NextLink from "next/link";
 import { Copy, Download, Eye, EyeOff, KeyRound, RefreshCw, UserCog } from "lucide-react";
 import { getStore, getSupabaseClient } from "@/core/data";
 import type { Row } from "@/core/schema/types";
@@ -35,7 +36,7 @@ const STAGE_WORDS: [string, string][] = [
   ["Lost", "Lost"],
 ];
 
-type Link = { secret: string; last_in_at: string | null; last_in_count: number | null; total_in: number; last_out_at: string | null };
+type Link = { secret: string; last_in_at: string | null; last_in_count: number | null; total_in: number; last_out_at: string | null; skip_tabs: string[] | null; tabs_seen: Record<string, { rows?: number }> | null };
 
 export function MetaSheetLink() {
   const user = useUser();
@@ -53,7 +54,7 @@ export function MetaSheetLink() {
   const loadLink = useCallback(async () => {
     const client = getSupabaseClient();
     if (!client) return setLinkErr("The sheet link works only in the live app.");
-    const { data, error } = await client.from("sheet_links").select("secret, last_in_at, last_in_count, total_in, last_out_at").eq("id", "meta-leads").maybeSingle();
+    const { data, error } = await client.from("sheet_links").select("secret, last_in_at, last_in_count, total_in, last_out_at, skip_tabs, tabs_seen").eq("id", "meta-leads").maybeSingle();
     if (error) return setLinkErr(/relation|schema cache|does not exist/i.test(error.message) ? "The database step for the sheet link has not been run yet." : error.message);
     setLink((data as Link) ?? null);
   }, []);
@@ -88,6 +89,17 @@ export function MetaSheetLink() {
       toast("Could not load the script", "error");
     }
   };
+  const switchTab = async (tab: string, on: boolean) => {
+    const client = getSupabaseClient();
+    if (!client) return;
+    const { error } = await client.rpc("set_sheet_tab", { p_tab: tab, p_on: on });
+    if (error) return toast(error.message, "error");
+    toast(on ? `${tab}: leads will come into JD One` : `${tab}: switched off – nothing comes from it`, "success");
+    void loadLink();
+  };
+  const skip = (link?.skip_tabs ?? []).map((t) => t.toLowerCase());
+  const sheetTabs = [...new Set([...Object.keys(link?.tabs_seen ?? {}), ...(link?.skip_tabs ?? []), ...tabs])].sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
+
   const rotate = async () => {
     const client = getSupabaseClient();
     if (!client) return;
@@ -161,6 +173,55 @@ export function MetaSheetLink() {
           </>
         )}
       </section>
+
+      {/* Campaign tabs */}
+      {link && (
+        <section className="rounded-xl border border-line bg-white p-5">
+          <h2 className="jd-serif text-xl font-semibold text-navy">Campaign tabs</h2>
+          <p className="mt-1 text-sm text-slate-600">Every tab in the sheet whose name starts with “Campaign”. Each one that is on gets its own pipeline in Sales pipeline. A new tab shows here by itself and is on.</p>
+          <div className="mt-4 overflow-x-auto">
+            <table className="w-full min-w-[560px] text-sm">
+              <thead>
+                <tr className="border-b border-line text-left text-xs uppercase tracking-wide text-slate-500">
+                  <th className="py-2 pr-3 font-medium">Tab</th>
+                  <th className="py-2 pr-3 text-right font-medium">Rows in sheet</th>
+                  <th className="py-2 pr-3 text-right font-medium">Leads in JD One</th>
+                  <th className="py-2 pr-3 font-medium">Status</th>
+                  <th className="py-2 font-medium" />
+                </tr>
+              </thead>
+              <tbody>
+                {sheetTabs.map((t) => {
+                  const off = skip.includes(t.toLowerCase());
+                  const rowsIn = link.tabs_seen?.[t]?.rows;
+                  const inJd = fromSheet.filter((l) => l.sheet_tab === t).length;
+                  return (
+                    <tr key={t} className="border-b border-line/60 last:border-0">
+                      <td className="py-2.5 pr-3 font-medium text-navy">{t}</td>
+                      <td className="py-2.5 pr-3 text-right tabular-nums">{rowsIn ?? "—"}</td>
+                      <td className="py-2.5 pr-3 text-right tabular-nums">{inJd}</td>
+                      <td className="py-2.5 pr-3">{off ? <span className="text-slate-500">Switched off</span> : <span className="font-medium text-emerald-700">Coming in</span>}</td>
+                      <td className="py-2.5 text-right">
+                        <div className="flex justify-end gap-2">
+                          {!off && inJd > 0 && (
+                            <NextLink href={`/pipeline/?c=${encodeURIComponent(t)}`} className="rounded-lg border border-line px-3 py-1.5 text-xs font-medium text-navy hover:bg-slate-50">
+                              Open pipeline
+                            </NextLink>
+                          )}
+                          <Button size="sm" variant="secondary" onClick={() => void switchTab(t, off)}>
+                            {off ? "Switch on" : "Switch off"}
+                          </Button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+          {!Object.keys(link.tabs_seen ?? {}).length && <p className="mt-3 text-xs text-slate-500">The list fills in after the sheet is connected (step below).</p>}
+        </section>
+      )}
 
       {/* Steps */}
       <section className="rounded-xl border border-line bg-white p-5">
