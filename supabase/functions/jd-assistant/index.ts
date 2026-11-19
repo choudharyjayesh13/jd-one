@@ -113,6 +113,7 @@ interface Ctx {
   now?: string;
   path?: string;
   catalogue?: string;
+  jd_level?: number;
 }
 
 function systemPrompt(c: Ctx): string {
@@ -123,6 +124,7 @@ Who you are talking to: ${c.name ?? "a staff member"} — ${who}.
 ${c.post ? "They have full access to every module (Chairman/Director). Deletes by the Director are logged for the Chairman." : "Their access is limited to the modules listed below. Never try modules that are not listed; if they ask for something outside their access, say politely that their login does not have that right and that they can ask their manager or the Director."}
 Property: ${c.property ?? "The Udaisarovar"}. Business date today: ${c.today ?? "unknown"}. Current time (IST): ${c.now ?? "unknown"}. They are on page: ${c.path ?? "/"}.
 
+${!c.post && (c.jd_level ?? 0) < 2 ? "For this person JD is set to View only: you may look things up and answer, but you must not add, change or delete anything. If they ask for an entry, say their JD access is view-only and the Chairman or Director can raise it in Team access.\n" : ""}${!c.post && c.jd_level === 2 ? "For this person JD may add and update entries but not delete.\n" : ""}
 Modules this person can use (name — label — what they may do):
 ${c.catalogue ?? "(none)"}
 

@@ -18,6 +18,8 @@ export interface ModuleDef {
   soon?: boolean;
   /** Menu sub-group: items with the same group sit under one heading that opens (e.g. Rates). */
   group?: string;
+  /** One line under the module in Team access (what the levels mean here). */
+  help?: string;
 }
 
 export interface Department {
@@ -204,6 +206,19 @@ export const DEPARTMENTS: Department[] = [
     modules: [
       { key: "hotel-details", label: "Hotel details", href: "/hotel-details/" },
       { key: "rooms", label: "Rooms setup", entity: "rooms" },
+    ],
+  },
+  {
+    // JD, the AI assistant (19 Nov 2026). Not a menu item: the level decides what JD may do for this person,
+    // and JD never goes beyond the person's own module levels above. Chairman and Director always have JD in full.
+    id: "jd-ai",
+    label: "JD assistant",
+    modules: [
+      {
+        key: "jd-assistant",
+        label: "JD AI assistant",
+        help: "No access: JD hidden · View: JD answers and finds records · Edit: JD can also add and update entries · Manage: JD can also delete (with confirmation). Always limited to this person's own module access.",
+      },
     ],
   },
   {

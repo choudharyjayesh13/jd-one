@@ -6,7 +6,7 @@
 import { getSupabaseClient } from "@/core/data";
 import { calendarTodayISO, TIMEZONE, todayISO } from "@/core/format";
 import type { AuthUser } from "@/core/auth/AuthProvider";
-import { catalogue, runTool, type ToolEnv } from "./tools";
+import { catalogue, jdLevel, runTool, type ToolEnv } from "./tools";
 
 export type Block =
   | { type: "text"; text: string }
@@ -46,6 +46,7 @@ export async function askJD(
     now,
     path: env.path,
     catalogue: catalogue(user),
+    jd_level: jdLevel(user),
   };
 
   const msgs = [...history];

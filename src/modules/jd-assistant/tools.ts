@@ -15,6 +15,12 @@ import { deleteRecord, recordTitle, saveRecord, validate } from "@/core/data/ser
 import { entities, findEntity } from "@/core/schema/registry";
 import type { EntityDef, FieldValues, Row } from "@/core/schema/types";
 
+/** What Team access lets JD do for this person (module "jd-assistant"); Chairman and Director: 3. */
+export function jdLevel(user: AuthUser): number {
+  if (user.post) return 3;
+  return moduleLevel("jd-assistant") ?? 0;
+}
+
 export interface ToolEnv {
   user: AuthUser;
   navigate: (path: string) => void;
@@ -26,13 +32,14 @@ type Input = Record<string, unknown>;
 
 /** Modules this person may at least view, with what they may do. Sent to JD as its catalogue. */
 export function catalogue(user: AuthUser): string {
+  const jd = jdLevel(user);
   return entities
     .filter((e) => canRead(user.role, e))
     .map((e) => {
       const can = ["view"];
-      if (canCreate(user.role, e)) can.push("add");
-      if (canUpdate(user.role, e)) can.push("edit");
-      if (canDelete(user.role, e)) can.push("delete");
+      if (jd >= 2 && canCreate(user.role, e)) can.push("add");
+      if (jd >= 2 && canUpdate(user.role, e)) can.push("edit");
+      if (jd >= 3 && canDelete(user.role, e)) can.push("delete");
       return `- ${e.name} — ${e.label} — ${can.join(", ")}`;
     })
     .join("\n");
@@ -43,6 +50,10 @@ class NotAllowed extends Error {}
 function entityFor(user: AuthUser, name: unknown, need: "read" | "create" | "update" | "delete"): EntityDef {
   const def = findEntity(String(name ?? ""));
   if (!def || !canRead(user.role, def)) throw new NotAllowed(`Not allowed: this login cannot open "${String(name)}".`);
+  const jd = jdLevel(user);
+  if (jd < 1) throw new NotAllowed("Not allowed: JD is not switched on for this login.");
+  if ((need === "create" || need === "update") && jd < 2) throw new NotAllowed("Not allowed: for this login JD may only look things up, not make or change entries (Team access → JD assistant).");
+  if (need === "delete" && jd < 3) throw new NotAllowed("Not allowed: for this login JD may not delete entries (Team access → JD assistant).");
   const ok = need === "read" || (need === "create" ? canCreate : need === "update" ? canUpdate : canDelete)(user.role, def);
   if (!ok) throw new NotAllowed(`Not allowed: this login can only view ${def.label}, not ${need} entries.`);
   return def;

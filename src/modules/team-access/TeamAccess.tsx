@@ -362,6 +362,7 @@ export function TeamAccess() {
                                   <span className={cn("text-[15px]", lvl === 0 ? "text-[#9a917f]" : "text-[#17140f]")}>
                                     {m.label}
                                     {m.soon && <span className="ml-2 text-[9px] uppercase tracking-[0.16em] text-[#9a7128]">Coming soon</span>}
+                                    {m.help && <span className="mt-0.5 block max-w-md text-xs leading-snug text-[#6b6255]">{m.help}</span>}
                                   </span>
                                   <LevelPicker value={lvl} label={m.label} onChange={(l) => set({ [m.key]: l })} />
                                 </div>

@@ -10,6 +10,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { ArrowUp, Check, Loader2, Mic, RotateCcw, X, AlertTriangle } from "lucide-react";
 import { useAuth, useUser } from "@/core/auth/AuthProvider";
 import { askJD, type ApiMessage, type Step } from "./api";
+import { jdLevel } from "./tools";
 
 type Phase = "closed" | "summon" | "open" | "leaving";
 
@@ -224,6 +225,9 @@ export function JdAssistant({ property }: { property: string }) {
   const canListen = typeof window !== "undefined" && ("webkitSpeechRecognition" in window || "SpeechRecognition" in window);
 
   const first = user.name.split(" ")[0];
+
+  // Team access → JD assistant: No access hides JD for this person (Chairman and Director always have it).
+  if (jdLevel(user) < 1) return null;
 
   return (
     <>
