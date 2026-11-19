@@ -51,31 +51,19 @@ function Orb({ size = 64, busy = false }: { size?: number; busy?: boolean }) {
     <span className={`jd-orb ${busy ? "jd-orb-busy" : ""}`} style={{ width: size, height: size }} aria-hidden>
       <svg viewBox="0 0 100 100" width={size} height={size}>
         <defs>
-          <radialGradient id="jdg-core" cx="38%" cy="32%" r="70%">
-            <stop offset="0%" stopColor="#ffe2b8" />
-            <stop offset="35%" stopColor="#ffa24a" />
-            <stop offset="75%" stopColor="#ee6f12" />
-            <stop offset="100%" stopColor="#b54500" />
-          </radialGradient>
-          <linearGradient id="jdg-ring" x1="0" y1="0" x2="1" y2="1">
-            <stop offset="0%" stopColor="#ffd28a" />
-            <stop offset="100%" stopColor="#ff7a1a" stopOpacity="0.2" />
+          <linearGradient id="jdg-core" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0%" stopColor="#f59a4a" />
+            <stop offset="100%" stopColor="#c8560c" />
           </linearGradient>
         </defs>
+        <circle cx="50" cy="50" r="48" fill="url(#jdg-core)" />
+        <circle cx="50" cy="50" r="42.5" fill="none" stroke="#fbe3c4" strokeOpacity=".55" strokeWidth="1" />
         <g className="jd-ring">
-          <circle cx="50" cy="50" r="46" fill="none" stroke="url(#jdg-ring)" strokeWidth="2" strokeDasharray="10 7" />
+          <circle cx="50" cy="50" r="42.5" fill="none" stroke="#fff6ea" strokeWidth="1.6" strokeLinecap="round" strokeDasharray="22 245" />
         </g>
-        <g className="jd-ring2">
-          <circle cx="50" cy="50" r="40" fill="none" stroke="#ffd9a8" strokeOpacity=".55" strokeWidth="1" strokeDasharray="2 9" />
-        </g>
-        <circle cx="50" cy="50" r="33" fill="url(#jdg-core)" />
-        <ellipse cx="40" cy="36" rx="12" ry="7" fill="#fff" opacity=".35" />
-        <text x="50" y="58" textAnchor="middle" fontSize="23" fontWeight="800" fill="#fff" fontFamily="-apple-system, Segoe UI, Roboto, sans-serif" letterSpacing="1">
+        <text x="50" y="61" textAnchor="middle" fontSize="31" fill="#fffaf2" fontFamily="'Cormorant Garamond', 'Playfair Display', Georgia, 'Times New Roman', serif" fontWeight="600" letterSpacing="1.5">
           JD
         </text>
-        <circle className="jd-spark s1" cx="86" cy="22" r="2.4" fill="#ffd28a" />
-        <circle className="jd-spark s2" cx="14" cy="70" r="1.8" fill="#fff1dc" />
-        <circle className="jd-spark s3" cx="80" cy="84" r="1.6" fill="#ffb066" />
       </svg>
     </span>
   );
@@ -244,18 +232,7 @@ export function JdAssistant({ property }: { property: string }) {
       {/* Floating genie */}
       {phase === "closed" && (
         <button type="button" onClick={open} className="jd-fab print:hidden" aria-label="Open JD assistant">
-          <span className="jd-smoke" aria-hidden>
-            <svg viewBox="0 0 40 60" width="34" height="50">
-              <path d="M20 2 C 34 14, 6 22, 20 34 S 30 50, 14 58" fill="none" stroke="url(#jdg-tail)" strokeWidth="7" strokeLinecap="round" />
-              <defs>
-                <linearGradient id="jdg-tail" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="#ff9a3d" stopOpacity=".85" />
-                  <stop offset="100%" stopColor="#ff9a3d" stopOpacity="0" />
-                </linearGradient>
-              </defs>
-            </svg>
-          </span>
-          <Orb size={62} />
+          <Orb size={58} />
           <span className="jd-fab-tip">Ask JD</span>
         </button>
       )}
@@ -270,19 +247,19 @@ export function JdAssistant({ property }: { property: string }) {
                 d="M100 100 m0 -6 a6 6 0 1 1 -1 0 M100 100 C 130 90 128 60 100 58 C 62 56 58 104 86 124 C 120 148 160 120 156 82 C 150 30 80 18 52 52 C 22 90 40 160 104 168 C 160 174 190 120 182 80"
                 fill="none"
                 stroke="#ff9a3d"
-                strokeWidth="5"
+                strokeWidth="2.5"
                 strokeLinecap="round"
               />
             </svg>
-            {Array.from({ length: 10 }).map((_, i) => (
-              <span key={i} className="jd-burst" style={{ "--a": `${i * 36}deg`, animationDelay: `${520 + (i % 3) * 40}ms` } as CSSProperties} />
+            {Array.from({ length: 6 }).map((_, i) => (
+              <span key={i} className="jd-burst" style={{ "--a": `${i * 60}deg`, animationDelay: "560ms" } as CSSProperties} />
             ))}
             <div className="jd-summon-orb">
               <Orb size={84} busy />
             </div>
           </div>
           <div className="jd-summon-hello">
-            Namaste {first}, <b>JD</b> haazir hai ✨
+            {user.post ? "Yes sir, my lord." : `At your service, ${first}.`}
           </div>
         </div>
       )}
@@ -294,9 +271,9 @@ export function JdAssistant({ property }: { property: string }) {
             <Orb size={42} busy={busy} />
             <div className="min-w-0 flex-1">
               <div className="flex items-center gap-2 text-[16px] font-semibold text-white">
-                JD <span className="rounded-full bg-white/15 px-2 py-[1px] text-[10px] font-medium uppercase tracking-[0.14em]">AI</span>
+                <span className="jd-a-serif text-[19px] tracking-[0.08em]">JD</span>
               </div>
-              <div className="truncate text-[11.5px] text-white/80">{busy ? "Kaam chal raha hai…" : user.post ? "Full access · always on" : "Your JD One assistant · always on"}</div>
+              <div className="truncate text-[11.5px] text-white/80">{busy ? "Working on it…" : "Your assistant · always on"}</div>
             </div>
             {items.length > 0 && (
               <button type="button" onClick={reset} className="jd-icon" aria-label="New chat" title="New chat">
@@ -317,10 +294,8 @@ export function JdAssistant({ property }: { property: string }) {
             ) : items.length === 0 ? (
               <div className="jd-empty">
                 <Orb size={76} />
-                <p className="mt-4 text-[17px] font-semibold text-[#17140f]">Hukum {first}, kya kaam hai?</p>
-                <p className="mt-1 max-w-[280px] text-[13px] text-[#6b6255]">
-                  Entries, records, reports, leave, guests — bas likhiye ya boliye. Main sirf wahi karunga jo aapke login ko allowed hai.
-                </p>
+                <p className="jd-a-serif mt-5 text-[22px] font-semibold leading-tight text-[#17140f]">{user.post ? "Yes sir, my lord." : `Yes, ${first}.`}</p>
+                <p className="mt-1 text-[14px] text-[#6b6255]">What shall I do for you today?</p>
                 <div className="mt-5 flex flex-wrap justify-center gap-2">
                   {suggestionsFor(user.post).map((s) => (
                     <button key={s} type="button" onClick={() => send(s)} className="jd-chip">
@@ -360,7 +335,7 @@ export function JdAssistant({ property }: { property: string }) {
                             <span />
                             <span />
                             <span />
-                            <em>JD soch raha hai</em>
+                            <em>Thinking</em>
                           </div>
                         )
                       )}
@@ -406,17 +381,17 @@ export function JdAssistant({ property }: { property: string }) {
                   void send();
                 }
               }}
-              placeholder={listening ? "Bol rahe hain… sun raha hoon" : "JD se kahiye…"}
+              placeholder={listening ? "Listening…" : "Ask JD anything"}
               disabled={mode === "local" || !!ask}
               className="jd-input"
             />
             {canListen && (
               <button type="button" onClick={listen} className={`jd-mic ${listening ? "on" : ""}`} aria-label="Speak">
-                <Mic className="h-[18px] w-[18px]" />
+                <Mic className="h-[19px] w-[19px]" strokeWidth={1.75} />
               </button>
             )}
             <button type="submit" disabled={!text.trim() || busy || mode === "local"} className="jd-send" aria-label="Send">
-              <ArrowUp className="h-5 w-5" />
+              <ArrowUp className="h-[18px] w-[18px]" strokeWidth={2.25} />
             </button>
           </form>
         </div>
@@ -426,82 +401,72 @@ export function JdAssistant({ property }: { property: string }) {
 }
 
 const CSS = `
-.jd-orb{display:inline-flex;flex-shrink:0;border-radius:9999px;filter:drop-shadow(0 6px 18px rgba(238,111,18,.45))}
-.jd-orb .jd-ring{transform-origin:50px 50px;animation:jd-spin 9s linear infinite}
-.jd-orb .jd-ring2{transform-origin:50px 50px;animation:jd-spin 14s linear infinite reverse}
-.jd-orb-busy .jd-ring{animation-duration:1.4s}
-.jd-orb-busy .jd-ring2{animation-duration:2.2s}
-.jd-orb-busy{animation:jd-pulse 1.2s ease-in-out infinite}
-.jd-spark{animation:jd-twinkle 2.4s ease-in-out infinite}
-.jd-spark.s2{animation-delay:.8s}.jd-spark.s3{animation-delay:1.5s}
+.jd-a-serif{font-family:'Cormorant Garamond','Playfair Display',Georgia,'Times New Roman',serif}
+.jd-orb{display:inline-flex;flex-shrink:0;border-radius:9999px;box-shadow:0 4px 14px rgba(200,86,12,.28)}
+.jd-orb .jd-ring{transform-origin:50px 50px;opacity:0}
+.jd-orb-busy .jd-ring{opacity:1;animation:jd-spin 1.3s linear infinite}
 
-.jd-fab{position:fixed;right:16px;bottom:calc(76px + env(safe-area-inset-bottom));z-index:45;display:flex;align-items:center;justify-content:center;border-radius:9999px;animation:jd-bob 3.2s ease-in-out infinite;-webkit-tap-highlight-color:transparent}
+.jd-fab{position:fixed;right:16px;bottom:calc(76px + env(safe-area-inset-bottom));z-index:45;display:flex;align-items:center;justify-content:center;border-radius:9999px;transition:transform .2s;-webkit-tap-highlight-color:transparent}
 @media (min-width:1024px){.jd-fab{right:28px;bottom:28px}}
-.jd-fab:active{transform:scale(.94)}
-.jd-fab::before{content:"";position:absolute;inset:-6px;border-radius:9999px;background:radial-gradient(circle,rgba(255,138,40,.35),transparent 70%);animation:jd-glow 2.6s ease-in-out infinite}
-.jd-smoke{position:absolute;bottom:-34px;right:6px;opacity:.9;animation:jd-sway 2.6s ease-in-out infinite;transform-origin:top center}
-.jd-fab-tip{position:absolute;right:72px;white-space:nowrap;background:#17140f;color:#fff;font-size:12px;font-weight:600;padding:6px 11px;border-radius:9999px;opacity:0;transform:translateX(6px);transition:.2s;pointer-events:none}
+.jd-fab:hover{transform:translateY(-2px)}
+.jd-fab:active{transform:scale(.95)}
+.jd-fab::before{content:"";position:absolute;inset:-5px;border-radius:9999px;border:1px solid rgba(200,86,12,.35);animation:jd-halo 3.2s ease-out infinite}
+.jd-fab-tip{position:absolute;right:68px;white-space:nowrap;background:#17140f;color:#fff;font-size:12px;font-weight:500;padding:6px 11px;border-radius:9999px;opacity:0;transform:translateX(6px);transition:.2s;pointer-events:none}
 .jd-fab:hover .jd-fab-tip{opacity:1;transform:none}
 
 .jd-summon{position:fixed;inset:0;z-index:60;pointer-events:none}
-.jd-veil{position:absolute;inset:0;background:radial-gradient(circle at calc(100% - 50px) calc(100% - 110px),rgba(255,140,40,.28),rgba(23,20,15,.55) 60%);animation:jd-fade-in .35s ease-out both}
-.jd-summon-at{position:absolute;right:47px;bottom:calc(107px + env(safe-area-inset-bottom));width:0;height:0;animation:jd-rise 1.05s cubic-bezier(.5,0,.2,1) both}
-@media (min-width:1024px){.jd-summon-at{right:59px;bottom:59px}}
-.jd-spiral{position:absolute;left:-130px;top:-130px;stroke-dasharray:900;stroke-dashoffset:900;filter:drop-shadow(0 0 10px rgba(255,140,40,.8));animation:jd-draw 0.9s ease-out forwards,jd-spin 1.1s linear infinite;opacity:.9}
+.jd-veil{position:absolute;inset:0;background:rgba(23,20,15,.42);backdrop-filter:blur(3px);animation:jd-fade-in .35s ease-out both}
+.jd-summon-at{position:absolute;right:45px;bottom:calc(105px + env(safe-area-inset-bottom));width:0;height:0;animation:jd-rise 1.05s cubic-bezier(.5,0,.2,1) both}
+@media (min-width:1024px){.jd-summon-at{right:57px;bottom:57px}}
+.jd-spiral{position:absolute;left:-130px;top:-130px;stroke-dasharray:900;stroke-dashoffset:900;opacity:.75;animation:jd-draw .9s ease-out forwards,jd-spin 1.6s linear infinite}
 .jd-summon-orb{position:absolute;left:-42px;top:-42px;animation:jd-whirl 1.05s cubic-bezier(.4,0,.2,1) both}
-.jd-burst{position:absolute;left:-4px;top:-4px;width:8px;height:8px;border-radius:9999px;background:#ffd28a;box-shadow:0 0 12px #ffb066;opacity:0;animation:jd-burst .55s ease-out both}
-.jd-summon-hello{position:absolute;left:50%;bottom:calc(46% );transform:translateX(-50%);color:#fff;font-size:20px;text-shadow:0 2px 14px rgba(0,0,0,.4);white-space:nowrap;animation:jd-hello 1.05s ease-out both}
+.jd-burst{position:absolute;left:-3px;top:-3px;width:6px;height:6px;border-radius:9999px;background:#fbe3c4;opacity:0;animation:jd-burst .5s ease-out both}
+.jd-summon-hello{position:absolute;left:50%;bottom:46%;transform:translateX(-50%);color:#fffaf2;font-family:'Cormorant Garamond','Playfair Display',Georgia,serif;font-size:28px;font-weight:600;letter-spacing:.02em;white-space:nowrap;animation:jd-hello 1.05s ease-out both}
 
-.jd-panel{position:fixed;z-index:60;inset:8px;top:max(8px,env(safe-area-inset-top));bottom:max(8px,env(safe-area-inset-bottom));display:flex;flex-direction:column;overflow:hidden;border-radius:22px;background:#fffdf9;box-shadow:0 30px 80px rgba(23,20,15,.35),0 0 0 1px rgba(238,111,18,.25);transform-origin:calc(100% - 40px) calc(100% - 60px)}
-@media (min-width:640px){.jd-panel{inset:auto;right:24px;bottom:24px;width:410px;height:min(660px,calc(100vh - 48px))}}
-.jd-in{animation:jd-open .45s cubic-bezier(.2,.9,.25,1.15) both}
-.jd-out{animation:jd-close .3s ease-in both}
-.jd-head{display:flex;align-items:center;gap:10px;padding:12px 12px 12px 14px;background:linear-gradient(120deg,#ff8a2b,#e2600c 55%,#b84a06);position:relative;overflow:hidden}
-.jd-head::after{content:"";position:absolute;inset:0;background:linear-gradient(110deg,transparent 30%,rgba(255,255,255,.22) 50%,transparent 70%);transform:translateX(-100%);animation:jd-sheen 4.5s ease-in-out infinite}
-.jd-icon{position:relative;z-index:1;display:flex;height:38px;width:38px;align-items:center;justify-content:center;border-radius:9999px;color:#fff}
-.jd-icon:hover{background:rgba(255,255,255,.16)}
-.jd-body{flex:1;overflow-y:auto;padding:16px 14px;display:flex;flex-direction:column;gap:14px;background:radial-gradient(circle at 100% 0,rgba(255,154,61,.08),transparent 40%)}
+.jd-panel{position:fixed;z-index:60;inset:8px;top:max(8px,env(safe-area-inset-top));bottom:max(8px,env(safe-area-inset-bottom));display:flex;flex-direction:column;overflow:hidden;border-radius:22px;background:#fffdf9;box-shadow:0 24px 70px rgba(23,20,15,.28),0 0 0 1px rgba(23,20,15,.06);transform-origin:calc(100% - 40px) calc(100% - 60px)}
+@media (min-width:640px){.jd-panel{inset:auto;right:24px;bottom:24px;width:400px;height:min(640px,calc(100vh - 48px))}}
+.jd-in{animation:jd-open .42s cubic-bezier(.2,.9,.25,1.1) both}
+.jd-out{animation:jd-close .28s ease-in both}
+.jd-head{display:flex;align-items:center;gap:10px;padding:12px 10px 12px 14px;background:#17140f;border-bottom:1px solid rgba(201,162,75,.35)}
+.jd-icon{display:flex;height:38px;width:38px;align-items:center;justify-content:center;border-radius:9999px;color:rgba(255,255,255,.8)}
+.jd-icon:hover{background:rgba(255,255,255,.1);color:#fff}
+.jd-body{flex:1;overflow-y:auto;padding:18px 14px;display:flex;flex-direction:column;gap:14px}
 .jd-empty{margin:auto 0;display:flex;flex-direction:column;align-items:center;text-align:center;padding:12px 6px}
-.jd-chip{border:1px solid rgba(238,111,18,.35);background:#fff;color:#9a3d06;font-size:12.5px;padding:7px 12px;border-radius:9999px;transition:.15s}
-.jd-chip:hover{background:#fff3e6}
-.jd-me{max-width:82%;background:#17140f;color:#fff;border-radius:18px 18px 4px 18px;padding:9px 13px;font-size:14px;line-height:1.45;white-space:pre-wrap;animation:jd-pop .25s ease-out both}
-.jd-them{background:#fff;border:1px solid #efe6d8;border-radius:4px 18px 18px 18px;padding:10px 13px;font-size:14px;line-height:1.5;color:#17140f;animation:jd-pop .25s ease-out both}
-.jd-err{border-color:#fecaca;background:#fef2f2;color:#991b1b}
-.jd-step{display:flex;align-items:center;gap:6px;font-size:12px;color:#7a6a55;background:#fbf6ee;border:1px solid #f0e4d2;border-radius:9999px;padding:4px 10px;width:fit-content;max-width:100%;animation:jd-pop .2s ease-out both}
-.jd-step.running{color:#c2560a;border-color:#fdd9b5;background:linear-gradient(90deg,#fff7ef,#ffe9d4,#fff7ef);background-size:200% 100%;animation:jd-shimmer 1.2s linear infinite}
+.jd-chip{border:1px solid #e7e1d5;background:#fff;color:#3a332a;font-size:12.5px;padding:7px 12px;border-radius:9999px;transition:.15s}
+.jd-chip:hover{border-color:#c8560c;color:#c8560c}
+.jd-me{max-width:82%;background:#f3eee6;color:#17140f;border-radius:18px 18px 4px 18px;padding:9px 13px;font-size:14px;line-height:1.45;white-space:pre-wrap;animation:jd-pop .25s ease-out both}
+.jd-them{padding:2px 2px;font-size:14px;line-height:1.55;color:#17140f;animation:jd-pop .25s ease-out both}
+.jd-err{border:1px solid #fecaca;background:#fef2f2;color:#991b1b;border-radius:12px;padding:9px 12px}
+.jd-step{display:flex;align-items:center;gap:6px;font-size:12px;color:#8a7d6b;width:fit-content;max-width:100%;animation:jd-pop .2s ease-out both}
+.jd-step.running{color:#c8560c}
 .jd-step.done svg{color:#15803d}
 .jd-step.failed{color:#b45309}
-.jd-thinking{display:flex;align-items:center;gap:4px;padding:10px 4px}
-.jd-thinking span{height:7px;width:7px;border-radius:9999px;background:#ee6f12;animation:jd-dot 1s ease-in-out infinite}
+.jd-thinking{display:flex;align-items:center;gap:4px;padding:8px 2px}
+.jd-thinking span{height:6px;width:6px;border-radius:9999px;background:#c8560c;animation:jd-dot 1s ease-in-out infinite}
 .jd-thinking span:nth-child(2){animation-delay:.15s}.jd-thinking span:nth-child(3){animation-delay:.3s}
 .jd-thinking em{margin-left:6px;font-style:normal;font-size:12px;color:#9a8a75}
 .jd-confirm{border:1px solid #fed7aa;background:#fff7ed;border-radius:16px;padding:12px 14px;animation:jd-pop .25s ease-out both}
-.jd-foot{display:flex;align-items:flex-end;gap:8px;padding:10px;border-top:1px solid #efe6d8;background:#fff}
-.jd-input{flex:1;resize:none;max-height:120px;min-height:44px;border:1px solid #e7e1d5;border-radius:22px;padding:11px 15px;font-size:15px;outline:none;background:#fffdf9}
-.jd-input:focus{border-color:#ee8122;box-shadow:0 0 0 3px rgba(238,129,34,.15)}
-.jd-mic,.jd-send{display:flex;height:44px;width:44px;flex-shrink:0;align-items:center;justify-content:center;border-radius:9999px}
-.jd-mic{color:#6b6255;border:1px solid #e7e1d5}
-.jd-mic.on{color:#fff;background:#dc2626;border-color:#dc2626;animation:jd-pulse 1s infinite}
-.jd-send{color:#fff;background:linear-gradient(135deg,#ff9a3d,#e2600c);box-shadow:0 6px 16px rgba(226,96,12,.35)}
-.jd-send:disabled{opacity:.4;box-shadow:none}
+.jd-foot{margin:10px;display:flex;align-items:flex-end;gap:4px;padding:6px 6px 6px 14px;border:1px solid #e7e1d5;border-radius:24px;background:#fff;box-shadow:0 1px 3px rgba(23,20,15,.05)}
+.jd-foot:focus-within{border-color:#cfc6b6}
+.jd-input{flex:1;resize:none;max-height:120px;min-height:36px;border:0;padding:8px 0;font-size:15px;outline:none;background:transparent}
+.jd-mic,.jd-send{display:flex;height:36px;width:36px;flex-shrink:0;align-items:center;justify-content:center;border-radius:9999px;transition:.15s}
+.jd-mic{color:#6b6255}
+.jd-mic:hover{background:#f3eee6;color:#17140f}
+.jd-mic.on{color:#c8560c;background:#fdf0e4}
+.jd-send{color:#fff;background:#c8560c}
+.jd-send:disabled{background:#e7e1d5;color:#fff}
 
 @keyframes jd-spin{to{transform:rotate(360deg)}}
-@keyframes jd-pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.07)}}
-@keyframes jd-twinkle{0%,100%{opacity:.2}50%{opacity:1}}
-@keyframes jd-bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
-@keyframes jd-glow{0%,100%{opacity:.5;transform:scale(1)}50%{opacity:1;transform:scale(1.15)}}
-@keyframes jd-sway{0%,100%{transform:rotate(-8deg)}50%{transform:rotate(10deg)}}
+@keyframes jd-halo{0%{opacity:.9;transform:scale(1)}80%,100%{opacity:0;transform:scale(1.35)}}
 @keyframes jd-fade-in{from{opacity:0}}
 @keyframes jd-draw{to{stroke-dashoffset:0}}
-@keyframes jd-rise{0%{transform:translate(0,0)}55%{transform:translate(-18px,-60px)}100%{transform:translate(-20px,-80px)}}
-@keyframes jd-whirl{0%{transform:scale(.7) rotate(0)}45%{transform:scale(1.5) rotate(540deg)}75%{transform:scale(1.25) rotate(720deg)}100%{transform:scale(2.6) rotate(760deg);opacity:0}}
-@keyframes jd-burst{0%{opacity:1;transform:rotate(var(--a)) translateX(0) scale(1)}100%{opacity:0;transform:rotate(var(--a)) translateX(120px) scale(.3)}}
-@keyframes jd-hello{0%,30%{opacity:0;transform:translate(-50%,12px)}55%,85%{opacity:1;transform:translate(-50%,0)}100%{opacity:0}}
-@keyframes jd-open{0%{opacity:0;transform:scale(.15) rotate(-12deg)}60%{opacity:1}100%{transform:none}}
-@keyframes jd-close{to{opacity:0;transform:scale(.2) rotate(10deg)}}
-@keyframes jd-sheen{0%,60%{transform:translateX(-100%)}100%{transform:translateX(100%)}}
-@keyframes jd-pop{from{opacity:0;transform:translateY(6px) scale(.98)}}
-@keyframes jd-shimmer{to{background-position:-200% 0}}
-@keyframes jd-dot{0%,100%{transform:translateY(0);opacity:.5}50%{transform:translateY(-5px);opacity:1}}
-@media (prefers-reduced-motion:reduce){.jd-orb *,.jd-fab,.jd-fab::before,.jd-smoke,.jd-head::after{animation:none!important}}
+@keyframes jd-rise{0%{transform:translate(0,0)}100%{transform:translate(-20px,-80px)}}
+@keyframes jd-whirl{0%{transform:scale(.7) rotate(0)}50%{transform:scale(1.4) rotate(360deg)}100%{transform:scale(2.2) rotate(380deg);opacity:0}}
+@keyframes jd-burst{0%{opacity:1;transform:rotate(var(--a)) translateX(0)}100%{opacity:0;transform:rotate(var(--a)) translateX(90px)}}
+@keyframes jd-hello{0%,30%{opacity:0;transform:translate(-50%,10px)}55%,85%{opacity:1;transform:translate(-50%,0)}100%{opacity:0}}
+@keyframes jd-open{0%{opacity:0;transform:scale(.2)}60%{opacity:1}100%{transform:none}}
+@keyframes jd-close{to{opacity:0;transform:scale(.25)}}
+@keyframes jd-pop{from{opacity:0;transform:translateY(5px)}}
+@keyframes jd-dot{0%,100%{transform:translateY(0);opacity:.5}50%{transform:translateY(-4px);opacity:1}}
+@media (prefers-reduced-motion:reduce){.jd-orb *,.jd-fab::before{animation:none!important}}
 `;
