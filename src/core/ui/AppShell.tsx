@@ -6,6 +6,7 @@
  * each opening to its modules. Only modules the person has access to appear;
  * planned ("soon") modules are left out until they are built.
  */
+import { JdAssistant } from "@/modules/jd-assistant/JdAssistant";
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -390,6 +391,8 @@ export function AppShell({ children }: { children: ReactNode }) {
           Menu
         </button>
       </nav>
+
+      <JdAssistant property={property.name} />
     </div>
   );
 }
