@@ -15,6 +15,7 @@ import { Loading, PageHeader } from "@/core/ui/misc";
 import { cn } from "@/core/ui/cn";
 import { canSeeLeads, useIsSalesSeat } from "@/modules/night-audit/access";
 import { followUpStatus } from "@/modules/leads/entity";
+import { campaignKey } from "@/modules/pipeline/CampaignBar";
 
 const TALKED = ["Contacted", "Qualified", "Quote preparation", "Awaiting approval", "Quote shared", "Confirmation pending", "Won", "Nurture"];
 const HOT = ["Qualified", "Quote preparation", "Awaiting approval", "Quote shared", "Confirmation pending"];
@@ -65,7 +66,7 @@ export function MetaReport() {
 
   const rows = useMemo(() => {
     const from = period === "all" ? "" : period === "month" ? `${today.slice(0, 7)}-01` : addDays(today, -Number(period));
-    return leads.filter((l) => l.sheet_tab && (!from || String(l.created_at ?? "").slice(0, 10) >= from));
+    return leads.filter((l) => campaignKey(l) && (!from || String(l.created_at ?? "").slice(0, 10) >= from));
   }, [leads, period, today]);
 
   if (loading) return <Loading />;
@@ -73,8 +74,8 @@ export function MetaReport() {
 
   const who = (id: unknown) => String(staff.find((s) => s.id === id)?.name ?? "Not given yet");
   const all = count(rows);
-  const byTab = group(rows, (l) => String(l.sheet_tab));
-  const byAd = group(rows, (l) => `${String(l.sheet_tab)} · ${String(l.ad_name ?? "Ad not named")}`);
+  const byTab = group(rows, campaignKey);
+  const byAd = group(rows, (l) => `${campaignKey(l)} · ${String(l.ad_name ?? "Ad not named")}`);
   const byPerson = group(rows, (l) => who(l.assigned_to));
   const byPackage = group(rows, (l) => String(l.form_package ?? "Not chosen"));
 

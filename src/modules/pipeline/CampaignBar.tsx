@@ -11,11 +11,23 @@ import { cn } from "@/core/ui/cn";
 
 export const OTHER = "__other";
 
+/** Which campaign pipeline a lead belongs to: its sheet tab, or "Campaign N" from the campaign name of
+ * leads imported before the sheet link (e.g. "UDS Campaign 1 - AKS"). Empty = other enquiries. */
+export function campaignKey(l: Row): string {
+  if (l.sheet_tab) return String(l.sheet_tab);
+  const m = /campaign\s*(\d+)/i.exec(String(l.campaign ?? ""));
+  return m ? `Campaign ${m[1]}` : "";
+}
+
 export function inCampaign(l: Row, campaign: string): boolean {
   if (!campaign) return true;
-  if (campaign === OTHER) return !l.sheet_tab;
-  return l.sheet_tab === campaign;
+  if (campaign === OTHER) return !campaignKey(l);
+  return campaignKey(l) === campaign;
 }
+
+/** Natural order: Campaign 2 before Campaign 10. */
+export const byName = (a: string, b: string) => a.localeCompare(b, undefined, { numeric: true, sensitivity: "base" });
+export const campaignList = (leads: Row[]) => [...new Set(leads.map(campaignKey).filter(Boolean))].sort(byName);
 
 export const campaignLabel = (c: string) => (c === OTHER ? "Other enquiries" : c);
 
@@ -32,21 +44,18 @@ export function writeCampaign(c: string) {
   window.history.replaceState(null, "", u.toString());
 }
 
-/** Natural order: Campaign 2 before Campaign 10. */
-const byName = (a: string, b: string) => a.localeCompare(b, undefined, { numeric: true, sensitivity: "base" });
-
 export function CampaignBar({ value, onChange }: { value: string; onChange: (c: string) => void }) {
   const { rows: leads } = useList("leads");
   const open = (l: Row) => l.stage !== "Won" && l.stage !== "Lost";
-  const tabs = [...new Set(leads.map((l) => String(l.sheet_tab ?? "")).filter(Boolean))].sort(byName);
+  const tabs = campaignList(leads);
   const items: { id: string; label: string; total: number; open: number }[] = [
     { id: "", label: "All leads", total: leads.length, open: leads.filter(open).length },
     ...tabs.map((t) => {
-      const list = leads.filter((l) => l.sheet_tab === t);
+      const list = leads.filter((l) => campaignKey(l) === t);
       return { id: t, label: t, total: list.length, open: list.filter(open).length };
     }),
   ];
-  const others = leads.filter((l) => !l.sheet_tab);
+  const others = leads.filter((l) => !campaignKey(l));
   if (tabs.length) items.push({ id: OTHER, label: "Other enquiries", total: others.length, open: others.filter(open).length });
   if (!tabs.length) return null;
 

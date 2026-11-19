@@ -9,15 +9,16 @@ import { EodBoard } from "./EodBoard";
 import { Funnel } from "./Funnel";
 import { RevenueTargets, TargetStrip } from "./RevenueTargets";
 import { CampaignBar, readCampaign, writeCampaign } from "./CampaignBar";
+import { CampaignBoards } from "./CampaignBoards";
 
-type Tab = "leads" | "deals" | "eod" | "targets";
-const TABS: [Tab, string][] = [["leads", "🧲 New leads"], ["deals", "🤝 Customer deals"], ["eod", "📊 Daily EOD"], ["targets", "💰 Revenue targets"]];
+type Tab = "campaigns" | "leads" | "deals" | "eod" | "targets";
+const TABS: [Tab, string][] = [["campaigns", "Campaign pipelines"], ["leads", "Pipeline"], ["deals", "Customer deals"], ["eod", "Daily EOD"], ["targets", "Revenue targets"]];
 
 export function SalesPage() {
   const user = useUser();
   const me = (user.staff?.id as string | undefined) ?? "";
   const q = typeof window !== "undefined" ? new URLSearchParams(window.location.search).get("tab") : null;
-  const [tab, setTab] = useState<Tab>(q === "deals" || q === "eod" || q === "targets" ? q : "leads");
+  const [tab, setTab] = useState<Tab>(q === "deals" || q === "eod" || q === "targets" || q === "campaigns" ? q : q === "leads" || readCampaign() ? "leads" : "campaigns");
   const [mineOnly, setMineOnly] = useState(user.role === "marketing");
   const [campaign, setCampaignState] = useState(readCampaign);
   const setCampaign = (c: string) => {
@@ -37,10 +38,19 @@ export function SalesPage() {
           <label className="ml-auto flex items-center gap-1 text-sm text-slate-600"><input type="checkbox" checked={mineOnly} onChange={(e) => setMineOnly(e.target.checked)} /> Funnel: only my leads</label>
         )}
       </div>
-      {tab !== "targets" && <TargetStrip onOpen={() => setTab("targets")} />}
+      {tab !== "targets" && tab !== "campaigns" && <TargetStrip onOpen={() => setTab("targets")} />}
       {tab === "leads" && <CampaignBar value={campaign} onChange={setCampaign} />}
       {tab === "leads" && <Funnel who={mineOnly ? me : ""} campaign={campaign} />}
-      {tab === "leads" ? <Pipeline campaign={campaign} /> : tab === "deals" ? <DealsBoard /> : tab === "eod" ? <EodBoard /> : <RevenueTargets />}
+      {tab === "campaigns" && (
+        <CampaignBoards
+          onOpen={(c) => {
+            setCampaign(c);
+            setTab("leads");
+            window.scrollTo({ top: 0 });
+          }}
+        />
+      )}
+      {tab === "campaigns" ? null : tab === "leads" ? <Pipeline campaign={campaign} /> : tab === "deals" ? <DealsBoard /> : tab === "eod" ? <EodBoard /> : <RevenueTargets />}
     </div>
   );
 }

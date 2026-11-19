@@ -110,7 +110,7 @@ export function useMenu(): { dept: Department; modules: ModuleDef[] }[] {
         const own = dept.modules.filter((m) => {
           if (m.key === "room-chart") return roomChart.depts.includes(dept.id) || (!user.post && (moduleLevel("room-chart") ?? 0) >= 1);
           if (m.key === "assign-tasks") return !!user.post || supervisor || taskManager;
-          if (m.key === "leads" || m.key === "pipeline" || m.key === "meta-report") return canSeeLeads(user, salesSeat);
+          if (m.key === "leads" || m.key === "pipeline" || m.key === "campaign-pipelines" || m.key === "meta-report") return canSeeLeads(user, salesSeat);
           if (m.key === "meta-sheet") return !!user.post;
           return (dept.adminOnly ? adminModuleVisible(m, user) : moduleVisible(m, user, supervisor)) && moduleHref(m);
         });
@@ -164,7 +164,12 @@ function SideMenu({ onNavigate, pathname }: { onNavigate: () => void; pathname: 
   const user = useUser();
   const menu = useMenu();
   const badges = useBadges(user);
-  const isActive = (href: string) => (href === "/" ? pathname === "/" : pathname.startsWith(href));
+  const isActive = (href: string) => {
+    const [path, qs] = href.split("?");
+    if (path === "/") return pathname === "/";
+    if (!pathname.startsWith(path)) return false;
+    return !qs || (typeof window !== "undefined" && window.location.search.includes(qs));
+  };
   const currentDept = menu.find((g) => g.modules.some((m) => isActive(moduleHref(m) ?? "#")))?.dept.id;
   const [open, setOpen] = useState<Record<string, boolean>>(() => (currentDept ? { [currentDept]: true } : {}));
   useEffect(() => {
