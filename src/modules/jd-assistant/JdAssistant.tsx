@@ -48,7 +48,7 @@ function suggestionsFor(post: string | null): string[] {
 
 function Orb({ size = 64, busy = false }: { size?: number; busy?: boolean }) {
   return (
-    <span className={`jd-orb ${busy ? "jd-orb-busy" : ""}`} style={{ width: size, height: size }} aria-hidden>
+    <span className={`jda-orb ${busy ? "jda-orb-busy" : ""}`} style={{ width: size, height: size }} aria-hidden>
       <svg viewBox="0 0 100 100" width={size} height={size}>
         <defs>
           <linearGradient id="jdg-core" x1="0" y1="0" x2="1" y2="1">
@@ -58,7 +58,7 @@ function Orb({ size = 64, busy = false }: { size?: number; busy?: boolean }) {
         </defs>
         <circle cx="50" cy="50" r="48" fill="url(#jdg-core)" />
         <circle cx="50" cy="50" r="42.5" fill="none" stroke="#fbe3c4" strokeOpacity=".55" strokeWidth="1" />
-        <g className="jd-ring">
+        <g className="jda-ring">
           <circle cx="50" cy="50" r="42.5" fill="none" stroke="#fff6ea" strokeWidth="1.6" strokeLinecap="round" strokeDasharray="22 245" />
         </g>
         <text x="50" y="61" textAnchor="middle" fontSize="31" fill="#fffaf2" fontFamily="'Cormorant Garamond', 'Playfair Display', Georgia, 'Times New Roman', serif" fontWeight="600" letterSpacing="1.5">
@@ -231,18 +231,19 @@ export function JdAssistant({ property }: { property: string }) {
 
       {/* Floating genie */}
       {phase === "closed" && (
-        <button type="button" onClick={open} className="jd-fab print:hidden" aria-label="Open JD assistant">
+        <button type="button" onClick={open} className="jda-fab print:hidden" aria-label="Open JD assistant">
+          <span className="jda-orbit" aria-hidden />
           <Orb size={58} />
-          <span className="jd-fab-tip">Ask JD</span>
+          <span className="jda-fab-tip">Ask JD</span>
         </button>
       )}
 
       {/* Summon: smoke spiral + spinning orb + sparks */}
       {phase === "summon" && (
-        <div className="jd-summon print:hidden" aria-hidden>
-          <div className="jd-veil" />
-          <div className="jd-summon-at">
-            <svg className="jd-spiral" viewBox="0 0 200 200" width="260" height="260">
+        <div className="jda-summon print:hidden" aria-hidden>
+          <div className="jda-veil" />
+          <div className="jda-summon-at">
+            <svg className="jda-spiral" viewBox="0 0 200 200" width="260" height="260">
               <path
                 d="M100 100 m0 -6 a6 6 0 1 1 -1 0 M100 100 C 130 90 128 60 100 58 C 62 56 58 104 86 124 C 120 148 160 120 156 82 C 150 30 80 18 52 52 C 22 90 40 160 104 168 C 160 174 190 120 182 80"
                 fill="none"
@@ -252,13 +253,13 @@ export function JdAssistant({ property }: { property: string }) {
               />
             </svg>
             {Array.from({ length: 6 }).map((_, i) => (
-              <span key={i} className="jd-burst" style={{ "--a": `${i * 60}deg`, animationDelay: "560ms" } as CSSProperties} />
+              <span key={i} className="jda-burst" style={{ "--a": `${i * 60}deg`, animationDelay: "560ms" } as CSSProperties} />
             ))}
-            <div className="jd-summon-orb">
+            <div className="jda-summon-orb">
               <Orb size={84} busy />
             </div>
           </div>
-          <div className="jd-summon-hello">
+          <div className="jda-summon-hello">
             {user.post ? "Yes sir, my lord." : `At your service, ${first}.`}
           </div>
         </div>
@@ -266,39 +267,42 @@ export function JdAssistant({ property }: { property: string }) {
 
       {/* Chat */}
       {(phase === "open" || phase === "leaving") && (
-        <div className={`jd-panel print:hidden ${phase === "leaving" ? "jd-out" : "jd-in"}`} role="dialog" aria-label="JD assistant">
-          <header className="jd-head">
+        <div className={`jda-panel print:hidden ${phase === "leaving" ? "jda-out" : "jda-in"}`} role="dialog" aria-label="JD assistant">
+          <header className="jda-head">
             <Orb size={42} busy={busy} />
             <div className="min-w-0 flex-1">
               <div className="flex items-center gap-2 text-[16px] font-semibold text-white">
-                <span className="jd-a-serif text-[19px] tracking-[0.08em]">JD</span>
+                <span className="jda-a-serif text-[19px] tracking-[0.08em]">JD</span>
               </div>
               <div className="truncate text-[11.5px] text-white/80">{busy ? "Working on it…" : "Your assistant · always on"}</div>
             </div>
             {items.length > 0 && (
-              <button type="button" onClick={reset} className="jd-icon" aria-label="New chat" title="New chat">
+              <button type="button" onClick={reset} className="jda-icon" aria-label="New chat" title="New chat">
                 <RotateCcw className="h-[18px] w-[18px]" />
               </button>
             )}
-            <button type="button" onClick={close} className="jd-icon" aria-label="Close JD">
+            <button type="button" onClick={close} className="jda-icon" aria-label="Close JD">
               <X className="h-5 w-5" />
             </button>
           </header>
 
-          <div ref={scroller} className="jd-body">
+          <div ref={scroller} className="jda-body">
             {mode === "local" ? (
-              <div className="jd-empty">
+              <div className="jda-empty">
                 <Orb size={72} />
                 <p className="mt-4 text-sm text-[#6b6255]">JD works when JD One is connected to the shared database. This device is in local mode.</p>
               </div>
             ) : items.length === 0 ? (
-              <div className="jd-empty">
-                <Orb size={76} />
-                <p className="jd-a-serif mt-5 text-[22px] font-semibold leading-tight text-[#17140f]">{user.post ? "Yes sir, my lord." : `Yes, ${first}.`}</p>
+              <div className="jda-empty">
+                <span className="relative inline-flex">
+                  <span className="jda-orbit" aria-hidden />
+                  <Orb size={76} />
+                </span>
+                <p className="jda-a-serif mt-5 text-[22px] font-semibold leading-tight text-[#17140f]">{user.post ? "Yes sir, my lord." : `Yes, ${first}.`}</p>
                 <p className="mt-1 text-[14px] text-[#6b6255]">What shall I do for you today?</p>
                 <div className="mt-5 flex flex-wrap justify-center gap-2">
                   {suggestionsFor(user.post).map((s) => (
-                    <button key={s} type="button" onClick={() => send(s)} className="jd-chip">
+                    <button key={s} type="button" onClick={() => send(s)} className="jda-chip">
                       {s}
                     </button>
                   ))}
@@ -308,7 +312,7 @@ export function JdAssistant({ property }: { property: string }) {
               items.map((it, i) =>
                 it.role === "user" ? (
                   <div key={i} className="flex justify-end">
-                    <div className="jd-me">{it.text}</div>
+                    <div className="jda-me">{it.text}</div>
                   </div>
                 ) : (
                   <div key={i} className="flex items-start gap-2">
@@ -317,7 +321,7 @@ export function JdAssistant({ property }: { property: string }) {
                       {!!it.steps?.length && (
                         <div className="flex flex-col gap-1">
                           {it.steps.map((s) => (
-                            <div key={s.id} className={`jd-step ${s.state}`}>
+                            <div key={s.id} className={`jda-step ${s.state}`}>
                               {s.state === "running" ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : s.state === "done" ? <Check className="h-3.5 w-3.5" /> : <AlertTriangle className="h-3.5 w-3.5" />}
                               <span className="truncate">{s.label}</span>
                             </div>
@@ -325,13 +329,13 @@ export function JdAssistant({ property }: { property: string }) {
                         </div>
                       )}
                       {it.text ? (
-                        <div className={`jd-them ${it.error ? "jd-err" : ""}`}>
+                        <div className={`jda-them ${it.error ? "jda-err" : ""}`}>
                           <Rich text={it.text} />
                         </div>
                       ) : (
                         busy &&
                         i === items.length - 1 && (
-                          <div className="jd-thinking">
+                          <div className="jda-thinking">
                             <span />
                             <span />
                             <span />
@@ -346,7 +350,7 @@ export function JdAssistant({ property }: { property: string }) {
             )}
 
             {ask && (
-              <div className="jd-confirm">
+              <div className="jda-confirm">
                 <div className="flex items-center gap-2 text-[13px] font-semibold text-[#9a3412]">
                   <AlertTriangle className="h-4 w-4" /> Confirm
                 </div>
@@ -364,7 +368,7 @@ export function JdAssistant({ property }: { property: string }) {
           </div>
 
           <form
-            className="jd-foot"
+            className="jda-foot"
             onSubmit={(e) => {
               e.preventDefault();
               void send();
@@ -383,14 +387,14 @@ export function JdAssistant({ property }: { property: string }) {
               }}
               placeholder={listening ? "Listening…" : "Ask JD anything"}
               disabled={mode === "local" || !!ask}
-              className="jd-input"
+              className="jda-input"
             />
             {canListen && (
-              <button type="button" onClick={listen} className={`jd-mic ${listening ? "on" : ""}`} aria-label="Speak">
+              <button type="button" onClick={listen} className={`jda-mic ${listening ? "on" : ""}`} aria-label="Speak">
                 <Mic className="h-[19px] w-[19px]" strokeWidth={1.75} />
               </button>
             )}
-            <button type="submit" disabled={!text.trim() || busy || mode === "local"} className="jd-send" aria-label="Send">
+            <button type="submit" disabled={!text.trim() || busy || mode === "local"} className="jda-send" aria-label="Send">
               <ArrowUp className="h-[18px] w-[18px]" strokeWidth={2.25} />
             </button>
           </form>
@@ -401,72 +405,74 @@ export function JdAssistant({ property }: { property: string }) {
 }
 
 const CSS = `
-.jd-a-serif{font-family:'Cormorant Garamond','Playfair Display',Georgia,'Times New Roman',serif}
-.jd-orb{display:inline-flex;flex-shrink:0;border-radius:9999px;box-shadow:0 4px 14px rgba(200,86,12,.28)}
-.jd-orb .jd-ring{transform-origin:50px 50px;opacity:0}
-.jd-orb-busy .jd-ring{opacity:1;animation:jd-spin 1.3s linear infinite}
+.jda-a-serif{font-family:'Cormorant Garamond','Playfair Display',Georgia,'Times New Roman',serif}
+.jda-orb{display:inline-flex;flex-shrink:0;border-radius:9999px;box-shadow:0 4px 14px rgba(200,86,12,.28)}
+.jda-orb .jda-ring{transform-origin:50px 50px;opacity:0}
+.jda-orb-busy .jda-ring{opacity:1;animation:jda-spin 1.3s linear infinite}
 
-.jd-fab{position:fixed;right:16px;bottom:calc(76px + env(safe-area-inset-bottom));z-index:45;display:flex;align-items:center;justify-content:center;border-radius:9999px;transition:transform .2s;-webkit-tap-highlight-color:transparent}
-@media (min-width:1024px){.jd-fab{right:28px;bottom:28px}}
-.jd-fab:hover{transform:translateY(-2px)}
-.jd-fab:active{transform:scale(.95)}
-.jd-fab::before{content:"";position:absolute;inset:-5px;border-radius:9999px;border:1px solid rgba(200,86,12,.35);animation:jd-halo 3.2s ease-out infinite}
-.jd-fab-tip{position:absolute;right:68px;white-space:nowrap;background:#17140f;color:#fff;font-size:12px;font-weight:500;padding:6px 11px;border-radius:9999px;opacity:0;transform:translateX(6px);transition:.2s;pointer-events:none}
-.jd-fab:hover .jd-fab-tip{opacity:1;transform:none}
+.jda-fab{position:fixed;right:16px;bottom:calc(76px + env(safe-area-inset-bottom));z-index:45;display:flex;align-items:center;justify-content:center;border-radius:9999px;transition:transform .2s;-webkit-tap-highlight-color:transparent}
+@media (min-width:1024px){.jda-fab{right:28px;bottom:28px}}
+.jda-fab:hover{transform:translateY(-2px)}
+.jda-fab:active{transform:scale(.95)}
+.jda-orbit{position:absolute;inset:-9px;border-radius:9999px;border:1px solid rgba(200,86,12,.28);animation:jda-spin 4.5s linear infinite;pointer-events:none}
+.jda-orbit::before{content:"";position:absolute;top:-4px;left:50%;width:8px;height:8px;margin-left:-4px;border-radius:9999px;background:#ee8122;box-shadow:0 0 10px #ee8122,0 0 2px #fff inset}
+.jda-orbit::after{content:"";position:absolute;bottom:-2.5px;left:50%;width:5px;height:5px;margin-left:-2.5px;border-radius:9999px;background:#f4d390;opacity:.9}
+.jda-fab-tip{position:absolute;right:68px;white-space:nowrap;background:#17140f;color:#fff;font-size:12px;font-weight:500;padding:6px 11px;border-radius:9999px;opacity:0;transform:translateX(6px);transition:.2s;pointer-events:none}
+.jda-fab:hover .jda-fab-tip{opacity:1;transform:none}
 
-.jd-summon{position:fixed;inset:0;z-index:60;pointer-events:none}
-.jd-veil{position:absolute;inset:0;background:rgba(23,20,15,.42);backdrop-filter:blur(3px);animation:jd-fade-in .35s ease-out both}
-.jd-summon-at{position:absolute;right:45px;bottom:calc(105px + env(safe-area-inset-bottom));width:0;height:0;animation:jd-rise 1.05s cubic-bezier(.5,0,.2,1) both}
-@media (min-width:1024px){.jd-summon-at{right:57px;bottom:57px}}
-.jd-spiral{position:absolute;left:-130px;top:-130px;stroke-dasharray:900;stroke-dashoffset:900;opacity:.75;animation:jd-draw .9s ease-out forwards,jd-spin 1.6s linear infinite}
-.jd-summon-orb{position:absolute;left:-42px;top:-42px;animation:jd-whirl 1.05s cubic-bezier(.4,0,.2,1) both}
-.jd-burst{position:absolute;left:-3px;top:-3px;width:6px;height:6px;border-radius:9999px;background:#fbe3c4;opacity:0;animation:jd-burst .5s ease-out both}
-.jd-summon-hello{position:absolute;left:50%;bottom:46%;transform:translateX(-50%);color:#fffaf2;font-family:'Cormorant Garamond','Playfair Display',Georgia,serif;font-size:28px;font-weight:600;letter-spacing:.02em;white-space:nowrap;animation:jd-hello 1.05s ease-out both}
+.jda-summon{position:fixed;inset:0;z-index:60;pointer-events:none}
+.jda-veil{position:absolute;inset:0;background:rgba(23,20,15,.42);backdrop-filter:blur(3px);animation:jda-fade-in .35s ease-out both}
+.jda-summon-at{position:absolute;right:45px;bottom:calc(105px + env(safe-area-inset-bottom));width:0;height:0;animation:jda-rise 1.05s cubic-bezier(.5,0,.2,1) both}
+@media (min-width:1024px){.jda-summon-at{right:57px;bottom:57px}}
+.jda-spiral{position:absolute;left:-130px;top:-130px;stroke-dasharray:900;stroke-dashoffset:900;opacity:.75;animation:jda-draw .9s ease-out forwards,jda-spin 1.6s linear infinite}
+.jda-summon-orb{position:absolute;left:-42px;top:-42px;animation:jda-whirl 1.05s cubic-bezier(.4,0,.2,1) both}
+.jda-burst{position:absolute;left:-3px;top:-3px;width:6px;height:6px;border-radius:9999px;background:#fbe3c4;opacity:0;animation:jda-burst .5s ease-out both}
+.jda-summon-hello{position:absolute;left:50%;bottom:46%;transform:translateX(-50%);color:#fffaf2;font-family:'Cormorant Garamond','Playfair Display',Georgia,serif;font-size:28px;font-weight:600;letter-spacing:.02em;white-space:nowrap;animation:jda-hello 1.05s ease-out both}
 
-.jd-panel{position:fixed;z-index:60;inset:8px;top:max(8px,env(safe-area-inset-top));bottom:max(8px,env(safe-area-inset-bottom));display:flex;flex-direction:column;overflow:hidden;border-radius:22px;background:#fffdf9;box-shadow:0 24px 70px rgba(23,20,15,.28),0 0 0 1px rgba(23,20,15,.06);transform-origin:calc(100% - 40px) calc(100% - 60px)}
-@media (min-width:640px){.jd-panel{inset:auto;right:24px;bottom:24px;width:400px;height:min(640px,calc(100vh - 48px))}}
-.jd-in{animation:jd-open .42s cubic-bezier(.2,.9,.25,1.1) both}
-.jd-out{animation:jd-close .28s ease-in both}
-.jd-head{display:flex;align-items:center;gap:10px;padding:12px 10px 12px 14px;background:#17140f;border-bottom:1px solid rgba(201,162,75,.35)}
-.jd-icon{display:flex;height:38px;width:38px;align-items:center;justify-content:center;border-radius:9999px;color:rgba(255,255,255,.8)}
-.jd-icon:hover{background:rgba(255,255,255,.1);color:#fff}
-.jd-body{flex:1;overflow-y:auto;padding:18px 14px;display:flex;flex-direction:column;gap:14px}
-.jd-empty{margin:auto 0;display:flex;flex-direction:column;align-items:center;text-align:center;padding:12px 6px}
-.jd-chip{border:1px solid #e7e1d5;background:#fff;color:#3a332a;font-size:12.5px;padding:7px 12px;border-radius:9999px;transition:.15s}
-.jd-chip:hover{border-color:#c8560c;color:#c8560c}
-.jd-me{max-width:82%;background:#f3eee6;color:#17140f;border-radius:18px 18px 4px 18px;padding:9px 13px;font-size:14px;line-height:1.45;white-space:pre-wrap;animation:jd-pop .25s ease-out both}
-.jd-them{padding:2px 2px;font-size:14px;line-height:1.55;color:#17140f;animation:jd-pop .25s ease-out both}
-.jd-err{border:1px solid #fecaca;background:#fef2f2;color:#991b1b;border-radius:12px;padding:9px 12px}
-.jd-step{display:flex;align-items:center;gap:6px;font-size:12px;color:#8a7d6b;width:fit-content;max-width:100%;animation:jd-pop .2s ease-out both}
-.jd-step.running{color:#c8560c}
-.jd-step.done svg{color:#15803d}
-.jd-step.failed{color:#b45309}
-.jd-thinking{display:flex;align-items:center;gap:4px;padding:8px 2px}
-.jd-thinking span{height:6px;width:6px;border-radius:9999px;background:#c8560c;animation:jd-dot 1s ease-in-out infinite}
-.jd-thinking span:nth-child(2){animation-delay:.15s}.jd-thinking span:nth-child(3){animation-delay:.3s}
-.jd-thinking em{margin-left:6px;font-style:normal;font-size:12px;color:#9a8a75}
-.jd-confirm{border:1px solid #fed7aa;background:#fff7ed;border-radius:16px;padding:12px 14px;animation:jd-pop .25s ease-out both}
-.jd-foot{margin:10px;display:flex;align-items:flex-end;gap:4px;padding:6px 6px 6px 14px;border:1px solid #e7e1d5;border-radius:24px;background:#fff;box-shadow:0 1px 3px rgba(23,20,15,.05)}
-.jd-foot:focus-within{border-color:#cfc6b6}
-.jd-input{flex:1;resize:none;max-height:120px;min-height:36px;border:0;padding:8px 0;font-size:15px;outline:none;background:transparent}
-.jd-mic,.jd-send{display:flex;height:36px;width:36px;flex-shrink:0;align-items:center;justify-content:center;border-radius:9999px;transition:.15s}
-.jd-mic{color:#6b6255}
-.jd-mic:hover{background:#f3eee6;color:#17140f}
-.jd-mic.on{color:#c8560c;background:#fdf0e4}
-.jd-send{color:#fff;background:#c8560c}
-.jd-send:disabled{background:#e7e1d5;color:#fff}
+.jda-panel{position:fixed;z-index:60;inset:8px;top:max(8px,env(safe-area-inset-top));bottom:max(8px,env(safe-area-inset-bottom));display:flex;flex-direction:column;overflow:hidden;border-radius:22px;background:#fffdf9;box-shadow:0 24px 70px rgba(23,20,15,.28),0 0 0 1px rgba(23,20,15,.06);transform-origin:calc(100% - 40px) calc(100% - 60px)}
+@media (min-width:640px){.jda-panel{inset:auto;right:24px;bottom:24px;width:400px;height:min(640px,calc(100vh - 48px))}}
+.jda-in{animation:jda-open .42s cubic-bezier(.2,.9,.25,1.1) both}
+.jda-out{animation:jda-close .28s ease-in both}
+.jda-head{display:flex;align-items:center;gap:10px;padding:12px 10px 12px 14px;background:#17140f;border-bottom:1px solid rgba(201,162,75,.35)}
+.jda-icon{display:flex;height:38px;width:38px;align-items:center;justify-content:center;border-radius:9999px;color:rgba(255,255,255,.8)}
+.jda-icon:hover{background:rgba(255,255,255,.1);color:#fff}
+.jda-body{flex:1;overflow-y:auto;padding:18px 14px;display:flex;flex-direction:column;gap:14px}
+.jda-empty{margin:auto 0;display:flex;flex-direction:column;align-items:center;text-align:center;padding:12px 6px}
+.jda-chip{border:1px solid #e7e1d5;background:#fff;color:#3a332a;font-size:12.5px;padding:7px 12px;border-radius:9999px;transition:.15s}
+.jda-chip:hover{border-color:#c8560c;color:#c8560c}
+.jda-me{max-width:82%;background:#f3eee6;color:#17140f;border-radius:18px 18px 4px 18px;padding:9px 13px;font-size:14px;line-height:1.45;white-space:pre-wrap;animation:jda-pop .25s ease-out both}
+.jda-them{padding:2px 2px;font-size:14px;line-height:1.55;color:#17140f;animation:jda-pop .25s ease-out both}
+.jda-err{border:1px solid #fecaca;background:#fef2f2;color:#991b1b;border-radius:12px;padding:9px 12px}
+.jda-step{display:flex;align-items:center;gap:6px;font-size:12px;color:#8a7d6b;width:fit-content;max-width:100%;animation:jda-pop .2s ease-out both}
+.jda-step.running{color:#c8560c}
+.jda-step.done svg{color:#15803d}
+.jda-step.failed{color:#b45309}
+.jda-thinking{display:flex;align-items:center;gap:4px;padding:8px 2px}
+.jda-thinking span{height:6px;width:6px;border-radius:9999px;background:#c8560c;animation:jda-dot 1s ease-in-out infinite}
+.jda-thinking span:nth-child(2){animation-delay:.15s}.jda-thinking span:nth-child(3){animation-delay:.3s}
+.jda-thinking em{margin-left:6px;font-style:normal;font-size:12px;color:#9a8a75}
+.jda-confirm{border:1px solid #fed7aa;background:#fff7ed;border-radius:16px;padding:12px 14px;animation:jda-pop .25s ease-out both}
+.jda-foot{margin:10px;display:flex;align-items:flex-end;gap:4px;padding:6px 6px 6px 14px;border:1px solid #e7e1d5;border-radius:24px;background:#fff;box-shadow:0 1px 3px rgba(23,20,15,.05)}
+.jda-foot:focus-within{border-color:#cfc6b6}
+.jda-input{flex:1;resize:none;max-height:120px;min-height:36px;border:0;padding:8px 0;font-size:15px;outline:none;background:transparent}
+.jda-mic,.jda-send{display:flex;height:36px;width:36px;flex-shrink:0;align-items:center;justify-content:center;border-radius:9999px;transition:.15s}
+.jda-mic{color:#6b6255}
+.jda-mic:hover{background:#f3eee6;color:#17140f}
+.jda-mic.on{color:#c8560c;background:#fdf0e4}
+.jda-send{color:#fff;background:#c8560c}
+.jda-send:disabled{background:#e7e1d5;color:#fff}
 
-@keyframes jd-spin{to{transform:rotate(360deg)}}
-@keyframes jd-halo{0%{opacity:.9;transform:scale(1)}80%,100%{opacity:0;transform:scale(1.35)}}
-@keyframes jd-fade-in{from{opacity:0}}
-@keyframes jd-draw{to{stroke-dashoffset:0}}
-@keyframes jd-rise{0%{transform:translate(0,0)}100%{transform:translate(-20px,-80px)}}
-@keyframes jd-whirl{0%{transform:scale(.7) rotate(0)}50%{transform:scale(1.4) rotate(360deg)}100%{transform:scale(2.2) rotate(380deg);opacity:0}}
-@keyframes jd-burst{0%{opacity:1;transform:rotate(var(--a)) translateX(0)}100%{opacity:0;transform:rotate(var(--a)) translateX(90px)}}
-@keyframes jd-hello{0%,30%{opacity:0;transform:translate(-50%,10px)}55%,85%{opacity:1;transform:translate(-50%,0)}100%{opacity:0}}
-@keyframes jd-open{0%{opacity:0;transform:scale(.2)}60%{opacity:1}100%{transform:none}}
-@keyframes jd-close{to{opacity:0;transform:scale(.25)}}
-@keyframes jd-pop{from{opacity:0;transform:translateY(5px)}}
-@keyframes jd-dot{0%,100%{transform:translateY(0);opacity:.5}50%{transform:translateY(-4px);opacity:1}}
-@media (prefers-reduced-motion:reduce){.jd-orb *,.jd-fab::before{animation:none!important}}
+@keyframes jda-spin{to{transform:rotate(360deg)}}
+@keyframes jda-halo{0%{opacity:.9;transform:scale(1)}80%,100%{opacity:0;transform:scale(1.35)}}
+@keyframes jda-fade-in{from{opacity:0}}
+@keyframes jda-draw{to{stroke-dashoffset:0}}
+@keyframes jda-rise{0%{transform:translate(0,0)}100%{transform:translate(-20px,-80px)}}
+@keyframes jda-whirl{0%{transform:scale(.7) rotate(0)}50%{transform:scale(1.4) rotate(360deg)}100%{transform:scale(2.2) rotate(380deg);opacity:0}}
+@keyframes jda-burst{0%{opacity:1;transform:rotate(var(--a)) translateX(0)}100%{opacity:0;transform:rotate(var(--a)) translateX(90px)}}
+@keyframes jda-hello{0%,30%{opacity:0;transform:translate(-50%,10px)}55%,85%{opacity:1;transform:translate(-50%,0)}100%{opacity:0}}
+@keyframes jda-open{0%{opacity:0;transform:scale(.2)}60%{opacity:1}100%{transform:none}}
+@keyframes jda-close{to{opacity:0;transform:scale(.25)}}
+@keyframes jda-pop{from{opacity:0;transform:translateY(5px)}}
+@keyframes jda-dot{0%,100%{transform:translateY(0);opacity:.5}50%{transform:translateY(-4px);opacity:1}}
+@media (prefers-reduced-motion:reduce){.jda-orb *,.jda-orbit{animation:none!important}}
 `;
