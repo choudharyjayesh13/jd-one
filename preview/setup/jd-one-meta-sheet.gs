@@ -1,5 +1,5 @@
 /**
- * JD One ↔ Meta leads sheet  (version 1 · 19 Nov 2026)
+ * JD One ↔ Meta leads sheet  (version 2 · 19 Nov 2026)
  *
  * Paste this whole file in the Google Sheet: Extensions → Apps Script → replace everything → Save.
  * Then reload the sheet and use the new "JD One" menu → "Connect to JD One" and paste the key
@@ -8,7 +8,8 @@
  * What it does
  *  - Every minute: every tab whose name starts with "Campaign" is read. Rows not yet sent go to
  *    JD One as leads (the first run sends all old rows too). A new tab "Campaign 3" is picked up
- *    on its own – nothing to change.
+ *    on its own – nothing to change. Tabs switched off in JD One (Sales → Meta sheet link) are
+ *    left alone completely: nothing is sent from them and nothing is written into them.
  *  - Every 10 minutes: the progress made in JD One (stage, who has it, calls, last call,
  *    next follow-up, remark) is written back into the sheet, and the "JD One summary" tab is rebuilt.
  *      · Tabs in the agency's own layout (with a "Lead Stage" column) get their own columns filled.
@@ -92,7 +93,7 @@ function sendNewLeads() {
     if (last > 0) sentSheet.getRange(1, 1, last, 1).getValues().forEach(function (r) { sent[r[0]] = true; });
 
     var pending = [];
-    campaignTabs_(ss).forEach(function (sh) {
+    activeTabs_(ss, key).forEach(function (sh) {
       readTab_(sh).rows.forEach(function (row) {
         if (!sent[row.key]) pending.push(row);
       });
@@ -147,7 +148,7 @@ function pullStatus() {
     });
     var ss = SpreadsheetApp.getActive();
     var summary = {};
-    campaignTabs_(ss).forEach(function (sh) {
+    activeTabs_(ss, key).forEach(function (sh) {
       var t = readTab_(sh);
       if (!t.rows.length) return;
       var agency = findCol_(t.heads, AGENCY_COLS.stage) >= 0;
@@ -326,6 +327,16 @@ function clean_(f, v) {
 
 function campaignTabs_(ss) {
   return ss.getSheets().filter(function (sh) { return sh.getName().trim().toLowerCase().indexOf(TAB_PREFIX) === 0; });
+}
+
+/** Campaign tabs that are switched on in JD One. Also tells JD One which tabs the sheet has. */
+function activeTabs_(ss, key) {
+  var tabs = campaignTabs_(ss);
+  var seen = {};
+  tabs.forEach(function (sh) { seen[sh.getName()] = { rows: Math.max(sh.getLastRow() - 1, 0) }; });
+  var cfg = call_('sheet_config', { p_key: key, p_tabs: seen }) || {};
+  var skip = (cfg.skip || []).map(function (t) { return String(t).trim().toLowerCase(); });
+  return tabs.filter(function (sh) { return skip.indexOf(sh.getName().trim().toLowerCase()) < 0; });
 }
 
 function sentSheet_(ss) {
