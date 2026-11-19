@@ -34,8 +34,11 @@ jobs:
       - name: Report
         run: |
           if [ -f ~/jdone-keystore/jdone.jks ]; then echo "Signing key present (cache kept alive)"; else echo "::warning::Signing key cache is missing"; fi
+      - name: Delete the temporary export branch (export-request says "done")
+        if: github.event_name == 'push' && hashFiles('.github/keys/export-request') != '' && contains(github.event.head_commit.message, '[key-export-done]')
+        run: git push "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}" --delete android-key-export || true
       - name: Encrypt key for export
-        if: github.event_name == 'push' && steps.k.outputs.cache-hit == 'true'
+        if: github.event_name == 'push' && steps.k.outputs.cache-hit == 'true' && !contains(github.event.head_commit.message, '[key-export-done]')
         run: |
           mkdir -p out
           openssl rand -out k.bin 32
@@ -43,7 +46,7 @@ jobs:
           openssl pkeyutl -encrypt -pubin -inkey .github/keys/android-key-export.pub.pem -pkeyopt rsa_padding_mode:oaep -in k.bin -out out/key.bin.enc
           rm k.bin
       - name: Put the encrypted key on a temporary branch
-        if: github.event_name == 'push' && steps.k.outputs.cache-hit == 'true'
+        if: github.event_name == 'push' && steps.k.outputs.cache-hit == 'true' && !contains(github.event.head_commit.message, '[key-export-done]')
         run: |
           cd out
           git init -q -b key-export
