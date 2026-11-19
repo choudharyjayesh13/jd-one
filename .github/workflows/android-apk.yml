@@ -37,6 +37,13 @@ jobs:
           path: ~/jdone-keystore
           key: jd-one-android-signing-v2
 
+      # A fixed key from the repo secret, if set, wins over the cache (see android-key.yml).
+      - name: Use the signing key from the repo secret
+        env:
+          KS_B64: ${{ secrets.JDONE_KEYSTORE_B64 }}
+        run: |
+          if [ -n "$KS_B64" ]; then mkdir -p ~/jdone-keystore && echo "$KS_B64" | base64 -d > ~/jdone-keystore/jdone.jks && echo "Using the key from the repo secret"; fi
+
       - name: Build APK
         working-directory: android-app
         run: bash build.sh 2>&1 | tee ../apk.log

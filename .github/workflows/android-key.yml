@@ -1,0 +1,50 @@
+name: Android signing key (keep alive / export)
+
+# The JD One APK must always be signed with the same key, or phones refuse the
+# update. The key lives in the Actions cache (never in this public repo), and
+# GitHub deletes caches that go unused for 7 days. So:
+#  - every 4 days this restores the cache, which keeps it from expiring;
+#  - a push that changes .github/keys/export-request sends the key out
+#    encrypted with .github/keys/android-key-export.pub.pem (only the holder
+#    of the matching private key can open it), as a 1-day artifact.
+# If the repo secret JDONE_KEYSTORE_B64 is set, android-apk.yml uses that instead.
+
+on:
+  schedule:
+    - cron: "23 4 */4 * *"
+  push:
+    branches: [redesign/login-flow]
+    paths: [".github/keys/export-request"]
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-app
+  cancel-in-progress: false
+
+jobs:
+  key:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/cache/restore@v4
+        id: k
+        with:
+          path: ~/jdone-keystore
+          key: jd-one-android-signing-v2
+      - name: Report
+        run: |
+          if [ -f ~/jdone-keystore/jdone.jks ]; then echo "Signing key present (cache kept alive)"; else echo "::warning::Signing key cache is missing"; fi
+      - name: Encrypt key for export
+        if: github.event_name == 'push' && steps.k.outputs.cache-hit == 'true'
+        run: |
+          mkdir -p out
+          openssl rand -out k.bin 32
+          openssl enc -aes-256-cbc -pbkdf2 -salt -in ~/jdone-keystore/jdone.jks -out out/jdone.jks.enc -pass file:k.bin
+          openssl pkeyutl -encrypt -pubin -inkey .github/keys/android-key-export.pub.pem -pkeyopt rsa_padding_mode:oaep -in k.bin -out out/key.bin.enc
+          rm k.bin
+      - uses: actions/upload-artifact@v4
+        if: github.event_name == 'push' && steps.k.outputs.cache-hit == 'true'
+        with:
+          name: android-key-encrypted
+          path: out/
+          retention-days: 1
