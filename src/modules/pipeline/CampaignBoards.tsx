@@ -31,7 +31,7 @@ export function CampaignBoards({ onOpen }: { onOpen: (campaign: string) => void 
       {cards.length === 0 && <p className="rounded-xl border border-line bg-white p-5 text-sm text-slate-500">No leads yet.</p>}
       <div className="grid gap-4 lg:grid-cols-2">
         {cards.map((c) => (
-          <Card key={c.id} title={c.title} sub={c.id === OTHER ? "WhatsApp, calls, website, walk-in and others" : campaignName(c.list)} list={c.list} onOpen={() => onOpen(c.id)} />
+          <Card key={c.id} title={c.title} sub={c.id === OTHER ? "WhatsApp, calls, website, walk-in and others" : campaignName(c.list) === c.title ? "" : campaignName(c.list)} list={c.list} onOpen={() => onOpen(c.id)} />
         ))}
       </div>
     </div>
