@@ -80,3 +80,27 @@ export function useCanAssignReports(user: AuthUser): boolean {
   const sup = useIsPropertySupervisor(user);
   return !!user.post || sup;
 }
+
+/** Sales seats (posts sales_1 … sales_3): the only staff who see leads, besides the Chairman and the Director. */
+export const SALES_SEATS = ["sales_1", "sales_2", "sales_3"] as const;
+export function useIsSalesSeat(user: AuthUser): boolean {
+  const [yes, setYes] = useState(false);
+  useEffect(() => {
+    const email = (user.email ?? "").toLowerCase();
+    if (!email) return;
+    let live = true;
+    getStore()
+      .list("org-posts")
+      .then((rows) => live && setYes(rows.some((r) => String(r.post).startsWith("sales_") && String(r.email ?? "").toLowerCase() === email)))
+      .catch(() => undefined);
+    return () => {
+      live = false;
+    };
+  }, [user.email]);
+  return yes;
+}
+
+/** Leads, Sales pipeline and the Meta campaigns report: Sales seats, Chairman, Director, owner. */
+export function canSeeLeads(user: AuthUser, salesSeat: boolean): boolean {
+  return !!user.post || salesSeat || user.role === "owner";
+}

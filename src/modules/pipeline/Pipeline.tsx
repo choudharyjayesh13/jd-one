@@ -4,7 +4,7 @@
  * stage rule on every column, one-tap Call / WhatsApp / follow-up / move, "Call these first", and the
  * approval gate (owner/manager approve or send back quotes waiting in stage 06).
  */
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Phone, MessageCircle, AlarmClock, Flame, Search, CalendarClock, Minus, Plus, ShieldCheck, Info, Users, BedDouble, Trophy, IndianRupee } from "lucide-react";
 import { getStore } from "@/core/data";
@@ -18,6 +18,7 @@ import { newHref, viewHref } from "@/core/routes";
 import type { Row } from "@/core/schema/types";
 import { LEAD_QUALIFICATIONS, LEAD_STAGES, STAGE_GUIDE } from "@/modules/leads/options";
 import { followUpStatus } from "@/modules/leads/entity";
+import { useIsSalesSeat } from "@/modules/night-audit/access";
 
 const TONE: Record<string, string> = { Overdue: "bg-rose-100 text-rose-700", Today: "bg-amber-100 text-amber-800", "Call now": "bg-orange-100 text-orange-700", Upcoming: "bg-emerald-50 text-emerald-700", "Not set": "bg-slate-100 text-slate-500", Closed: "bg-slate-100 text-slate-400" };
 const QTONE: Record<string, string> = { Hot: "bg-rose-500 text-white", Warm: "bg-amber-400 text-white", Cold: "bg-sky-200 text-sky-800", Unqualified: "bg-slate-200 text-slate-600" };
@@ -32,6 +33,11 @@ export function Pipeline() {
   const canApprove = APPROVERS.includes(String(user.role));
   const [who, setWho] = useState<string>(user.role === "marketing" && me ? me : "");
   const [q, setQ] = useState("");
+  const [tab, setTab] = useState("");
+  const salesSeat = useIsSalesSeat(user);
+  useEffect(() => {
+    if (salesSeat && !user.post && me) setWho(me);
+  }, [salesSeat, user.post, me]);
   const [showClosed, setShowClosed] = useState(false);
   const [guide, setGuide] = useState(false);
   const [openFu, setOpenFu] = useState<string | null>(null);
@@ -41,7 +47,8 @@ export function Pipeline() {
   if (loading) return <Loading />;
   const name = (id: unknown) => String(staff.find((s) => s.id === id)?.name ?? "Unassigned");
   const t = q.trim().toLowerCase();
-  const mine = leads.filter((l) => (!who || (who === "none" ? !l.assigned_to : l.assigned_to === who)) && (!t || `${l.name} ${l.phone} ${l.requirement ?? ""} ${l.campaign ?? ""} ${l.city ?? ""}`.toLowerCase().includes(t)));
+  const tabs = [...new Set(leads.map((l) => String(l.sheet_tab ?? "")).filter(Boolean))].sort();
+  const mine = leads.filter((l) => (!tab || (tab === "other" ? !l.sheet_tab : l.sheet_tab === tab)) && (!who || (who === "none" ? !l.assigned_to : l.assigned_to === who)) && (!t || `${l.name} ${l.phone} ${l.requirement ?? ""} ${l.campaign ?? ""} ${l.city ?? ""}`.toLowerCase().includes(t)));
   const open = mine.filter((l) => l.stage !== "Won" && l.stage !== "Lost");
   const fu = (s: string) => open.filter((l) => followUpStatus(l) === s);
   const overdue = fu("Overdue"), today = fu("Today"), callNow = fu("Call now");
@@ -50,7 +57,8 @@ export function Pipeline() {
   const wonValue = wonThisMonth.reduce((a, l) => a + Number(l.booking_value ?? l.package_proposed ?? l.budget ?? 0), 0);
   const pending = leads.filter((l) => l.approval_status === "Pending" && l.stage !== "Won" && l.stage !== "Lost");
   const noAction = open.filter((l) => l.stage !== "New" && (!l.next_follow_up || !l.next_action));
-  const callers = staff.filter((s) => ["marketing", "manager", "owner"].includes(String(s.role)));
+  const owners = new Set(leads.map((l) => String(l.assigned_to ?? "")));
+  const callers = staff.filter((s) => ["marketing", "manager", "owner"].includes(String(s.role)) || owners.has(String(s.id)));
 
   const save = async (l: Row, values: Record<string, unknown>, msg: string) => {
     try {
@@ -99,6 +107,11 @@ export function Pipeline() {
           <span className={cn("shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold", TONE[st])}>{st}{l.next_follow_up && st !== "Closed" ? ` · ${formatDate(l.next_follow_up).slice(0, 6)}` : ""}</span>
         </div>
         {l.next_action ? <p className="rounded-lg bg-amber-50 px-2 py-1 text-[11px] font-medium text-amber-900">➜ {String(l.next_action)}</p> : l.requirement ? <p className="line-clamp-2 text-xs text-slate-500">{String(l.requirement)}</p> : null}
+        {l.sheet_tab ? (
+          <p className="truncate text-[10px] font-medium uppercase tracking-wide text-[#9a7b2f]" title={[l.campaign, l.ad_name, l.form_package].filter(Boolean).join(" · ")}>
+            {String(l.sheet_tab)}{l.ad_name ? ` · ${String(l.ad_name)}` : ""}
+          </p>
+        ) : null}
         <div className="flex flex-wrap items-center gap-1.5 text-[11px] text-slate-500">
           {l.qualification ? <span className={cn("rounded-full px-1.5 py-0.5 text-[10px] font-semibold", QTONE[String(l.qualification)] ?? "bg-slate-100")}>{String(l.qualification)}</span> : null}
           {l.lead_type ? <span className="rounded bg-slate-100 px-1.5 py-0.5">{String(l.lead_type)}</span> : null}
@@ -174,6 +187,13 @@ export function Pipeline() {
             <option value="none">Unassigned</option>
             {callers.map((s) => <option key={s.id as string} value={s.id as string}>{String(s.name)}{s.id === me ? " (me)" : ""}</option>)}
           </select>
+          {tabs.length > 0 && (
+            <select value={tab} onChange={(e) => setTab(e.target.value)} className="rounded-xl border border-line bg-white px-3 py-2 text-sm" aria-label="Campaign">
+              <option value="">All sources</option>
+              {tabs.map((t) => <option key={t} value={t}>{t}</option>)}
+              <option value="other">Not from Meta sheet</option>
+            </select>
+          )}
           <label className="flex items-center gap-1 text-sm text-slate-600"><input type="checkbox" checked={showClosed} onChange={(e) => setShowClosed(e.target.checked)} /> Won / Lost</label>
           <button type="button" onClick={() => setGuide(!guide)} className="flex items-center gap-1 rounded-xl border border-line bg-white px-3 py-2 text-sm text-slate-600"><Info className="h-4 w-4" />Stage rules</button>
           <Link href={newHref("leads", { stage: "New", assigned_to: me || undefined })} className="flex items-center gap-1 rounded-xl bg-navy px-3 py-2 text-sm font-semibold text-white"><Plus className="h-4 w-4" />New lead</Link>
