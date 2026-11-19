@@ -17,10 +17,6 @@ on:
     paths: [".github/keys/export-request"]
   workflow_dispatch:
 
-concurrency:
-  group: deploy-app
-  cancel-in-progress: false
-
 jobs:
   key:
     runs-on: ubuntu-latest
