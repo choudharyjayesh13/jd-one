@@ -21,7 +21,7 @@ import { canSeePerformance } from "@/modules/performance/Performance";
 import { useList } from "./hooks";
 import { cn } from "./cn";
 import { DbUpdateStrip } from "./DbSetup";
-import { canNightAudit, reportDepartments, useHoldsPost, useIsPropertySupervisor } from "@/modules/night-audit/access";
+import { canNightAudit, canSeeLeads, reportDepartments, useHoldsPost, useIsPropertySupervisor, useIsSalesSeat } from "@/modules/night-audit/access";
 import { SHARED_PAGES, useSharedPageDepts } from "@/modules/rooms/shared";
 import { Welcome } from "./Welcome";
 import { useCanApproveLeave } from "@/modules/leave/LeavePage";
@@ -100,6 +100,7 @@ export function useMenu(): { dept: Department; modules: ModuleDef[] }[] {
   const user = useUser();
   const supervisor = useIsPropertySupervisor(user);
   const taskManager = useHoldsPost(user, "task_manager");
+  const salesSeat = useIsSalesSeat(user);
   // Shared pages (Room chart) show in every department ticked in Home cards.
   const roomChart = useSharedPageDepts("room-chart");
   const rcKey = roomChart.depts.join(",");
@@ -109,13 +110,15 @@ export function useMenu(): { dept: Department; modules: ModuleDef[] }[] {
         const own = dept.modules.filter((m) => {
           if (m.key === "room-chart") return roomChart.depts.includes(dept.id) || (!user.post && (moduleLevel("room-chart") ?? 0) >= 1);
           if (m.key === "assign-tasks") return !!user.post || supervisor || taskManager;
+          if (m.key === "leads" || m.key === "pipeline" || m.key === "campaign-pipelines" || m.key === "meta-report") return canSeeLeads(user, salesSeat);
+          if (m.key === "meta-sheet") return !!user.post;
           return (dept.adminOnly ? adminModuleVisible(m, user) : moduleVisible(m, user, supervisor)) && moduleHref(m);
         });
         const shared = SHARED_PAGES.filter((p) => p.id === "room-chart" && roomChart.depts.includes(dept.id) && !dept.modules.some((m) => m.key === p.id)).map((p) => ({ key: p.id, label: p.title, href: p.href }) as ModuleDef);
         return { dept, modules: [...shared, ...own] };
       }).filter((g) => g.modules.length > 0),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [user, supervisor, taskManager, rcKey],
+    [user, supervisor, taskManager, salesSeat, rcKey],
   );
 }
 
@@ -161,7 +164,12 @@ function SideMenu({ onNavigate, pathname }: { onNavigate: () => void; pathname: 
   const user = useUser();
   const menu = useMenu();
   const badges = useBadges(user);
-  const isActive = (href: string) => (href === "/" ? pathname === "/" : pathname.startsWith(href));
+  const isActive = (href: string) => {
+    const [path, qs] = href.split("?");
+    if (path === "/") return pathname === "/";
+    if (!pathname.startsWith(path)) return false;
+    return !qs || (typeof window !== "undefined" && window.location.search.includes(qs));
+  };
   const currentDept = menu.find((g) => g.modules.some((m) => isActive(moduleHref(m) ?? "#")))?.dept.id;
   const [open, setOpen] = useState<Record<string, boolean>>(() => (currentDept ? { [currentDept]: true } : {}));
   useEffect(() => {
