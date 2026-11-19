@@ -10,14 +10,17 @@
 // row-level security applies too). JD can therefore never do more than the
 // person talking to it is allowed to do by hand.
 //
-// Secrets (Supabase → Edge Functions → Secrets):
-//   ANTHROPIC_API_KEY   required
+// Secrets (Supabase → Edge Functions → Secrets) — one brain is enough:
+//   ANTHROPIC_API_KEY   Claude (preferred when set)
 //   JD_MODEL            optional, default claude-sonnet-5-5
+//   GEMINI_API_KEY      Google Gemini (free tier) — used when there is no Claude key
+//   GEMINI_MODEL        optional, default gemini-flash-latest
 // SUPABASE_URL and SUPABASE_ANON_KEY are provided by Supabase automatically.
 
 import { createClient } from "npm:@supabase/supabase-js@2";
 
 const MODEL = Deno.env.get("JD_MODEL") ?? "claude-sonnet-5-5";
+const GEMINI_MODEL = Deno.env.get("GEMINI_MODEL") ?? "gemini-flash-latest";
 const SCHEMA = Deno.env.get("JD_SCHEMA") ?? "jdone";
 const MAX_MESSAGES = 60;
 
@@ -146,7 +149,8 @@ Deno.serve(async (req) => {
   if (req.method !== "POST") return json({ error: "Use POST" }, 405);
 
   const apiKey = Deno.env.get("ANTHROPIC_API_KEY");
-  if (!apiKey) return json({ error: "JD is not switched on yet: ANTHROPIC_API_KEY is missing in Supabase secrets." }, 503);
+  const geminiKey = Deno.env.get("GEMINI_API_KEY");
+  if (!apiKey && !geminiKey) return json({ error: "JD abhi chalu nahi hai. Director se baat karein." }, 503);
 
   // 1. Only signed-in JD One staff may talk to JD.
   const auth = req.headers.get("Authorization") ?? "";
@@ -179,7 +183,8 @@ Deno.serve(async (req) => {
   if (!messages.length) return json({ error: "No message" }, 400);
   const ctx: Ctx = { ...(body.context ?? {}), name: staff.name ?? body.context?.name };
 
-  // 3. Ask Claude.
+  // 3. Ask the brain: Claude when its key is set, else Gemini (free tier).
+  if (!apiKey) return askGemini(geminiKey!, systemPrompt(ctx), messages as Msg[]);
   const res = await fetch("https://api.anthropic.com/v1/messages", {
     method: "POST",
     headers: { "x-api-key": apiKey, "anthropic-version": "2023-06-01", "content-type": "application/json" },
@@ -188,7 +193,7 @@ Deno.serve(async (req) => {
       max_tokens: 2048,
       system: [{ type: "text", text: systemPrompt(ctx), cache_control: { type: "ephemeral" } }],
       tools: TOOLS,
-      messages,
+      messages: stripSig(messages as Msg[]),
     }),
   });
   const out = await res.json();
@@ -198,3 +203,95 @@ Deno.serve(async (req) => {
   }
   return json({ content: out.content, stop_reason: out.stop_reason });
 });
+
+// ---------------- Gemini (free tier) adapter ----------------
+// The app speaks Claude's message format; this converts to Gemini and back, so
+// the app never needs to know which brain answered.
+
+// deno-lint-ignore no-explicit-any
+type Block = { type: string; text?: string; id?: string; name?: string; input?: any; tool_use_id?: string; content?: string; is_error?: boolean; _sig?: string };
+type Msg = { role: "user" | "assistant"; content: string | Block[] };
+
+/** Gemini rejects free-form objects, so these tool fields travel as JSON text. */
+const JSON_FIELDS = new Set(["filter", "range", "values"]);
+
+function stripSig(msgs: Msg[]): Msg[] {
+  return msgs.map((m) =>
+    typeof m.content === "string" ? m : { ...m, content: m.content.map(({ _sig, ...b }) => (void _sig, b)) },
+  );
+}
+
+// deno-lint-ignore no-explicit-any
+function geminiSchema(schema: any): any {
+  const props: Record<string, unknown> = {};
+  // deno-lint-ignore no-explicit-any
+  for (const [k, v] of Object.entries<any>(schema.properties ?? {})) {
+    if (JSON_FIELDS.has(k)) props[k] = { type: "string", description: `${v.description ?? k} — as a JSON object string, e.g. {"status":"Open"}` };
+    else if (v.type === "object") props[k] = { type: "object", properties: v.properties, description: v.description };
+    else props[k] = v;
+  }
+  return { type: "object", properties: props, required: schema.required };
+}
+
+async function askGemini(key: string, system: string, msgs: Msg[]): Promise<Response> {
+  const names = new Map<string, string>();
+  // deno-lint-ignore no-explicit-any
+  const contents: any[] = [];
+  for (const m of msgs) {
+    const blocks: Block[] = typeof m.content === "string" ? [{ type: "text", text: m.content }] : m.content;
+    // deno-lint-ignore no-explicit-any
+    const parts: any[] = [];
+    for (const b of blocks) {
+      if (b.type === "text" && b.text) parts.push({ text: b.text, ...(b._sig ? { thoughtSignature: b._sig } : {}) });
+      else if (b.type === "tool_use") {
+        names.set(b.id!, b.name!);
+        parts.push({ functionCall: { name: b.name, args: b.input ?? {} }, ...(b._sig ? { thoughtSignature: b._sig } : {}) });
+      } else if (b.type === "tool_result") {
+        let result: unknown = b.content;
+        try {
+          result = JSON.parse(b.content ?? "null");
+        } catch { /* keep text */ }
+        parts.push({ functionResponse: { name: names.get(b.tool_use_id!) ?? "tool", response: { result, ...(b.is_error ? { error: true } : {}) } } });
+      }
+    }
+    if (parts.length) contents.push({ role: m.role === "assistant" ? "model" : "user", parts });
+  }
+
+  const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`, {
+    method: "POST",
+    headers: { "x-goog-api-key": key, "content-type": "application/json" },
+    body: JSON.stringify({
+      systemInstruction: { parts: [{ text: system }] },
+      contents,
+      tools: [{ functionDeclarations: TOOLS.map((t) => ({ name: t.name, description: t.description, parameters: geminiSchema(t.input_schema) })) }],
+      generationConfig: { maxOutputTokens: 2048, temperature: 0.3 },
+    }),
+  });
+  const out = await res.json();
+  if (!res.ok) {
+    console.error("gemini error", res.status, JSON.stringify(out));
+    const busy = res.status === 429;
+    return json({ error: busy ? "JD ki aaj ki free limit poori ho gayi. Thodi der baad try karein." : "JD could not think right now. Please try again in a minute." }, busy ? 429 : 502);
+  }
+  // deno-lint-ignore no-explicit-any
+  const parts: any[] = out.candidates?.[0]?.content?.parts ?? [];
+  const content: Block[] = [];
+  parts.forEach((p, i) => {
+    if (p.thought) return;
+    if (p.functionCall) {
+      const input = { ...(p.functionCall.args ?? {}) };
+      for (const k of JSON_FIELDS) {
+        if (typeof input[k] === "string") {
+          try {
+            input[k] = JSON.parse(input[k]);
+          } catch { /* leave as is */ }
+        }
+      }
+      content.push({ type: "tool_use", id: `g${Date.now().toString(36)}_${i}`, name: p.functionCall.name, input, ...(p.thoughtSignature ? { _sig: p.thoughtSignature } : {}) });
+    } else if (p.text) {
+      content.push({ type: "text", text: p.text, ...(p.thoughtSignature ? { _sig: p.thoughtSignature } : {}) });
+    }
+  });
+  if (!content.length) content.push({ type: "text", text: "Maaf kijiye, samajh nahi paaya. Ek baar aur likhiye?" });
+  return json({ content, stop_reason: content.some((b) => b.type === "tool_use") ? "tool_use" : "end_turn" });
+}
