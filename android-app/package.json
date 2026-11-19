@@ -7,6 +7,7 @@
     "@capacitor/app": "latest",
     "@capacitor/cli": "latest",
     "@capacitor/core": "latest",
-    "@capacitor-community/background-geolocation": "latest"
+    "@capacitor-community/background-geolocation": "latest",
+    "@capacitor-community/speech-recognition": "latest"
   }
 }

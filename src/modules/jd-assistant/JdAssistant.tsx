@@ -11,6 +11,7 @@ import { ArrowUp, Check, Loader2, Mic, RotateCcw, X, AlertTriangle } from "lucid
 import { useAuth, useUser } from "@/core/auth/AuthProvider";
 import { askJD, type ApiMessage, type Step } from "./api";
 import { jdLevel } from "./tools";
+import { listenOnce, voiceSupported } from "./voice";
 
 type Phase = "closed" | "summon" | "open" | "leaving";
 
@@ -109,6 +110,7 @@ export function JdAssistant({ property }: { property: string }) {
   const [text, setText] = useState("");
   const [busy, setBusy] = useState(false);
   const [listening, setListening] = useState(false);
+  const [voiceErr, setVoiceErr] = useState<string | null>(null);
   const [ask, setAsk] = useState<{ message: string; resolve: (ok: boolean) => void } | null>(null);
   const scroller = useRef<HTMLDivElement>(null);
   const input = useRef<HTMLTextAreaElement>(null);
@@ -208,21 +210,21 @@ export function JdAssistant({ property }: { property: string }) {
     saveChat([], []);
   };
 
-  const listen = () => {
-    type Rec = { lang: string; interimResults: boolean; onresult: (e: { results: { 0: { transcript: string } }[] }) => void; onend: () => void; onerror: () => void; start: () => void };
-    const W = window as unknown as { SpeechRecognition?: new () => Rec; webkitSpeechRecognition?: new () => Rec };
-    const SR = W.SpeechRecognition ?? W.webkitSpeechRecognition;
-    if (!SR) return;
-    const rec = new SR();
-    rec.lang = "hi-IN";
-    rec.interimResults = false;
-    rec.onresult = (e) => setText((t) => (t ? t + " " : "") + e.results[0][0].transcript);
-    rec.onend = () => setListening(false);
-    rec.onerror = () => setListening(false);
+  const listen = async () => {
+    if (listening) return;
+    setVoiceErr(null);
     setListening(true);
-    rec.start();
+    try {
+      const said = await listenOnce("hi-IN");
+      if (said) setText((t) => (t ? t + " " : "") + said);
+      else setVoiceErr("Kuch sunai nahi diya — mic dabaakar phir boliye.");
+    } catch (e) {
+      setVoiceErr(e instanceof Error ? e.message : "Voice typing did not work. Please type.");
+    } finally {
+      setListening(false);
+    }
   };
-  const canListen = typeof window !== "undefined" && ("webkitSpeechRecognition" in window || "SpeechRecognition" in window);
+  const canListen = typeof window !== "undefined" && voiceSupported();
 
   const first = user.name.split(" ")[0];
 
@@ -371,6 +373,14 @@ export function JdAssistant({ property }: { property: string }) {
             )}
           </div>
 
+          {voiceErr && (
+            <div className="jda-voice-err" role="status">
+              <span>{voiceErr}</span>
+              <button type="button" onClick={() => setVoiceErr(null)} aria-label="Dismiss">
+                <X className="h-3.5 w-3.5" />
+              </button>
+            </div>
+          )}
           <form
             className="jda-foot"
             onSubmit={(e) => {
@@ -394,7 +404,7 @@ export function JdAssistant({ property }: { property: string }) {
               className="jda-input"
             />
             {canListen && (
-              <button type="button" onClick={listen} className={`jda-mic ${listening ? "on" : ""}`} aria-label="Speak">
+              <button type="button" onClick={() => void listen()} className={`jda-mic ${listening ? "on" : ""}`} aria-label="Speak" aria-pressed={listening}>
                 <Mic className="h-[19px] w-[19px]" strokeWidth={1.75} />
               </button>
             )}
@@ -462,7 +472,10 @@ const CSS = `
 .jda-mic,.jda-send{display:flex;height:36px;width:36px;flex-shrink:0;align-items:center;justify-content:center;border-radius:9999px;transition:.15s}
 .jda-mic{color:#6b6255}
 .jda-mic:hover{background:#f3eee6;color:#17140f}
-.jda-mic.on{color:#c8560c;background:#fdf0e4}
+.jda-mic.on{color:#c8560c;background:#fdf0e4;animation:jda-listen 1.2s ease-in-out infinite}
+.jda-voice-err{margin:0 10px -4px;display:flex;align-items:flex-start;gap:8px;border-radius:12px;background:#fff7ed;border:1px solid #fed7aa;padding:8px 10px;font-size:12.5px;line-height:1.4;color:#9a3412;animation:jda-pop .2s ease-out both}
+.jda-voice-err span{flex:1}
+.jda-voice-err button{color:#9a3412;padding:2px}
 .jda-send{color:#fff;background:#c8560c}
 .jda-send:disabled{background:#e7e1d5;color:#fff}
 
@@ -477,6 +490,7 @@ const CSS = `
 @keyframes jda-open{0%{opacity:0;transform:scale(.2)}60%{opacity:1}100%{transform:none}}
 @keyframes jda-close{to{opacity:0;transform:scale(.25)}}
 @keyframes jda-pop{from{opacity:0;transform:translateY(5px)}}
+@keyframes jda-listen{0%,100%{box-shadow:0 0 0 0 rgba(200,86,12,.35)}50%{box-shadow:0 0 0 6px rgba(200,86,12,0)}}
 @keyframes jda-dot{0%,100%{transform:translateY(0);opacity:.5}50%{transform:translateY(-4px);opacity:1}}
 @media (prefers-reduced-motion:reduce){.jda-orb *,.jda-orbit{animation:none!important}}
 `;
