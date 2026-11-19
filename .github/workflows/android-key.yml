@@ -6,7 +6,8 @@ name: Android signing key (keep alive / export)
 #  - every 4 days this restores the cache, which keeps it from expiring;
 #  - a push that changes .github/keys/export-request sends the key out
 #    encrypted with .github/keys/android-key-export.pub.pem (only the holder
-#    of the matching private key can open it), as a 1-day artifact.
+#    of the matching private key can open it), on the temporary branch
+#    android-key-export (delete it after use).
 # If the repo secret JDONE_KEYSTORE_B64 is set, android-apk.yml uses that instead.
 
 on:
@@ -16,6 +17,9 @@ on:
     branches: [redesign/login-flow]
     paths: [".github/keys/export-request"]
   workflow_dispatch:
+
+permissions:
+  contents: write
 
 jobs:
   key:
@@ -38,9 +42,11 @@ jobs:
           openssl enc -aes-256-cbc -pbkdf2 -salt -in ~/jdone-keystore/jdone.jks -out out/jdone.jks.enc -pass file:k.bin
           openssl pkeyutl -encrypt -pubin -inkey .github/keys/android-key-export.pub.pem -pkeyopt rsa_padding_mode:oaep -in k.bin -out out/key.bin.enc
           rm k.bin
-      - uses: actions/upload-artifact@v4
+      - name: Put the encrypted key on a temporary branch
         if: github.event_name == 'push' && steps.k.outputs.cache-hit == 'true'
-        with:
-          name: android-key-encrypted
-          path: out/
-          retention-days: 1
+        run: |
+          cd out
+          git init -q -b key-export
+          git add jdone.jks.enc key.bin.enc
+          git -c user.name="JD One deploy" -c user.email="noreply@anthropic.com" commit -qm "Encrypted signing key export"
+          git push -f "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}" key-export:android-key-export
