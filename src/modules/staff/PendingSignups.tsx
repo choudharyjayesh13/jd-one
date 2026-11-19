@@ -10,7 +10,7 @@ import { getEntity } from "@/core/schema/registry";
 import { getStore } from "@/core/data";
 import { useAuth, useUser } from "@/core/auth/AuthProvider";
 import { canUpdate } from "@/core/auth/access";
-import { formatDateTime, todayISO } from "@/core/format";
+import { formatDateTime, calendarTodayISO } from "@/core/format";
 import { Button } from "@/core/ui/Button";
 import { Card, CardBody, CardHeader } from "@/core/ui/Card";
 import { Dialog } from "@/core/ui/Dialog";
@@ -58,9 +58,9 @@ export function PendingSignups() {
         business_unit_id: form.business_unit_id,
         designation: form.designation || null,
         active: true,
-        joined_on: todayISO(),
+        joined_on: calendarTodayISO(),
         auth_user_id: approving.auth_user_id ?? null,
-        notes: `Self sign-up approved ${todayISO()}`,
+        notes: `Self sign-up approved ${calendarTodayISO()}`,
         created_by: me,
       });
       await store.update("signup-requests", approving.id, { status: "Approved", decided_by: me, decided_at: new Date().toISOString(), business_unit_id: form.business_unit_id, designation: form.designation || null });

@@ -1,21 +1,24 @@
 import { forwardRef, type InputHTMLAttributes, type SelectHTMLAttributes, type TextareaHTMLAttributes, type ReactNode } from "react";
 import { cn } from "./cn";
 
+/** Full width unless the caller sets a width (w-auto, w-24…): both classes together let w-full win. */
+const width = (className?: string) => (className && /(^|\s)(sm:|md:|lg:)?(w-|min-w-)/.test(className) ? "" : "w-full");
+
 const base =
-  "w-full rounded-lg border border-line bg-white px-3 text-base text-slate-900 placeholder:text-slate-400 focus:border-navy focus:outline-none focus:ring-2 focus:ring-gold/40 disabled:bg-slate-50 disabled:text-slate-500 sm:text-sm";
+  "rounded-lg border border-line bg-white px-3 text-base text-slate-900 placeholder:text-slate-400 focus:border-navy focus:outline-none focus:ring-2 focus:ring-gold/40 disabled:bg-slate-50 disabled:text-slate-500 sm:text-sm";
 
 export const Input = forwardRef<HTMLInputElement, InputHTMLAttributes<HTMLInputElement> & { invalid?: boolean }>(function Input(
   { className, invalid, ...rest },
   ref,
 ) {
-  return <input ref={ref} className={cn(base, "h-10", invalid && "border-red-500", className)} {...rest} />;
+  return <input ref={ref} className={cn(base, width(className), "h-10", invalid && "border-red-500", className)} {...rest} />;
 });
 
 export const Textarea = forwardRef<HTMLTextAreaElement, TextareaHTMLAttributes<HTMLTextAreaElement> & { invalid?: boolean }>(function Textarea(
   { className, invalid, ...rest },
   ref,
 ) {
-  return <textarea ref={ref} rows={3} className={cn(base, "py-2", invalid && "border-red-500", className)} {...rest} />;
+  return <textarea ref={ref} rows={3} className={cn(base, width(className), "py-2", invalid && "border-red-500", className)} {...rest} />;
 });
 
 export const Select = forwardRef<HTMLSelectElement, SelectHTMLAttributes<HTMLSelectElement> & { invalid?: boolean }>(function Select(
@@ -23,7 +26,7 @@ export const Select = forwardRef<HTMLSelectElement, SelectHTMLAttributes<HTMLSel
   ref,
 ) {
   return (
-    <select ref={ref} className={cn(base, "h-10 appearance-none pr-8", invalid && "border-red-500", className)} {...rest}>
+    <select ref={ref} className={cn(base, width(className), "h-10 appearance-none pr-8", invalid && "border-red-500", className)} {...rest}>
       {children}
     </select>
   );

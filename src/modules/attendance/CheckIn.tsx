@@ -8,12 +8,13 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Camera, MapPin, RefreshCw, X, Coffee, Send, CheckCircle2, Sun, Moon } from "lucide-react";
 import { getStore } from "@/core/data";
 import { useUser } from "@/core/auth/AuthProvider";
-import { todayISO, formatDateTime } from "@/core/format";
+import { calendarTodayISO, formatDateTime } from "@/core/format";
 import { Button } from "@/core/ui/Button";
 import { cn } from "@/core/ui/cn";
 import { photoOfDay } from "@/core/ui/property";
 import { isAdmin } from "@/core/auth/access";
-import { activeRest, nextPunch, phaseAt, pretty, shiftsOf } from "./shifts";
+import { activeRest, nextPunch, phaseAt, pretty, shiftsOf, shift1Review } from "./shifts";
+import { istTime, onTimeLimit } from "@/modules/scoreboard/compute";
 import { useToast } from "@/core/ui/Toast";
 import type { Row } from "@/core/schema/types";
 
@@ -127,10 +128,19 @@ export function CheckIn() {
     });
   }, [store, staffId]);
   useEffect(() => {
-    const q = staffId ? store.list("attendance", { filter: { date: todayISO(), staff_id: staffId } }) : Promise.resolve([] as Row[]);
+    const q = staffId ? store.list("attendance", { filter: { date: calendarTodayISO(), staff_id: staffId } }) : Promise.resolve([] as Row[]);
     void q.then((rows) => setToday(rows[0] ?? null));
   }, [store, staffId, saving]);
-  const loadRests = useCallback(() => store.list("rest-periods", { filter: { date: todayISO() } }).then(setRests).catch(() => undefined), [store]);
+  const loadRests = useCallback(() => store.list("rest-periods", { filter: { date: calendarTodayISO() } }).then(setRests).catch(() => undefined), [store]);
+  const [teamAtt, setTeamAtt] = useState<Row[]>([]);
+  const [teamTasks, setTeamTasks] = useState<Row[]>([]);
+  useEffect(() => {
+    if (!leader) return;
+    void Promise.all([store.list("attendance", { filter: { date: calendarTodayISO() } }), store.list("tasks", { filter: { due: calendarTodayISO() } })])
+      .then(([a, t]) => { setTeamAtt(a); setTeamTasks(t); })
+      .catch(() => undefined);
+  }, [store, leader, rests]);
+  const review = (s: Row) => shift1Review(s, teamAtt.find((a) => a.staff_id === s.id) ?? null, teamTasks, calendarTodayISO(), istTime, onTimeLimit);
   useEffect(() => {
     void loadRests();
   }, [loadRests]);
@@ -177,7 +187,7 @@ export function CheckIn() {
       const common = { latitude: pos.lat, longitude: pos.lng, accuracy_m: pos.accuracy, distance_m: distance, location_ok: locationOk, device };
       const values = { [punch.field]: at, [punch.selfie]: photo, ...common };
       if (today) await store.update("attendance", today.id, values);
-      else await store.create("attendance", { date: todayISO(), staff_id: staffId, status: "P", ...values });
+      else await store.create("attendance", { date: calendarTodayISO(), staff_id: staffId, status: "P", ...values });
       toast(`${punch.label} · ${formatDateTime(at).slice(-8)}${distance != null ? ` · ${distance} m from ${unit?.name}` : ""}`, "success");
       setPhoto(null);
     } catch (e) {
@@ -189,8 +199,11 @@ export function CheckIn() {
   const giveRest = async () => {
     const f = restForm;
     if (!f.staff_id || !f.start_time || !f.end_time) return toast("Choose the person and the rest time", "error");
+    const who = staff.find((x) => x.id === f.staff_id);
+    const r = who ? review(who) : null;
+    if (r && !r.ok) return toast(`No rest — Shift 1 not done well: ${r.reasons.join(", ")}`, "error");
     try {
-      await store.create("rest-periods", { staff_id: f.staff_id, date: todayISO(), start_time: f.start_time, end_time: f.end_time, note: f.note || null, assigned_by: user.staff?.id ?? null });
+      await store.create("rest-periods", { staff_id: f.staff_id, date: calendarTodayISO(), start_time: f.start_time, end_time: f.end_time, note: f.note || null, assigned_by: user.staff?.id ?? null });
       toast(`Rest time given to ${String(staff.find((x) => x.id === f.staff_id)?.name ?? "")} — they see it in the app`);
       setRestForm({ staff_id: "", start_time: "", end_time: "", note: "" });
       await loadRests();
@@ -213,12 +226,12 @@ export function CheckIn() {
       <section className="relative overflow-hidden rounded-3xl text-white shadow-lg">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src={photoOfDay(4).url} alt="" className="absolute inset-0 h-full w-full object-cover" />
-        <div className="absolute inset-0 bg-gradient-to-b from-navy/70 via-navy/80 to-navy/95" />
+        <div className="absolute inset-0 bg-gradient-to-b from-black/70 via-black/80 to-black/95" />
         <div className="relative p-6 text-center sm:p-8">
           <p className="text-sm text-white/70">{now.toLocaleDateString("en-IN", { weekday: "long", day: "numeric", month: "long", year: "numeric" })}</p>
           <div className="mt-1 text-5xl font-bold tabular-nums sm:text-6xl">{now.toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit", second: "2-digit" })}</div>
           <p className="mt-2 inline-block rounded-full bg-white/10 px-4 py-1 text-sm">
-            {phase === "before" ? `Shift 1 starts at ${pretty(sh.s1[0])}` : phase === "shift1" ? `Shift 1 · until ${pretty(sh.s1[1])}` : phase === "break" ? `Lunch & rest break · Shift 2 at ${pretty(sh.s2[0])}` : phase === "shift2" ? `Shift 2 · until ${pretty(sh.s2[1])}` : "Day finished · see you tomorrow"}
+            {phase === "before" ? `Shift 1 starts at ${pretty(sh.s1[0])}` : phase === "shift1" ? `Shift 1 · until ${pretty(sh.s1[1])}` : phase === "break" ? `1-hour break (bath & personal work) · Shift 2 at ${pretty(sh.s2[0])}` : phase === "shift2" ? `Shift 2 · until ${pretty(sh.s2[1])}` : "Day finished · see you tomorrow"}
           </p>
         </div>
       </section>
@@ -314,11 +327,11 @@ export function CheckIn() {
       {leader && (
         <section className="space-y-4 rounded-2xl border border-emerald-200 bg-white p-5 shadow-sm sm:p-6">
           <h2 className="flex items-center gap-2 text-base font-semibold text-navy"><Coffee className="h-5 w-5 text-emerald-600" /> Give rest time</h2>
-          <p className="-mt-2 text-xs text-slate-500">When someone is free, give them rest. They see “You are on rest time” in their app.</p>
+          <p className="-mt-2 text-xs text-slate-500">Rest is only for people who did Shift 1 well: on time, Shift 1 IN and OUT marked, and every Shift 1 task done. They see “You are on rest time” in their app.</p>
           <div className="grid gap-2 sm:grid-cols-[1.5fr_1fr_1fr]">
             <select className="rounded-xl border border-line bg-white px-3 py-2.5" value={restForm.staff_id} onChange={(e) => setRestForm((f) => ({ ...f, staff_id: e.target.value }))}>
               <option value="">Choose person…</option>
-              {staff.map((x) => <option key={x.id} value={x.id}>{String(x.name)}</option>)}
+              {staff.map((x) => { const r = review(x); return <option key={x.id} value={x.id} disabled={!r.ok}>{r.ok ? "✅ " : "❌ "}{String(x.name)}{r.ok ? "" : ` — ${r.reasons.join(", ")}`}</option>; })}
             </select>
             <input type="time" className="rounded-xl border border-line px-3 py-2.5" value={restForm.start_time} onChange={(e) => setRestForm((f) => ({ ...f, start_time: e.target.value }))} />
             <input type="time" className="rounded-xl border border-line px-3 py-2.5" value={restForm.end_time} onChange={(e) => setRestForm((f) => ({ ...f, end_time: e.target.value }))} />

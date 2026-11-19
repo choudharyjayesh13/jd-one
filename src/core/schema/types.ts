@@ -11,11 +11,12 @@ import type { DataStore } from "@/core/data/types";
 export type Role = "owner" | "manager" | "hr" | "accounts" | "finance" | "marketing" | "staff";
 
 /** Teams group modules in the sidebar and sections on the dashboard. */
-export type Team = "hr" | "accounts" | "finance" | "marketing" | "operations";
+export type Team = "property" | "hr" | "accounts" | "finance" | "marketing" | "operations";
 
 export const TEAMS: { id: Team; label: string }[] = [
+  { id: "property", label: "Property" },
   { id: "operations", label: "Operations" },
-  { id: "marketing", label: "Marketing" },
+  { id: "marketing", label: "Sales & Marketing" },
   { id: "accounts", label: "Accounts" },
   { id: "finance", label: "Finance" },
   { id: "hr", label: "HR" },
@@ -34,9 +35,10 @@ export function teamsForRole(role: Role): Team[] {
     case "finance":
       return ["finance"];
     case "marketing":
-      return ["marketing"];
+      // Sales & Marketing (one department): leads + pipeline, plus bookings/customers to convert them.
+      return ["marketing", "property", "operations"];
     default:
-      return ["operations"];
+      return ["property", "operations"];
   }
 }
 
@@ -95,12 +97,16 @@ export interface FieldDef {
   step?: number;
   /** Derived from other values of the same record; rendered read-only. */
   computed?: (values: FieldValues) => unknown;
+  /** Display-only: computed when shown, never saved (no database column). */
+  virtual?: boolean;
   /** Field is stored but not editable in the form (e.g. balance kept by hooks). */
   readOnly?: boolean;
   /** Hide from detail view (e.g. internal ids). */
   hidden?: boolean;
   /** Show the field on a full row in the form. */
   wide?: boolean;
+  /** Show the field only when this is true for the current values (form and detail view). */
+  showIf?: (values: FieldValues) => boolean;
 }
 
 /** Reverse relation: records of `entity` whose `field` points at this record. */
@@ -165,6 +171,14 @@ export interface EntityAction {
   run?: (ctx: ActionContext) => Promise<void> | void;
 }
 
+export interface CustomFormProps {
+  entity: string;
+  id?: string;
+  prefill?: FieldValues;
+  onSaved: (row: Row) => void;
+  onCancel?: () => void;
+}
+
 export interface EntityDef {
   /** URL slug + registry key, e.g. "daily-reports". */
   name: string;
@@ -199,6 +213,8 @@ export interface EntityDef {
   unitField?: string;
   /** Replaces the generic detail page (e.g. the customer 360° view). */
   customDetail?: ComponentType<{ id: string }>;
+  /** Replaces the generic new/edit form (e.g. the step-by-step booking form). Action forms (`only`) stay generic. */
+  customForm?: ComponentType<CustomFormProps>;
   /** Rendered above the generic list page (e.g. pending sign-ups on Staff). */
   listExtra?: ComponentType;
   /** Live hint shown in the form whenever one of `watch` fields changes. */

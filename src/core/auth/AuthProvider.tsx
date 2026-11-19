@@ -10,6 +10,9 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useState, t
 import type { Role, Row } from "@/core/schema/types";
 import { getStore, getSupabaseClient, storeKind } from "@/core/data";
 import { hasPin, isUnlocked, markUnlocked, setPin as savePin, verifyPin } from "./pin";
+import { setCurrentAccess, type Post } from "./access";
+import { BRAND_STORAGE_KEY, STAYS_PROPERTIES } from "./brands";
+import { loadBusinessDay } from "@/core/businessDate";
 
 export interface AuthUser {
   id: string;
@@ -20,6 +23,10 @@ export interface AuthUser {
   staff: Row | null;
   /** Business unit the user is scoped to; null = all units (owner/manager). */
   unitId: string | null;
+  /** Chairman or Director (they run Team access and have every module). */
+  post: Post | null;
+  /** Team access: module key → level (0–3); null when not set up yet (old role rules apply). */
+  access: Record<string, number> | null;
 }
 
 /** Supabase: signed in, but not (yet) a staff member — waiting for approval. */
@@ -60,9 +67,9 @@ interface AuthState {
 const AuthContext = createContext<AuthState | null>(null);
 const ACT_AS_KEY = "jdone.actAs";
 
-const localOwner: AuthUser = { id: "local-owner", email: null, name: "Owner (this device)", role: "owner", staff: null, unitId: null };
+const localOwner: AuthUser = { id: "local-owner", email: null, name: "Owner (this device)", role: "owner", staff: null, unitId: null, post: "chairman", access: null };
 
-function userFromStaff(id: string, email: string | null, staff: Row | null): AuthUser {
+function userFromStaff(id: string, email: string | null, staff: Row | null, extra: { post: Post | null; access: Record<string, number> | null } = { post: null, access: null }): AuthUser {
   const role = ((staff?.role as Role) ?? "staff") as Role;
   const scoped = role !== "owner" && role !== "manager";
   return {
@@ -72,7 +79,69 @@ function userFromStaff(id: string, email: string | null, staff: Row | null): Aut
     role,
     staff,
     unitId: scoped ? ((staff?.business_unit_id as string) ?? null) : null,
+    post: extra.post,
+    access: extra.access,
   };
+}
+
+/**
+ * Post (Chairman/Director, from jdone.org_posts by login email) and Team access
+ * levels. Before the phase-1 tables exist both lookups fail quietly and the old
+ * role rules keep working. Until the Chairman's email is set, the owner account
+ * that is not the Director counts as Chairman.
+ */
+/** Director's login, used only until the database has the posts table (phase-1 SQL). */
+const DIRECTOR_EMAIL = "akshaychanchori@gmail.com";
+
+async function loadPostAndAccess(email: string | null, staff: Row): Promise<{ post: Post | null; access: Record<string, number> | null }> {
+  const store = getStore();
+  const em = (email ?? "").toLowerCase();
+  let post: Post | null = null;
+  try {
+    const posts = await store.list("org-posts");
+    const director = posts.find((p) => p.post === "director");
+    const chairman = posts.find((p) => p.post === "chairman");
+    const directorEmail = director?.email ? String(director.email).toLowerCase() : "";
+    const chairmanEmail = chairman?.email ? String(chairman.email).toLowerCase() : "";
+    if (em && directorEmail && em === directorEmail) post = "director";
+    else if (chairmanEmail ? em === chairmanEmail : staff.role === "owner") post = "chairman";
+  } catch {
+    // Phase-1 tables not created yet: same rule as the database will use.
+    if (em && em === DIRECTOR_EMAIL) post = "director";
+    else if (staff.role === "owner") post = "chairman";
+  }
+  let access: Record<string, number> | null = null;
+  try {
+    const rows = await store.list("staff-access", { filter: { staff_id: staff.id } });
+    if (rows.length) access = Object.fromEntries(rows.map((r) => [String(r.module), Number(r.level) || 0]));
+  } catch {
+    /* phase-1 tables not created yet */
+  }
+  return { post, access };
+}
+
+/**
+ * Signed in at a hotel (e.g. The Udaisarovar): everyone, the Chairman and the Director too,
+ * works on that property only – no "All units", no other businesses. Also opens the business day.
+ */
+async function scopeToLoginProperty(user: AuthUser): Promise<AuthUser> {
+  await loadBusinessDay();
+  let brandId: string | null = null;
+  try {
+    brandId = window.localStorage.getItem(BRAND_STORAGE_KEY);
+  } catch {
+    /* no storage */
+  }
+  const brand = STAYS_PROPERTIES.find((b) => b.id === brandId);
+  if (!brand) return user;
+  const key = brand.name.toLowerCase().replace(/^(the|hotel)\s+/, "");
+  try {
+    const units = await getStore().list("business-units");
+    const unit = units.find((u) => String(u.name ?? "").toLowerCase().includes(key));
+    return unit ? { ...user, unitId: String(unit.id) } : user;
+  } catch {
+    return user;
+  }
 }
 
 /**
@@ -110,9 +179,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const loadLocalUser = useCallback(async () => {
     const actAs = localStorage.getItem(ACT_AS_KEY);
-    if (!actAs) return localOwner;
+    if (!actAs) return scopeToLoginProperty(localOwner);
     const staff = await getStore().get("staff", actAs);
-    return staff ? userFromStaff(`local-${staff.id}`, null, staff) : localOwner;
+    return scopeToLoginProperty(staff ? userFromStaff(`local-${staff.id}`, null, staff) : localOwner);
   }, []);
 
   // Boot: restore session.
@@ -142,11 +211,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           return;
         }
         setPendingSignup(null);
-        setUser(userFromStaff(su.id, email, staff));
+        setUser(await scopeToLoginProperty(userFromStaff(su.id, email, staff, await loadPostAndAccess(email, staff))));
       };
-      const { data } = await client.auth.getSession();
-      await resolve(data.session?.user);
-      if (!cancelled) setLoading(false);
+      try {
+        const { data } = await client.auth.getSession();
+        await resolve(data.session?.user);
+      } catch (e) {
+        // Never leave the app on "Opening JD One…" forever: fall back to the sign-in screen.
+        console.error("JD One: could not restore the session", e);
+        setUser(null);
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
       const { data: sub } = client.auth.onAuthStateChange((_event, session) => {
         void resolve(session?.user);
       });
@@ -156,6 +232,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       cancelled = true;
     };
   }, [loadLocalUser]);
+
+  // Permission checks (access.ts) read this; keep it in step with the signed-in user.
+  setCurrentAccess({ admin: !!user?.post, levels: user?.post ? null : (user?.access ?? null) });
 
   const value = useMemo<AuthState>(
     () => ({

@@ -30,11 +30,11 @@ export function PageHeader({ title, subtitle, back, actions }: { title: ReactNod
     <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
       <div className="min-w-0">
         {back && (
-          <Link href={back} className="mb-1 inline-flex items-center gap-1 text-xs text-slate-500 hover:text-navy">
+          <Link href={back} className="mb-1 inline-flex items-center gap-1 text-xs uppercase tracking-[0.18em] text-[#9a7128] hover:text-[#17140f]">
             <ChevronLeft className="h-3.5 w-3.5" /> Back
           </Link>
         )}
-        <h1 className="truncate text-xl font-semibold text-navy sm:text-2xl">{title}</h1>
+        <h1 className="jd-serif truncate text-3xl font-medium leading-tight text-navy sm:text-4xl">{title}</h1>
         {subtitle && <div className="mt-0.5 text-sm text-slate-500">{subtitle}</div>}
       </div>
       {actions && <div className="flex flex-wrap items-center gap-2">{actions}</div>}

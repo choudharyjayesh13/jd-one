@@ -20,7 +20,7 @@ export function AwardsBanner({ me, compact }: { me?: string | null; compact?: bo
     <div className="relative overflow-hidden rounded-2xl text-white shadow-md">
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img src={photo} alt="" className="absolute inset-0 h-full w-full object-cover" />
-      <div className="absolute inset-0 bg-gradient-to-br from-navy/95 via-navy/85 to-amber-900/70" />
+      <div className="absolute inset-0 bg-gradient-to-br from-black/95 via-black/85 to-amber-900/70" />
       <div className={cn("relative flex items-center gap-4", compact ? "p-4" : "p-5")}>
         <span className="text-4xl">{emoji}</span>
         <div className="min-w-0 flex-1">

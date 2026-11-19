@@ -20,6 +20,15 @@ import { FilesInput } from "./FilesInput";
 import { Dialog } from "./Dialog";
 import { Loading, ErrorBox } from "./misc";
 import { useToast } from "./Toast";
+import { LOCKED_ENTITIES } from "@/modules/edit-requests/entity";
+
+/** Comparable form of a value ("6000" and 6000 are the same; empty is empty). */
+function norm(v: unknown): string {
+  if (v === null || v === undefined || v === "") return "";
+  if (typeof v === "number" || (typeof v === "string" && /^-?\d+(\.\d+)?$/.test(v.trim()))) return String(Number(v));
+  if (typeof v === "object") return JSON.stringify(v);
+  return String(v);
+}
 
 interface Props {
   entity: string;
@@ -52,7 +61,14 @@ function initialValues(def: EntityDef, existing: Row | null, prefill: FieldValue
   return v;
 }
 
-export function EntityForm({ entity, id, prefill, locked = [], only, onSaved, onCancel, submitLabel, children }: Props) {
+/** The form for an entity: its own step-by-step form when it has one (bookings), else the generic one. */
+export function EntityForm(props: Props) {
+  const Custom = getEntity(props.entity).customForm;
+  if (Custom && !props.only) return <Custom entity={props.entity} id={props.id} prefill={props.prefill} onSaved={props.onSaved} onCancel={props.onCancel} />;
+  return <GenericEntityForm {...props} />;
+}
+
+function GenericEntityForm({ entity, id, prefill, locked = [], only, onSaved, onCancel, submitLabel, children }: Props) {
   const def = getEntity(entity);
   const user = useUser();
   const { toast } = useToast();
@@ -62,6 +78,9 @@ export function EntityForm({ entity, id, prefill, locked = [], only, onSaved, on
   const [loadError, setLoadError] = useState<string | null>(null);
   const [inlineCreate, setInlineCreate] = useState<FieldDef | null>(null);
   const [hint, setHint] = useState<LiveHint | null>(null);
+  const [original, setOriginal] = useState<Row | null>(null);
+  const [ask, setAsk] = useState<{ changes: { field: string; label: string; from: string; to: string }[]; patch: FieldValues } | null>(null);
+  const [reason, setReason] = useState("");
   const staffId = (user.staff?.id as string | undefined) ?? null;
   const prefillKey = JSON.stringify(prefill ?? {});
 
@@ -71,6 +90,7 @@ export function EntityForm({ entity, id, prefill, locked = [], only, onSaved, on
       try {
         const existing = id ? await getStore().get(entity, id) : null;
         if (id && !existing) throw new Error(`${def.labelSingular} not found`);
+        if (!cancelled) setOriginal(existing);
         if (!cancelled) setValues(initialValues(def, existing, JSON.parse(prefillKey) as FieldValues, user.unitId, staffId));
       } catch (e) {
         if (!cancelled) setLoadError((e as Error).message);
@@ -117,6 +137,20 @@ export function EntityForm({ entity, id, prefill, locked = [], only, onSaved, on
       toast("Please fix the highlighted fields", "error");
       return;
     }
+    // Final entries: changes beyond the open fields go to the Director / Chairman as an edit request.
+    const openFields = LOCKED_ENTITIES[entity];
+    if (id && openFields && original && !user.post) {
+      const changed = def.fields.filter((f) => !f.computed && !f.virtual && !f.readOnly && f.type !== "file" && f.type !== "files" && norm(values[f.name]) !== norm(original[f.name]));
+      const needsOk = changed.filter((f) => !openFields.includes(f.name));
+      if (needsOk.length) {
+        const show = (f: FieldDef, v: unknown) => (v === null || v === undefined || v === "" ? "—" : f.type === "money" ? formatMoney(v) : typeof v === "object" ? JSON.stringify(v) : String(v));
+        setAsk({
+          changes: changed.map((f) => ({ field: f.name, label: f.label, from: show(f, original[f.name]), to: show(f, values[f.name]) })),
+          patch: Object.fromEntries(changed.map((f) => [f.name, values[f.name] ?? null])),
+        });
+        return;
+      }
+    }
     setSaving(true);
     try {
       const row = await saveRecord(entity, values, { store: getStore(), staffId }, id);
@@ -129,8 +163,35 @@ export function EntityForm({ entity, id, prefill, locked = [], only, onSaved, on
     }
   };
 
+  const sendRequest = async () => {
+    if (!ask || !id) return;
+    if (reason.trim().length < 3) return toast("Write why it has to change", "error");
+    setSaving(true);
+    try {
+      await getStore().create("edit-requests", {
+        entity,
+        record_id: id,
+        record_label: `${def.labelSingular} · ${String(original?.[def.titleField] ?? "")}`.trim(),
+        changes: ask.changes,
+        patch: ask.patch,
+        reason: reason.trim(),
+        status: "Pending",
+        requested_by: staffId,
+      });
+      toast("Sent to the Director / Chairman for approval. The entry changes once they approve.", "success");
+      setAsk(null);
+      setReason("");
+      if (original) onSaved(original);
+    } catch (e) {
+      toast((e as Error).message, "error");
+    } finally {
+      setSaving(false);
+    }
+  };
+
   const renderField = (f: FieldDef) => {
     if (f.hidden) return null;
+    if (f.showIf && !f.showIf(values)) return null;
     if (only && !only.includes(f.name)) return null;
     if (f.readOnly && !id) return null; // e.g. balance — kept by hooks
     const disabled = saving || lockedSet.has(f.name) || Boolean(f.readOnly);
@@ -254,6 +315,15 @@ export function EntityForm({ entity, id, prefill, locked = [], only, onSaved, on
         void submit();
       }}
     >
+      {id && LOCKED_ENTITIES[entity] && !user.post && (
+        <div className="rounded-lg border border-[#e7dcc4] bg-[#faf5ea] px-3 py-2 text-sm text-[#5c4718]">
+          This entry is final. Changes go to the Director or Chairman for approval
+          {LOCKED_ENTITIES[entity].length ? ` – except ${LOCKED_ENTITIES[entity].map((n) => def.fields.find((f) => f.name === n)?.label.toLowerCase()).filter(Boolean).join(", ")}, which you can fill in` : ""}.{" "}
+          <a href={`${process.env.NEXT_PUBLIC_BASE_PATH ?? ""}/edit-approvals/`} className="font-medium underline">
+            Your requests
+          </a>
+        </div>
+      )}
       {hint && (
         <div
           className={
@@ -279,6 +349,35 @@ export function EntityForm({ entity, id, prefill, locked = [], only, onSaved, on
           {submitLabel ?? (id ? "Save changes" : `Save ${def.labelSingular.toLowerCase()}`)}
         </Button>
       </div>
+
+      <Dialog open={Boolean(ask)} onClose={() => setAsk(null)} title="Ask to change this entry">
+        {ask && (
+          <div className="flex flex-col gap-4">
+            <p className="text-sm text-slate-600">This entry is final. The Director or Chairman will see the change below and approve or reject it.</p>
+            <ul className="divide-y divide-line rounded-lg border border-line text-sm">
+              {ask.changes.map((c) => (
+                <li key={c.field} className="grid grid-cols-[1fr_auto] gap-2 px-3 py-2">
+                  <span className="font-medium text-navy">{c.label}</span>
+                  <span className="text-right">
+                    <span className="text-slate-400 line-through">{c.from}</span> → <b className="font-medium text-navy">{c.to}</b>
+                  </span>
+                </li>
+              ))}
+            </ul>
+            <Field label="Why does it have to change?" required>
+              <Textarea rows={3} value={reason} onChange={(e) => setReason(e.target.value)} placeholder="e.g. Wrong amount typed, bill says 6,000" />
+            </Field>
+            <div className="flex justify-end gap-2">
+              <Button variant="secondary" onClick={() => setAsk(null)}>
+                Cancel
+              </Button>
+              <Button loading={saving} onClick={() => void sendRequest()}>
+                Send for approval
+              </Button>
+            </div>
+          </div>
+        )}
+      </Dialog>
 
       {/* "+ New" from a relation picker opens the related entity's form inline. */}
       <Dialog open={Boolean(inlineCreate)} onClose={() => setInlineCreate(null)} title={inlineCreate ? `New ${getEntity(inlineCreate.entity!).labelSingular.toLowerCase()}` : ""} wide>

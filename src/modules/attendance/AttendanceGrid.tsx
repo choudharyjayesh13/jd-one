@@ -6,7 +6,7 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import { getStore } from "@/core/data";
-import { currentMonth, formatMonth, monthRange, todayISO } from "@/core/format";
+import { currentMonth, formatMonth, monthRange, calendarTodayISO } from "@/core/format";
 import { useUser } from "@/core/auth/AuthProvider";
 import { listHref } from "@/core/routes";
 import { Input, Select } from "@/core/ui/Input";
@@ -28,7 +28,7 @@ export function AttendanceGrid() {
   const { rows: units } = useList("business-units");
   const { rows: staff, loading } = useList("staff", { filter: { ...(unit ? { business_unit_id: unit } : {}), active: true }, sort: { field: "name", dir: "asc" } });
   const { rows: entries, reload } = useList("attendance", { range: { date: { gte: start, lte: end } } });
-  const today = todayISO();
+  const today = calendarTodayISO();
 
   const byKey = useMemo(() => new Map(entries.map((e) => [`${e.staff_id}|${e.date}`, e])), [entries]);
   const dayList = Array.from({ length: days }, (_, i) => `${month}-${String(i + 1).padStart(2, "0")}`);

@@ -13,7 +13,7 @@ export function CardHeader({ title, action, subtitle }: { title: ReactNode; subt
   return (
     <div className="flex items-start justify-between gap-3 border-b border-line px-4 py-3">
       <div>
-        <h3 className="text-sm font-semibold text-navy">{title}</h3>
+        <h3 className="jd-serif text-lg font-semibold tracking-wide text-navy">{title}</h3>
         {subtitle && <p className="text-xs text-slate-500">{subtitle}</p>}
       </div>
       {action}
@@ -31,7 +31,7 @@ export function Stat({ label, value, hint, tone }: { label: string; value: React
   return (
     <div className="rounded-xl border border-line bg-white p-4 shadow-sm">
       <div className="text-xs font-medium uppercase tracking-wide text-slate-500">{label}</div>
-      <div className={cn("mt-1 text-2xl font-semibold tabular-nums", color)}>{value}</div>
+      <div className={cn("jd-serif mt-1 text-3xl font-semibold tabular-nums", color)}>{value}</div>
       {hint && <div className="mt-1 text-xs text-slate-500">{hint}</div>}
     </div>
   );

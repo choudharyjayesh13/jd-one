@@ -8,7 +8,7 @@ function escape(v: unknown): string {
 }
 
 export function toCSV(def: EntityDef, rows: Row[], labels?: (row: Row, field: string) => unknown): string {
-  const fields = def.fields.filter((f) => f.type !== "file" && f.type !== "files");
+  const fields = def.fields.filter((f) => f.type !== "file" && f.type !== "files" && !f.virtual);
   const header = fields.map((f) => escape(f.label)).join(",");
   const lines = rows.map((r) => fields.map((f) => escape(labels ? labels(r, f.name) : r[f.name])).join(","));
   return "﻿" + [header, ...lines].join("\r\n");

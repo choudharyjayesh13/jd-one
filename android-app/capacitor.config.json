@@ -1,0 +1,13 @@
+{
+  "appId": "com.myjdgroup.jdone",
+  "appName": "JD One",
+  "webDir": "www",
+  "server": {
+    "url": "https://app.myjdgroup.com",
+    "androidScheme": "https"
+  },
+  "android": {
+    "appendUserAgent": "JDOneAndroid",
+    "allowMixedContent": false
+  }
+}

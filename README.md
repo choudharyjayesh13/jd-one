@@ -67,3 +67,13 @@ Run `supabase/migrations/2026-09-29-signup-tickets.jdone.sql` once in the Supaba
 - **Scoreboard** (`/scoreboard/`, under Operations, all roles): Today / This week / This month, per unit. One row per active staff member: days present, on time (checked in by 10:00), tasks done + points, overdue tasks, tickets resolved + average fix time, leads won, activities logged, and a **score** = task points + 2 × tickets resolved + 5 × leads won + 1 per present day − overdue tasks, with 🥇🥈🥉 and a team total. The *Rapid service* tile shows open tickets by age (< 2 h, < 24 h, > 24 h) and average first response (created → work started). The Operations dashboard shows the top 3 and open-ticket count.
 - **Tickets** (Operations / HR → Tickets, open-count badge): maintenance requests with category, location, priority, **photos and videos** (taken on the phone or picked from the gallery; photos are shrunk to 1280 px, videos must be under 25 MB), reporter, assignee, due date and cost. Buttons on a ticket: **Start work**, **Mark done** (asks for resolution notes and after-photos), **Verify**. Assigning a ticket creates a task "Ticket: …" in that person's My Day; closing the ticket closes the task. Files go to the `tickets` storage bucket in shared mode (data stays in the browser in local mode, so keep videos short there).
 - Tasks now have **Points** (default 1, counted when done) and a *Completed* time set automatically.
+
+## JD — AI assistant (added 19 Nov 2026)
+
+An orange **JD** orb floats on every screen after sign-in. Tap it: JD rises out in a swirl of smoke and sparks and opens as a chat (Hindi, Hinglish or English, typed or spoken). JD can find records, make entries, update them, delete them (always with an on-screen "Yes, delete"), and open pages.
+
+- **Rights follow the person.** JD's actions run in the staff member's own browser through the same checks as the app's screens (Team access levels; Chairman and Director have everything), business-unit scoping, the module hooks/change log, and Supabase row-level security. JD can never do more than that person could do by hand.
+- **Brain:** Supabase Edge Function `jd-assistant` (`supabase/functions/jd-assistant`) calls Claude. It only answers signed-in staff.
+- **Switch on:** Supabase → Edge Functions → Secrets → add `ANTHROPIC_API_KEY` (from console.anthropic.com). Optional: `JD_MODEL` (default `claude-sonnet-5-5`).
+- **Code:** `src/modules/jd-assistant/` — `JdAssistant.tsx` (orb, animation, chat), `api.ts` (conversation loop), `tools.ts` (actions + permission checks). Mounted in `src/core/ui/AppShell.tsx`.
+- Local mode: JD shows a note that it needs the shared database.

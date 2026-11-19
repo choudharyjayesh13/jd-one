@@ -37,6 +37,7 @@ export function validate(def: EntityDef, values: FieldValues): ValidationErrors 
 export function normalize(def: EntityDef, values: FieldValues): FieldValues {
   const out: FieldValues = {};
   for (const f of def.fields) {
+    if (f.virtual) continue;
     let v = values[f.name];
     if (f.computed) v = f.computed(values);
     if (v === "" || v === undefined) v = null;

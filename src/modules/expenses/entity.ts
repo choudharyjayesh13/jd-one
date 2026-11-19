@@ -1,5 +1,6 @@
 import { Receipt } from "lucide-react";
 import { defineEntity } from "@/core/schema/types";
+import { MONEY_ROLES } from "@/modules/salary-payments/entity";
 import { todayISO } from "@/core/format";
 
 export const EXPENSE_CATEGORIES = ["Utilities & power", "Salaries & staff", "Maintenance & hardware", "Kitchen & food", "Fuel & gas", "Ads, marketing & hiring", "Other"] as const;
@@ -15,6 +16,7 @@ export const expenses = defineEntity({
   titleField: "vendor",
   searchFields: ["vendor", "detail", "category"],
   defaultSort: { field: "date", dir: "desc" },
+  permissions: { read: MONEY_ROLES, update: MONEY_ROLES, delete: ["owner"] },
   fields: [
     { name: "date", label: "Date", type: "date", required: true, default: todayISO },
     { name: "business_unit_id", label: "Business unit", type: "relation", entity: "business-units", required: true },

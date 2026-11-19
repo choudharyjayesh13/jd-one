@@ -29,11 +29,11 @@ export function stageFromLeadStatus(status: string | undefined): string {
   const s = (status ?? "").toLowerCase();
   if (/won|convert|booked|confirmed/.test(s)) return "Won";
   if (/lost|not interested|junk|invalid|spam/.test(s)) return "Lost";
-  if (/proposal|quote/.test(s)) return "Proposal";
-  if (/negotiat/.test(s)) return "Negotiation";
+  if (/proposal|quote/.test(s)) return "Quote shared";
+  if (/negotiat/.test(s)) return "Quote shared";
   if (/qualif|interested|hot/.test(s)) return "Qualified";
   if (/contact|called|whatsapp|follow/.test(s)) return "Contacted";
-  if (/hold/.test(s)) return "On Hold";
+  if (/hold|later|future/.test(s)) return "Nurture";
   return "New";
 }
 

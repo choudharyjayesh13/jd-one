@@ -45,8 +45,22 @@ export function formatDateTime(value: unknown): string {
   return `${get("day")}-${get("month")}-${get("year")} ${get("hour")}:${get("minute")} ${get("dayPeriod").toLowerCase()}`;
 }
 
-/** Today's date (yyyy-mm-dd) in Asia/Kolkata regardless of device timezone. */
+/**
+ * Business day (hotel): it changes only when the night audit closes the day. Set at sign-in
+ * from the last night audit (src/core/businessDate.ts); null = follow the calendar.
+ */
+let businessDay: string | null = null;
+export function setBusinessDay(d: string | null) {
+  businessDay = d;
+}
+
+/** Today for hotel work: the open business day (stays on the old day until the night audit is done). */
 export function todayISO(): string {
+  return businessDay ?? calendarTodayISO();
+}
+
+/** The real calendar date in Asia/Kolkata – for attendance, HR and sales, which follow the clock. */
+export function calendarTodayISO(): string {
   return dateISO(new Date());
 }
 

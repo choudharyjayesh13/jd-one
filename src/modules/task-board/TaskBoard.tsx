@@ -7,7 +7,7 @@ import type { Row } from "@/core/schema/types";
 import { getStore } from "@/core/data";
 import { useUser } from "@/core/auth/AuthProvider";
 import { isAdmin } from "@/core/auth/access";
-import { formatDate, todayISO } from "@/core/format";
+import { formatDate, calendarTodayISO } from "@/core/format";
 import { newHref, viewHref } from "@/core/routes";
 import { useList } from "@/core/ui/hooks";
 import { useToast } from "@/core/ui/Toast";
@@ -28,7 +28,7 @@ export function TaskBoard() {
   const manager = isAdmin(user.role);
   const [scope, setScope] = useState<"mine" | "team">("mine");
   const [completing, setCompleting] = useState<Row | null>(null);
-  const today = todayISO();
+  const today = calendarTodayISO();
   const { rows: all, reload } = useList("tasks", scope === "mine" && me ? { filter: { assigned_to: me } } : {});
   const { rows: staff } = useList("staff");
   const nameOf = (id: unknown) => String(staff.find((s) => s.id === id)?.name ?? "Unassigned");
@@ -91,7 +91,7 @@ export function TaskBoard() {
       <section className="relative overflow-hidden rounded-3xl text-white shadow-lg">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src={photoOfDay(1).url} alt="" className="absolute inset-0 h-full w-full object-cover" />
-        <div className="absolute inset-0 bg-gradient-to-r from-navy/95 via-navy/80 to-navy/30" />
+        <div className="absolute inset-0 bg-gradient-to-r from-black/95 via-black/80 to-black/30" />
         <div className="relative flex flex-col gap-4 p-6 sm:flex-row sm:items-end sm:justify-between sm:p-8">
           <div>
             <p className="text-sm text-white/70">Task board</p>

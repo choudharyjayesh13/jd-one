@@ -11,12 +11,14 @@ import { Button } from "@/core/ui/Button";
 import { Loading, ErrorBox, PageHeader } from "@/core/ui/misc";
 import { cn } from "@/core/ui/cn";
 import { loadDashboard, type DashboardData } from "./data";
-import { AccountsSection, FinanceSection, HrSection, MarketingSection, OperationsSection, OverviewSection } from "./sections";
+import { TodaySection } from "./Today";
+import { AccountsSection, FinanceSection, HrSection, MarketingSection, OperationsSection, OverviewSection, PropertySection } from "./sections";
 
-type Tab = "all" | Team;
-const TAB_KEY = "jdone.dashboardTab";
+type Tab = "today" | "all" | Team;
+const TAB_KEY = "jdone.dashboardTab.v2"; // v2: "Today" became the default tab
 
 const sectionFor: Record<Team, (d: DashboardData) => React.ReactNode> = {
+  property: (d) => <PropertySection d={d} />,
   operations: (d) => <OperationsSection d={d} />,
   marketing: (d) => <MarketingSection d={d} />,
   accounts: (d) => <AccountsSection d={d} />,
@@ -35,9 +37,9 @@ export function Dashboard() {
   const [tab, setTab] = useState<Tab>(() => {
     try {
       const saved = typeof window !== "undefined" ? (localStorage.getItem(TAB_KEY) as Tab | null) : null;
-      return saved && (saved === "all" || TEAMS.some((t) => t.id === saved)) ? saved : "all";
+      return saved && (saved === "today" || saved === "all" || TEAMS.some((t) => t.id === saved)) ? saved : "today";
     } catch {
-      return "all";
+      return "today";
     }
   });
 
@@ -48,7 +50,7 @@ export function Dashboard() {
         .then((d) => !cancelled && setData(d))
         .catch((e) => !cancelled && setError((e as Error).message));
     void load();
-    const unsubs = ["bookings", "leads", "tasks", "tickets", "activities", "stock", "daily-reports", "expenses", "payments", "attendance", "customers", "targets"].map((e) => getStore().subscribe?.(e, () => void load()));
+    const unsubs = ["bookings", "leads", "tasks", "tickets", "activities", "stock", "daily-reports", "expenses", "payments", "attendance", "customers", "targets", "rooms", "rates", "payment-requests", "housekeeping-reports", "petty-cash"].map((e) => getStore().subscribe?.(e, () => void load()));
     return () => {
       cancelled = true;
       unsubs.forEach((u) => u?.());
@@ -77,7 +79,7 @@ export function Dashboard() {
       />
       {admin && (
         <div className="mb-4 flex gap-1 overflow-x-auto rounded-xl bg-white p-1 shadow-sm">
-          {[{ id: "all" as Tab, label: "All" }, ...TEAMS.map((t) => ({ id: t.id as Tab, label: t.label }))].map((t) => (
+          {[{ id: "today" as Tab, label: "📋 Today" }, { id: "all" as Tab, label: "Overview" }, ...TEAMS.map((t) => ({ id: t.id as Tab, label: t.label }))].map((t) => (
             <button key={t.id} type="button" onClick={() => pick(t.id)} className={cn("whitespace-nowrap rounded-lg px-3 py-1.5 text-sm font-medium", tab === t.id ? "bg-navy text-white" : "text-slate-600 hover:bg-slate-100")}>
               {t.label}
             </button>
@@ -85,10 +87,12 @@ export function Dashboard() {
         </div>
       )}
       {error && <ErrorBox message={error} />}
-      {!data ? (
+      {admin && tab === "today" ? (
+        <TodaySection />
+      ) : !data ? (
         <Loading label="Loading dashboard…" />
       ) : admin ? (
-        tab === "all" ? (
+        tab === "all" || tab === "today" ? (
           <OverviewSection d={data} />
         ) : (
           sectionFor[tab](data)

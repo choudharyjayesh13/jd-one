@@ -16,7 +16,11 @@ import { dailyReports } from "@/modules/daily-reports/entity";
 import { attendance } from "@/modules/attendance/entity";
 import { expenses } from "@/modules/expenses/entity";
 import { stock } from "@/modules/stock/entity";
+import { stockMovements } from "@/modules/stock-movements/entity";
+import { guestInfo } from "@/modules/guest-info/entity";
+import { propertyAssets } from "@/modules/property-assets/entity";
 import { kots } from "@/modules/kot/entity";
+import { menuItems } from "@/modules/menu/entity";
 import { purchases } from "@/modules/purchases/entity";
 import { tasks } from "@/modules/tasks/entity";
 import { targets } from "@/modules/targets/entity";
@@ -30,7 +34,48 @@ import { tickets } from "@/modules/tickets/entity";
 import { serviceVendors } from "@/modules/service-vendors/entity";
 import { restPeriods } from "@/modules/rest-periods/entity";
 import { staffPay } from "@/modules/staff-pay/entity";
+import { salaryPayments } from "@/modules/salary-payments/entity";
+import { vendors } from "@/modules/vendors/entity";
 import { signupRequests } from "@/modules/signup-requests/entity";
+import { rooms } from "@/modules/rooms/entity";
+import { rates } from "@/modules/rates/entity";
+import { promotions } from "@/modules/promotions/entity";
+import { paymentRequests } from "@/modules/payment-requests/entity";
+import { housekeepingReports } from "@/modules/housekeeping/entity";
+import { pettyCash } from "@/modules/petty-cash/entity";
+import { agents } from "@/modules/agents/entity";
+import { addOns } from "@/modules/add-ons/entity";
+import { deals } from "@/modules/deals/entity";
+import { dailyFilings } from "@/modules/daily-filings/entity";
+import { vehicleLogs } from "@/modules/vehicle-logs/entity";
+import { shiftCloses } from "@/modules/shift-closes/entity";
+import { salesEod } from "@/modules/sales-eod/entity";
+import { leadStageHistory } from "@/modules/lead-stage-history/entity";
+import { vouchers } from "@/modules/vouchers/entity";
+import { staffAccess } from "@/modules/staff-access/entity";
+import { orgPosts } from "@/modules/org-posts/entity";
+import { changeLog } from "@/modules/change-log/entity";
+import { indents } from "@/modules/indents/entity";
+import { wastage } from "@/modules/wastage/entity";
+import { hygieneChecks } from "@/modules/hygiene/entity";
+import { gasLogs } from "@/modules/gas/entity";
+import { amenityRefills } from "@/modules/amenities/entity";
+import { linenLogs } from "@/modules/linen/entity";
+import { lostFound } from "@/modules/lost-found/entity";
+import { activityBookings } from "@/modules/activity-bookings/entity";
+import { gateEntries, vehicleEntries } from "@/modules/security/entity";
+import { recipes } from "@/modules/recipes/entity";
+import { purchaseOrders } from "@/modules/purchase-orders/entity";
+import { guestRequests } from "@/modules/guest-requests/entity";
+import { guestFeedback } from "@/modules/guest-feedback/entity";
+import { events } from "@/modules/events/entity";
+import { serviceSchedules } from "@/modules/service-schedules/entity";
+import { deptReports, nightAudits } from "@/modules/night-audit/entity";
+import { leaveRequests } from "@/modules/leave/entity";
+import { locationPings } from "@/modules/location/entity";
+import { meterReadings } from "@/modules/meter/entity";
+import { editRequests } from "@/modules/edit-requests/entity";
+import { homeCards, shiftRoster } from "@/modules/home/entity";
 
 export const entities: EntityDef[] = [
   businessUnits,
@@ -39,14 +84,28 @@ export const entities: EntityDef[] = [
   leads,
   activities,
   bookings,
+  rooms,
+  rates,
+  promotions,
+  paymentRequests,
+  housekeepingReports,
+  pettyCash,
+  addOns,
+  agents,
   payments,
   checkins,
   dailyReports,
   attendance,
   expenses,
+  salaryPayments,
+  vendors,
   kots,
+  menuItems,
   purchases,
   stock,
+  stockMovements,
+  propertyAssets,
+  guestInfo,
   tasks,
   targets,
   importRuns,
@@ -60,6 +119,42 @@ export const entities: EntityDef[] = [
   restPeriods,
   staffPay,
   signupRequests,
+  // added 13–14 Oct 2026 — kept at the end so the phone bottom bar keeps its first modules
+  deals,
+  salesEod,
+  leadStageHistory,
+  shiftCloses,
+  vehicleLogs,
+  dailyFilings,
+  // phase 1, 3 Nov 2026: vouchers, Team access, posts, Director changes
+  vouchers,
+  staffAccess,
+  orgPosts,
+  changeLog,
+  indents,
+  wastage,
+  hygieneChecks,
+  gasLogs,
+  amenityRefills,
+  linenLogs,
+  lostFound,
+  activityBookings,
+  gateEntries,
+  vehicleEntries,
+  recipes,
+  purchaseOrders,
+  guestRequests,
+  guestFeedback,
+  events,
+  serviceSchedules,
+  deptReports,
+  nightAudits,
+  leaveRequests,
+  locationPings,
+  meterReadings,
+  editRequests,
+  homeCards,
+  shiftRoster,
 ];
 
 const byName = new Map(entities.map((e) => [e.name, e]));
