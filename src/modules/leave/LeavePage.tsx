@@ -248,6 +248,7 @@ function DecideDialog({ row, to, who, onClose }: { row: Row; to: "Approved" | "R
     setBusy(true);
     try {
       await getStore().update("leave-requests", row.id, { status: to, decision_note: note.trim() || null, decided_by: user.staff?.id ?? null, decided_at: new Date().toISOString() });
+      if (to === "Approved") await markAttendance(row, user.staff?.id ?? null).catch(() => undefined);
       toast(`${who}: ${to === "Approved" ? "leave approved" : "request rejected"}`, "success");
       onClose();
     } catch (e) {
@@ -311,4 +312,20 @@ export function LeaveNotice() {
       </ul>
     </section>
   );
+}
+
+/** An approved request goes straight onto the attendance grid: Off for weekly / monthly off, H for a
+ * half day, L for leave and emergency. Days already marked (e.g. Present) are left as they are. */
+async function markAttendance(row: Row, by: string | null) {
+  const status = row.kind === "Weekly off" || row.kind === "Monthly off" ? "O" : row.kind === "Half day" ? "H" : "L";
+  const store = getStore();
+  const from = String(row.date_from);
+  const to = String(row.date_to || row.date_from);
+  const have = await store.list("attendance", { filter: { staff_id: row.staff_id }, range: { date: { gte: from, lte: to } } });
+  const taken = new Set(have.map((a) => String(a.date)));
+  for (let d = new Date(`${from}T00:00:00Z`); d.toISOString().slice(0, 10) <= to; d.setUTCDate(d.getUTCDate() + 1)) {
+    const day = d.toISOString().slice(0, 10);
+    if (taken.has(day)) continue;
+    await store.create("attendance", { staff_id: row.staff_id, date: day, status, remarks: `${String(row.kind)} (approved)`, created_by: by });
+  }
 }
