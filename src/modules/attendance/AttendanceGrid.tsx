@@ -1,7 +1,7 @@
 "use client";
 /**
  * Month grid: rows = staff, columns = days. Tapping a cell cycles
- * blank → P → A → H → L → blank and saves immediately.
+ * blank → P → A → H → L → O (off) → blank and saves immediately.
  * Chairman / Director: tapping a cell opens the day instead – status, check-in and check-out time for any
  * date. The Director's changes go to the Chairman's "Director changes" list (database trigger).
  * Everyone who works here is listed, including group people (JD Group HQ), because everyone's salary runs on it.
@@ -23,7 +23,7 @@ import { cn } from "@/core/ui/cn";
 import { ATTENDANCE_STATUSES, ATTENDANCE_LABELS } from "./entity";
 
 const CYCLE = ["", ...ATTENDANCE_STATUSES];
-const cellTone: Record<string, string> = { P: "bg-emerald-100 text-emerald-800", A: "bg-red-100 text-red-800", H: "bg-amber-100 text-amber-800", L: "bg-sky-100 text-sky-800" };
+const cellTone: Record<string, string> = { P: "bg-emerald-100 text-emerald-800", A: "bg-red-100 text-red-800", H: "bg-amber-100 text-amber-800", L: "bg-sky-100 text-sky-800", O: "bg-violet-100 text-violet-800" };
 
 export function AttendanceGrid() {
   const user = useUser();
@@ -62,7 +62,7 @@ export function AttendanceGrid() {
   };
 
   const totals = (staffId: string) => {
-    const t: Record<string, number> = { P: 0, A: 0, H: 0, L: 0 };
+    const t: Record<string, number> = { P: 0, A: 0, H: 0, L: 0, O: 0 };
     for (const d of dayList) {
       const s = String(byKey.get(`${staffId}|${d}`)?.status ?? "");
       if (s in t) t[s]++;
@@ -76,7 +76,7 @@ export function AttendanceGrid() {
         title="Attendance grid"
         subtitle={
           <>
-            {formatMonth(month)} · {user.post ? "tap a cell to set the day and its times." : "tap a cell to cycle P → A → H → L."}{" "}
+            {formatMonth(month)} · {user.post ? "tap a cell to set the day and its times." : "tap a cell to cycle P → A → H → L → O."}{" "}
             <Link href={listHref("attendance")} className="underline">
               List view
             </Link>
@@ -118,7 +118,7 @@ export function AttendanceGrid() {
                     {Number(d.slice(8))}
                   </th>
                 ))}
-                <th className="px-2 py-2 text-center font-semibold text-slate-600">P/A/H/L</th>
+                <th className="px-2 py-2 text-center font-semibold text-slate-600">P/A/H/L/O</th>
               </tr>
             </thead>
             <tbody>
@@ -145,7 +145,7 @@ export function AttendanceGrid() {
                       );
                     })}
                     <td className="whitespace-nowrap px-2 text-center tabular-nums text-slate-600">
-                      {t.P}/{t.A}/{t.H}/{t.L}
+                      {t.P}/{t.A}/{t.H}/{t.L}/{t.O}
                     </td>
                   </tr>
                 );
@@ -213,7 +213,7 @@ function DayDialog({ staff, date, entry, byStaffId, onClose, onSaved }: { staff:
     <Dialog open onClose={onClose} title={`${String(staff.name)} · ${formatDate(date)}`}>
       <div className="flex flex-col gap-4">
         <Field label="Day">
-          <div className="grid grid-cols-4 gap-2">
+          <div className="grid grid-cols-3 gap-2 sm:grid-cols-5">
             {ATTENDANCE_STATUSES.map((st) => (
               <button key={st} type="button" onClick={() => setStatus(st)} className={cn("rounded-lg border px-2 py-2 text-sm font-medium", status === st ? "border-navy bg-navy text-white" : "border-line bg-white text-navy")}>
                 {ATTENDANCE_LABELS[st] ?? st}

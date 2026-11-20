@@ -2,8 +2,8 @@ import { CalendarCheck } from "lucide-react";
 import { defineEntity } from "@/core/schema/types";
 import { calendarTodayISO } from "@/core/format";
 
-export const ATTENDANCE_STATUSES = ["P", "A", "H", "L"] as const;
-export const ATTENDANCE_LABELS: Record<string, string> = { P: "Present", A: "Absent", H: "Half day", L: "Leave" };
+export const ATTENDANCE_STATUSES = ["P", "A", "H", "L", "O"] as const;
+export const ATTENDANCE_LABELS: Record<string, string> = { P: "Present", A: "Absent", H: "Half day", L: "Leave", O: "Off" };
 
 export const attendance = defineEntity({
   name: "attendance",
@@ -19,7 +19,7 @@ export const attendance = defineEntity({
   fields: [
     { name: "date", label: "Date", type: "date", required: true, default: calendarTodayISO },
     { name: "staff_id", label: "Staff", type: "relation", entity: "staff", required: true },
-    { name: "status", label: "Status", type: "select", options: ATTENDANCE_STATUSES, required: true, default: "P", help: "P present · A absent · H half day · L leave" },
+    { name: "status", label: "Status", type: "select", options: ATTENDANCE_STATUSES, required: true, default: "P", help: "P present · A absent · H half day · L leave · O off (weekly / granted off)" },
     { name: "remarks", label: "Remarks", type: "text" },
     // Captured by the phone check-in page (Mark attendance).
     { name: "checked_in_at", label: "Shift 1 in", type: "datetime" },
