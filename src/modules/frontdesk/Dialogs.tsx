@@ -27,6 +27,7 @@ import { Loading } from "@/core/ui/misc";
 import { cn } from "@/core/ui/cn";
 import { bookingForRoom, roomLines, roomsLabel } from "@/modules/rooms/occupancy";
 import { billFor, doCheckIn, doCheckOut } from "./desk";
+import { BackdateField, localInputToISO, nowLocalInput } from "@/core/ui/Backdate";
 
 const MODES = ["UPI", "Cash", "Card", "Bank", "OTA"];
 const ID_TYPES = ["Aadhaar", "Passport", "Driving licence", "Voter ID", "PAN", "Other"];
@@ -58,6 +59,7 @@ export function CheckInDialog({ onClose, onDone, preset, unit }: { onClose: () =
   const { rows: rooms } = useList(b ? "rooms" : null, { filter: { ...(b?.business_unit_id ? { business_unit_id: b.business_unit_id } : {}), active: true }, sort: { field: "sort_order", dir: "asc" } });
   const [f, setF] = useState({ guestName: "", phone: "", idType: "Aadhaar", idNumber: "", payChoice: "full" as "full" | "advance" | "later", amount: 0, mode: "UPI", reference: "", laterReason: "", laterApprovedBy: "" });
   const [roomIds, setRoomIds] = useState<string[]>([]);
+  const [inAt, setInAt] = useState("");
   const [bill, setBill] = useState<{ total: number; paid: number; balance: number } | null>(null);
   const [busy, setBusy] = useState(false);
 
@@ -107,6 +109,7 @@ export function CheckInDialog({ onClose, onDone, preset, unit }: { onClose: () =
         laterReason: f.laterReason,
         laterApprovedBy: f.laterApprovedBy,
         staffId: user.staff?.id ?? null,
+        at: localInputToISO(inAt),
       });
       toast(`${f.guestName} checked in.`, "success");
       onDone();
@@ -123,6 +126,11 @@ export function CheckInDialog({ onClose, onDone, preset, unit }: { onClose: () =
   return (
     <Dialog open wide onClose={onClose} title="New check-in">
       <Steps step={step} labels={["Booking", "Guest & ID", "Rooms", "Payment"]} />
+      {step === 3 && (
+        <div className="mb-3">
+          <BackdateField label="Check-in date & time" value={inAt || nowLocalInput()} onChange={setInAt} />
+        </div>
+      )}
       {step === 0 && (
         <div className="flex flex-col gap-3">
           {loading ? (
@@ -307,6 +315,7 @@ export function CheckOutDialog({ booking, onClose, onDone }: { booking: Row; onC
   const router = useRouter();
   const [bill, setBill] = useState<{ total: number; paid: number; balance: number; rooms: number; fnb: number } | null>(null);
   const [p, setP] = useState({ amount: 0, mode: "UPI", reference: "", leaveDue: false, note: "" });
+  const [outAt, setOutAt] = useState("");
   const [busy, setBusy] = useState(false);
   useEffect(() => {
     void billFor(getStore(), booking).then((x) => {
@@ -319,7 +328,7 @@ export function CheckOutDialog({ booking, onClose, onDone }: { booking: Row; onC
   const finish = async () => {
     setBusy(true);
     try {
-      await doCheckOut(getStore(), booking, { amount: p.leaveDue ? Math.min(p.amount, bill?.balance ?? 0) : p.amount, mode: p.mode, reference: p.reference, note: p.leaveDue ? `Balance left due: ${p.note}` : "" }, user.staff?.id ?? null);
+      await doCheckOut(getStore(), booking, { amount: p.leaveDue ? Math.min(p.amount, bill?.balance ?? 0) : p.amount, mode: p.mode, reference: p.reference, note: p.leaveDue ? `Balance left due: ${p.note}` : "" }, user.staff?.id ?? null, localInputToISO(outAt));
       toast(`${String(booking.guest_name)} checked out. Opening the bill…`, "success");
       onDone();
       router.push(`/guest-bill/?id=${booking.id}`);
@@ -336,6 +345,7 @@ export function CheckOutDialog({ booking, onClose, onDone }: { booking: Row; onC
         <Loading />
       ) : (
         <div className="flex flex-col gap-4">
+          <BackdateField label="Check-out date & time" value={outAt || nowLocalInput()} onChange={setOutAt} />
           <dl className="divide-y divide-line rounded-lg border border-line text-sm">
             {[
               ["Rooms", formatMoney(bill.rooms)],

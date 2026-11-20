@@ -65,6 +65,28 @@ export function NightAudit() {
   const notOver = date > calendarTodayISO();
   const blockedByReports = missing.length > 0 && !canForce;
 
+  // Chairman / Director: a closed day's report made again from today's figures (after back-dated changes).
+  const remake = async () => {
+    if (!closed || !user.post) return;
+    if (!(await confirm(`Make the ${formatDate(date)} report again from the figures as they are now?`, "Update report"))) return;
+    setBusy(true);
+    try {
+      const fresh = await collectDay(date, user.unitId);
+      const old = (closed.data && typeof closed.data === "object" ? closed.data : {}) as Record<string, unknown>;
+      const warn = REPORT_DEPARTMENTS.flatMap((d) => (fresh[d.id]?.alerts ?? []).map((a) => `${d.title}: ${a}`));
+      await getStore().update("night-audits", closed.id, {
+        data: { ...old, sections: fresh, updatedAt: new Date().toISOString(), updatedBy: user.name },
+        warnings: warn,
+      });
+      toast(`Report for ${formatDate(date)} updated.`, "success");
+      await reload();
+    } catch (e) {
+      toast(`Could not update the report: ${(e as Error).message}`, "error");
+    } finally {
+      setBusy(false);
+    }
+  };
+
   const close = async () => {
     if (!data || notOpenDay || notOver || blockedByReports) return;
     const issues = warnings.length;
@@ -138,11 +160,22 @@ export function NightAudit() {
           <p className="text-sm text-emerald-900">
             Closed by {staffName.get(String(closed.closed_by)) ?? "—"} at {formatDateTime(closed.closed_at)}
           </p>
-          <div>
+          {closed.data && typeof closed.data === "object" && (closed.data as Record<string, unknown>).updatedAt ? (
+            <p className="text-sm text-emerald-900">
+              Updated by {String((closed.data as Record<string, unknown>).updatedBy ?? "—")} at {formatDateTime(String((closed.data as Record<string, unknown>).updatedAt))}
+            </p>
+          ) : null}
+          <div className="flex flex-wrap gap-2">
             <Link href={`/night-audit/view/?date=${date}`}>
               <Button icon={MoonStar}>Open the night audit report</Button>
             </Link>
+            {user.post && (
+              <Button variant="secondary" loading={busy} onClick={() => void remake()}>
+                Update this report
+              </Button>
+            )}
           </div>
+          {user.post && <p className="text-xs text-emerald-900/80">Changed an entry of this day later (attendance, a payment, a check-in…)? Update the report and it is made again from the figures as they are now.{user.post === "director" ? " The Chairman is told." : ""}</p>}
         </div>
       ) : !data ? (
         <Loading />
