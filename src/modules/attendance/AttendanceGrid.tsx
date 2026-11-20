@@ -26,7 +26,13 @@ export function AttendanceGrid() {
   const [unit, setUnit] = useState(user.unitId ?? "");
   const { start, end, days } = monthRange(month);
   const { rows: units } = useList("business-units");
-  const { rows: staff, loading } = useList("staff", { filter: { ...(unit ? { business_unit_id: unit } : {}), active: true }, sort: { field: "name", dir: "asc" } });
+  const { rows: allStaff, loading } = useList("staff", { filter: { active: true }, sort: { field: "name", dir: "asc" } });
+  // Group-level people (Director and others under "JD Group HQ") work across properties: show them under
+  // every property's grid in their own section, so their attendance can be marked from any property.
+  const hqIds = new Set(units.filter((u) => /\bhq\b|head ?office/i.test(String(u.name ?? ""))).map((u) => String(u.id)));
+  const staff = allStaff.filter((s) => !unit || s.business_unit_id === unit);
+  const hqStaff = unit && !hqIds.has(unit) ? allStaff.filter((s) => hqIds.has(String(s.business_unit_id ?? "")) && s.role !== "owner") : [];
+  const hqName = String(units.find((u) => hqIds.has(String(u.id)))?.name ?? "JD Group HQ");
   const { rows: entries, reload } = useList("attendance", { range: { date: { gte: start, lte: end } } });
   const today = calendarTodayISO();
 
@@ -108,7 +114,14 @@ export function AttendanceGrid() {
               </tr>
             </thead>
             <tbody>
-              {staff.map((s) => {
+              {[...staff, ...(hqStaff.length ? [null] : []), ...hqStaff].map((s) => {
+                if (!s)
+                  return (
+                    <tr key="hq-head" className="border-t-2 border-line bg-slate-50">
+                      <td className="sticky left-0 z-10 bg-slate-50 px-3 py-1.5 text-xs font-semibold uppercase tracking-wide text-slate-500">{hqName}</td>
+                      <td colSpan={days + 1} />
+                    </tr>
+                  );
                 const t = totals(s.id);
                 return (
                   <tr key={s.id} className="border-t border-line">
@@ -129,7 +142,7 @@ export function AttendanceGrid() {
                   </tr>
                 );
               })}
-              {staff.length === 0 && (
+              {staff.length === 0 && hqStaff.length === 0 && (
                 <tr>
                   <td colSpan={days + 2} className="px-3 py-6 text-center text-slate-500">
                     No active staff{unit ? " in this unit" : ""}. Add them under Staff.
