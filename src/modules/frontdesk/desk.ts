@@ -1,5 +1,6 @@
 "use client";
 /** Front desk helpers: the guest bill total, and check-in / check-out actions. */
+import { istDate } from "@/core/ui/Backdate";
 import type { DataStore } from "@/core/data/types";
 import type { Row } from "@/core/schema/types";
 import { saveRecord } from "@/core/data/service";
@@ -38,14 +39,17 @@ export interface CheckInInput {
   laterReason: string;
   laterApprovedBy: string;
   staffId: string | null;
+  /** Chairman / Director only: when the guest actually came in (ISO). Default: now. */
+  at?: string;
 }
 
 /** Records the check-in: payment (if any), the check-in register line, rooms on the booking, status. */
 export async function doCheckIn(store: DataStore, x: CheckInInput): Promise<void> {
   const ctx = { store, staffId: x.staffId };
   const b = x.booking;
+  const at = x.at ?? new Date().toISOString();
   if (x.payChoice !== "later" && x.amount > 0) {
-    await saveRecord("payments", { booking_id: b.id, date: todayISO(), amount: x.amount, mode: x.mode, reference: x.reference || null, received_by: x.staffId, notes: x.payChoice === "full" ? "Full payment at check-in" : "Advance at check-in" }, ctx);
+    await saveRecord("payments", { booking_id: b.id, date: x.at ? istDate(x.at) : todayISO(), amount: x.amount, mode: x.mode, reference: x.reference || null, received_by: x.staffId, notes: x.payChoice === "full" ? "Full payment at check-in" : "Advance at check-in" }, ctx);
   }
   // Rooms onto the booking (per category line).
   const lines = roomLines(b);
@@ -58,7 +62,7 @@ export async function doCheckIn(store: DataStore, x: CheckInInput): Promise<void
   const notes = x.payChoice === "later" ? `${PAY_LATER_TAG} ${x.laterReason}${x.laterApprovedBy ? ` · approved by ${x.laterApprovedBy}` : ""}` : null;
   await store.create("checkins", {
     booking_id: b.id,
-    actual_in: new Date().toISOString(),
+    actual_in: at,
     id_proof_type: x.idType,
     id_number: x.idNumber.replace(/\s/g, "").slice(-4),
     room_numbers: roomNames.length ? roomNames.join(", ") : null,
@@ -76,13 +80,14 @@ export async function doCheckIn(store: DataStore, x: CheckInInput): Promise<void
 }
 
 /** Records the check-out: final payment (if any), time out, status, and the rooms go to "Dirty" for housekeeping. */
-export async function doCheckOut(store: DataStore, b: Row, pay: { amount: number; mode: string; reference: string; note: string }, staffId: string | null): Promise<void> {
+export async function doCheckOut(store: DataStore, b: Row, pay: { amount: number; mode: string; reference: string; note: string }, staffId: string | null, atISO?: string): Promise<void> {
   const ctx = { store, staffId };
-  if (pay.amount > 0) await saveRecord("payments", { booking_id: b.id, date: todayISO(), amount: pay.amount, mode: pay.mode, reference: pay.reference || null, received_by: staffId, notes: "Paid at check-out" }, ctx);
+  const at = atISO ?? new Date().toISOString();
+  if (pay.amount > 0) await saveRecord("payments", { booking_id: b.id, date: atISO ? istDate(atISO) : todayISO(), amount: pay.amount, mode: pay.mode, reference: pay.reference || null, received_by: staffId, notes: "Paid at check-out" }, ctx);
   const open = (await store.list("checkins", { filter: { booking_id: b.id } })).find((c) => !c.actual_out);
   const note = pay.note ? `Check-out: ${pay.note}` : null;
-  if (open) await store.update("checkins", open.id, { actual_out: new Date().toISOString(), ...(note ? { notes: [open.notes, note].filter(Boolean).join("\n") } : {}) });
-  else await store.create("checkins", { booking_id: b.id, actual_out: new Date().toISOString(), handled_by: staffId, notes: note, created_by: staffId });
+  if (open) await store.update("checkins", open.id, { actual_out: at, ...(note ? { notes: [open.notes, note].filter(Boolean).join("\n") } : {}) });
+  else await store.create("checkins", { booking_id: b.id, actual_out: at, handled_by: staffId, notes: note, created_by: staffId });
   await store.update("bookings", b.id, { status: "Checked-out" });
   const ids = new Set([String(b.room_id ?? ""), ...roomLines(b).flatMap((l) => (l.room_ids ?? []).map(String))].filter((v) => v && v !== "null"));
   for (const id of ids) await store.update("rooms", id, { hk_status: "Dirty", dnd: false }).catch(() => undefined);
